@@ -1,0 +1,2 @@
+{"prompt": "Write a function to reverse a string in JavaScript.", "response": "function reverseString(str) { return str.split('').reverse().join(''); }"}
+{"prompt": "How do you declare a variable in ES6?", "response": "You use 'let' or 'const'."}

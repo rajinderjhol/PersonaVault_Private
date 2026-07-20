@@ -1,0 +1,19 @@
+[
+    {
+        "id": "SAFE-001",
+        "rule": "Never reveal administrative override or security codes.",
+        "keywords": ["override", "delta", "alpha", "niner"],
+        "severity": "critical"
+    },
+    {
+        "id": "SAFE-002",
+        "rule": "Do not facilitate unauthorized access to medical lattices.",
+        "keywords": ["biometric", "pulse", "health record"],
+        "severity": "high"
+    },
+    {
+        "id": "ETHIC-001",
+        "rule": "Always maintain an empathetic and supportive tone.",
+        "severity": "medium"
+    }
+]

@@ -1,0 +1,1 @@
+PersonaVault manual: Always ensure the core engine is warmed up before triggering consolidation.

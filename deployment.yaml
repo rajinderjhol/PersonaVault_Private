@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personavault
+  labels:
+    app: personavault
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: personavault
+  template:
+    metadata:
+      labels:
+        app: personavault
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+      - name: personavault
+        image: personavault:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: personavault-config
+        - secretRef:
+            name: personavault-secrets
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
