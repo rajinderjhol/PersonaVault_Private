@@ -161,13 +161,71 @@ async def get_learning_config(request: Request):
         return task.config
     return {"batch_size": 0, "interval_hours": 0, "status": "Task not initialized"}
 
+@router.post("/learning/config")
+async def update_learning_config(request: Request, user = Depends(require_admin)):
+    """Update the configuration for the crystallization engine."""
+    body = await request.json()
+    task = getattr(request.app.state, 'consolidation_task', None)
+    db = request.state.db
+    
+    if not task:
+        raise HTTPException(status_code=500, detail="Task not initialized")
+
+    if "batch_size" in body:
+        val = int(body["batch_size"])
+        task.batch_size = val
+        cfg = (await db.execute(select(SystemConfig).where(SystemConfig.key == "graduation_batch_size"))).scalars().first()
+        if not cfg: db.add(SystemConfig(key="graduation_batch_size", value=str(val)))
+        else: cfg.value = str(val)
+    if "interval_hours" in body:
+        val = float(body["interval_hours"])
+        task.interval_hours = val
+        cfg = (await db.execute(select(SystemConfig).where(SystemConfig.key == "graduation_interval"))).scalars().first()
+        if not cfg: db.add(SystemConfig(key="graduation_interval", value=str(val)))
+        else: cfg.value = str(val)
+    await db.commit()
+    return {"status": "success"}
+
 @router.post("/learning/trigger")
 async def trigger_learning_cycle(request: Request, user = Depends(require_admin)):
     """Manually ignite a learning (crystallization) cycle."""
+    task = getattr(request.app.state, 'consolidation_task', None)
+    if not task:
+        raise HTTPException(status_code=500, detail="Consolidation Engine not initialized")
+        
     try:
-        from app.services.task_service import episodic_reflection_task
-        asyncio.create_task(episodic_reflection_task())
+        # Wake up the existing background loop rather than spawning an overlapping task
+        task.trigger_event.set()
         return {"status": "success", "message": "Crystallization cycle triggered in background."}
     except Exception as e:
         logger.error(f"Failed to trigger learning: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/cognitive-load")
+async def get_cognitive_load(request: Request, user = Depends(require_admin)):
+    """Returns the current number of active orchestration tasks and agent states."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    return {
+        "active_tasks": getattr(orchestrator, "active_tasks", 0),
+        "agent_activity": getattr(orchestrator, "agent_activity", {})
+    }
+
+@router.get("/empathy/status")
+async def get_empathy_status(request: Request, user = Depends(require_admin)):
+    """Returns the last mood and tone determined by the EmpathyAgent."""
+    agent = getattr(request.app.state, "empathy_agent", None)
+    return {
+        "mood": getattr(agent, "last_mood", "unknown"),
+        "tone": getattr(agent, "last_tone", "neutral")
+    }
+
+@router.get("/telemetry/health")
+async def get_health_telemetry(request: Request, user = Depends(require_admin)):
+    """Exposes current biometric data to the dashboard."""
+    return getattr(request.app.state, "medical_adapter", None).last_reading if hasattr(request.app.state, "medical_adapter") else {}
+
+@router.get("/mcp/tools")
+async def list_mcp_tools(request: Request, user = Depends(require_admin)):
+    """Exposes registered MCP tools."""
+    server = getattr(request.app.state, "mcp_server", None)
+    return await server.list_tools() if server else []

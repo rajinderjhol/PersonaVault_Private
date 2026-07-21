@@ -19,22 +19,25 @@ class DraftRequest(BaseModel):
     variables: dict
     instructions: str
 
+class MatterCreate(BaseModel):
+    title: str
+    description: str
+    client_id: int
+    assigned_attorney_id: int
+
 @router.post("/matters")
 async def create_matter(
-    title: str,
-    description: str,
-    client_id: int,
-    assigned_attorney_id: int,
+    payload: MatterCreate,
     user_id: int = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new legal matter."""
     matter = LegalMatter(
         matter_number=f"M-{int(time.time())}",
-        title=title,
-        description=description,
-        client_id=client_id,
-        assigned_attorney_id=assigned_attorney_id
+        title=payload.title,
+        description=payload.description,
+        client_id=payload.client_id,
+        assigned_attorney_id=payload.assigned_attorney_id
     )
     db.add(matter)
     await db.commit()

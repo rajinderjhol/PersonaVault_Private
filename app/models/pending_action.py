@@ -13,3 +13,7 @@ class PendingAction(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     resolved_at = Column(DateTime, nullable=True)
     user_response = Column(Text, nullable=True)
+
+    # VeriLinkOS Integration Placeholders
+    vap_hash = Column(String, nullable=True, index=True)  # Cryptographic receipt hash
+    action_chain_id = Column(String, nullable=True)      # Link to the VeriLink Action Chain

@@ -9,6 +9,13 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
+# ANSI color codes (Moved to top to ensure they are available for all echo statements)
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
 # Check for --test flag to run suite before launch
 RUN_TESTS=false
 if [[ "$*" == *"--test"* ]]; then
@@ -23,20 +30,13 @@ fi
 
 # Ensure core dependencies for vector search and ranking are installed in the venv
 echo -e "${CYAN}⠿ Validating Python environment...${NC}"
-if ! python -c "import faiss, rank_bm25, dotenv, verilink_plugin" &> /dev/null; then
+if ! python -c "import faiss, rank_bm25, dotenv, passlib, bcrypt" &> /dev/null; then
     echo -e "${YELLOW}📦 Installing/Updating missing libraries...${NC}"
     python -m pip install --upgrade pip
-    python -m pip install faiss-cpu rank-bm25 python-dotenv verilink-aiverify-plugin --no-cache-dir
+    python -m pip install faiss-cpu rank-bm25 python-dotenv passlib bcrypt==4.0.1 --no-cache-dir
 else
     echo -e "  ${GREEN}✅ All core dependencies present.${NC}"
 fi
-
-# ANSI color codes
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 echo -e "${CYAN}${BOLD}♻️  PersonaVault: Recycling development environment...${NC}"
 echo -e "${YELLOW}⏳ Releasing network ports and killing processes...${NC}"
@@ -148,6 +148,11 @@ until curl -s http://localhost:8000/health/engine | grep -qE '"status":"(ready|d
 done
 echo -e " ${GREEN}✅ Ready!${NC}"
 
-# Display summary from the actual logs
-echo -e "\n"
-grep "✨ PersonaVault" -A 10 storage/logs/uvicorn.log
+# Display summary of accessible URLs directly for better UX
+echo -e "\n${GREEN}${BOLD}✨ PersonaVault is now operational!${NC}"
+echo -e "${CYAN}--------------------------------------------------${NC}"
+echo -e "  ${BOLD}Admin Dashboard:${NC}  http://localhost:8000/admin/dashboard"
+echo -e "  ${BOLD}API Swagger UI:${NC}   http://localhost:8000/docs"
+echo -e "  ${BOLD}Engine Health:${NC}    http://localhost:8000/health/engine"
+echo -e "${CYAN}--------------------------------------------------${NC}"
+echo -e "${YELLOW}Logs are tailing in: storage/logs/uvicorn.log${NC}\n"

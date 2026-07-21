@@ -64,9 +64,9 @@ graph TD
 *   **Tiered AI Generation**: Prioritizes local LLMs (Ollama) for privacy and speed, with fallback to frontier models (Gemini) for complex tasks.
 *   **Cognitive Grounding**: Automatically adjusts AI tone and facts based on real-time IoT data and analyzed user personas.
 *   **Self-Improving Pipeline**: A "Judge" agent evaluates every response; recurring errors are automatically "graduated" into Layer 3 constraints.
-*   **Crystallization Engine**: Background background task manager for Layer 2 -> Layer 3 memory consolidation.
+*   **Crystallization Engine**: Background task manager for Layer 2 -> Layer 3 memory consolidation.
+*   **Explainable HITL**: Human-in-the-loop safety gates with raw state inspection and AI-synthesized cognitive insights.
 *   **Admin Simulation Lab**: Built-in IoT telemetry generator for testing real-time monitoring and HITL triggers.
-
 
 ## 🧠 Theoretical Validation: The Agent Harness Framework
 
@@ -109,6 +109,7 @@ PersonaVault goes beyond the MemoHarness proposal by adding:
       primaryClass={cs.AI},
       url={https://arxiv.org/abs/2607.14159},
 }
+```
 
 ## 🧠 Theoretical Validation: Multi-Agent Orchestration
 

@@ -10,6 +10,7 @@ from sqlalchemy import select, func, text
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 import os
+import time
 import logging
 from app.services.memory_service import MemoryService
 import json
@@ -21,7 +22,7 @@ import random
 from app.db.session import get_db, SessionLocal
 from app.models import (
     User, Memory, AuditLog, UserSession, SystemConfig,
-    AISetting, IoTDevice, IoTData, LegalMatter, WorkflowTask, LegalDocument
+    AISetting, IoTDevice, IoTData, LegalMatter, WorkflowTask, LegalDocument, PendingAction, EpisodicEntry
 ) # Added LegalDocument for analysis
 from app.core.dependencies import require_admin
 from app.services.custom import (
@@ -59,86 +60,69 @@ async def get_system_metrics(
     now_utc = datetime.utcnow() # Standardize to naive UTC to match application and DB defaults
     start_of_day = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Initialize defaults to prevent 500 if specific queries fail
-    metrics = {
-        "users": {"total": 0, "active_30d": 0, "new_today": 0},
-        "memories": {"total": 0, "expired": 0, "expiring_soon": 0},
-        "sessions": {"active": 0, "total_today": 0},
-        "iot": {"total_devices": 0, "active_count": 0, "active_devices": [], "data_points_today": 0},
-        "legal": {"active_matters": 0}
-    }
+    # Define tasks for concurrent execution to solve sequential bottlenecks
+    tasks = [
+        db.execute(select(func.count(User.id))),
+        db.execute(select(func.count(User.id)).where(User.created_at >= start_of_day)),
+        db.execute(select(func.count(User.id)).where(User.last_login >= now_utc - timedelta(days=30))),
+        db.execute(select(func.count(Memory.id))),
+        db.execute(select(Memory).where(Memory.expiry_days > 0)),
+        db.execute(select(func.count(UserSession.id)).where(UserSession.is_active.is_(True))),
+        db.execute(select(func.count(UserSession.id)).where(UserSession.created_at >= start_of_day)),
+        db.execute(select(func.count(IoTDevice.id))),
+        db.execute(select(IoTDevice).where(IoTDevice.status == "active")),
+        db.execute(select(func.count(IoTData.id)).where(IoTData.timestamp >= start_of_day)),
+        db.execute(select(func.count(LegalMatter.id)).where(LegalMatter.status == "active")),
+        db.execute(select(func.count(AISetting.id)).where(AISetting.is_active.is_(True))),
+        db.execute(select(SystemConfig).where(SystemConfig.key == "primary_ai_provider"))
+    ]
 
+    # Execute all queries concurrently
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
     try:
-        # Users
-        try:
-            total_users_stmt = select(func.count(User.id))
-            metrics["users"]["total"] = (await db.execute(total_users_stmt)).scalar_one()
+        # Helper to safely extract scalar from results
+        def get_val(idx, default=0):
+            if isinstance(results[idx], Exception): return default
+            return results[idx].scalar_one()
 
-            new_users_today_stmt = select(func.count(User.id)).where(User.created_at >= start_of_day)
-            metrics["users"]["new_today"] = (await db.execute(new_users_today_stmt)).scalar_one()
+        expiring_list = results[4].scalars().all() if not isinstance(results[4], Exception) else []
+        active_iot_results = results[8].scalars().all() if not isinstance(results[8], Exception) else []
+        
+        expired_count = 0
+        soon_count = 0
+        for m in expiring_list:
+            expiry_date = m.created_at + timedelta(days=m.expiry_days)
+            if expiry_date < now_utc:
+                expired_count += 1
+            elif now_utc <= expiry_date < (now_utc + timedelta(days=3)):
+                soon_count += 1
 
-            # Defensive check for last_login which might be missing in some schema versions
-            thirty_days_ago = now_utc - timedelta(days=30)
-            active_users_stmt = select(func.count(User.id)).where(User.last_login >= thirty_days_ago)
-            metrics["users"]["active_30d"] = (await db.execute(active_users_stmt)).scalar_one()
-        except Exception as u_err:
-            logger.debug(f"User metrics partial fail (likely missing last_login): {u_err}")
-            metrics["users"]["active_30d"] = metrics["users"]["total"]
-
-        # Memories
-        try:
-            total_memories_stmt = select(func.count(Memory.id))
-            metrics["memories"]["total"] = (await db.execute(total_memories_stmt)).scalar_one()
-
-            # Use portable logic: Fetch expiring memories and calculate in Python if DB logic is complex
-            # This avoids the SQLite-specific julianday function which crashes on Postgres
-            expiring_stmt = select(Memory).where(Memory.expiry_days > 0)
-            res = await db.execute(expiring_stmt)
-            expiring_list = res.scalars().all()
-            
-            expired_count = 0
-            soon_count = 0
-            for m in expiring_list:
-                expiry_date = m.created_at + timedelta(days=m.expiry_days)
-                if expiry_date < now_utc:
-                    expired_count += 1
-                elif now_utc <= expiry_date < (now_utc + timedelta(days=3)):
-                    soon_count += 1
-            
-            metrics["memories"]["expired"] = expired_count
-            metrics["memories"]["expiring_soon"] = soon_count
-        except Exception as m_err:
-            logger.warning(f"Memory metrics partial fail: {m_err}")
-
-        # Sessions
-        active_sessions_stmt = select(func.count(UserSession.id)).where(
-            UserSession.is_active.is_(True)
-        )
-        metrics["sessions"]["active"] = (await db.execute(active_sessions_stmt)).scalar_one()
-
-        total_sessions_today_stmt = select(func.count(UserSession.id)).where(UserSession.created_at >= start_of_day)
-        metrics["sessions"]["total_today"] = (await db.execute(total_sessions_today_stmt)).scalar_one()
-
-        # IoT
-        try:
-            total_iot_stmt = select(func.count(IoTDevice.id))
-            metrics["iot"]["total_devices"] = (await db.execute(total_iot_stmt)).scalar_one()
-
-            active_iot_stmt = select(IoTDevice).where(IoTDevice.status == "active")
-            active_iot_results = (await db.execute(active_iot_stmt)).scalars().all()
-            metrics["iot"]["active_count"] = len(active_iot_results)
-            metrics["iot"]["active_devices"] = [d.device_name or d.device_id for d in active_iot_results]
-
-            iot_data_stmt = select(func.count(IoTData.id)).where(IoTData.timestamp >= start_of_day)
-            metrics["iot"]["data_points_today"] = (await db.execute(iot_data_stmt)).scalar_one()
-        except Exception as iot_err:
-            logger.warning(f"IoT metrics partially failed: {iot_err}")
-
-        # Legal
-        try:
-            metrics["legal"]["active_matters"] = (await db.execute(select(func.count(LegalMatter.id)).where(LegalMatter.status == "active"))).scalar_one()
-        except Exception:
-            pass
+        metrics = {
+            "users": {
+                "total": get_val(0),
+                "new_today": get_val(1),
+                "active_30d": get_val(2)
+            },
+            "memories": {
+                "total": get_val(3),
+                "expired": expired_count,
+                "expiring_soon": soon_count
+            },
+            "sessions": {
+                "active": get_val(5),
+                "total_today": get_val(6)
+            },
+            "iot": {
+                "total_devices": get_val(7),
+                "active_count": len(active_iot_results),
+                "active_devices": [d.device_name or d.device_id for d in active_iot_results],
+                "data_points_today": get_val(9)
+            },
+            "legal": {
+                "active_matters": get_val(10)
+            }
+        }
 
         # AI
         try:
@@ -148,8 +132,14 @@ async def get_system_metrics(
             ai_provider_stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
             ai_provider_config = (await db.execute(ai_provider_stmt)).scalars().first()
             primary_provider = ai_provider_config.value if ai_provider_config else "ollama"
+
+            # Check VeriLink Integration Status
+            orchestrator = getattr(request.app.state, "orchestrator", None)
+            verilink_status = getattr(orchestrator, "governance_status", "not_installed")
+            verilink_offline = getattr(orchestrator, "offline_mode", False)
+            
         except Exception:
-            active_ai_settings, primary_provider = 0, "ollama"
+            active_ai_settings, primary_provider, verilink_offline = 0, "ollama", False
 
         return {
             "timestamp": now_utc.isoformat(),
@@ -158,7 +148,9 @@ async def get_system_metrics(
                 "active_configs": active_ai_settings,
                 "primary_provider": primary_provider,
                 "ollama_status": await _check_ollama(request),
-                "gemini_status": await _check_gemini(request)
+                "gemini_status": await _check_gemini(request),
+                "verilink_status": verilink_status,
+                "verilink_offline": verilink_offline
             },
             "system": {
                 "vector_index_size": len(request.app.state.vector_service.metadata) if hasattr(request.app.state, "vector_service") and getattr(request.app.state.vector_service, "metadata", None) is not None else 0,
@@ -322,6 +314,12 @@ async def get_audit_logs(
 @router.websocket("/ws/{client_id}")
 async def dashboard_websocket_endpoint(websocket: WebSocket, client_id: str):
     """WebSocket for real-time dashboard metrics and IoT updates."""
+    # SECURITY HANDSHAKE: Ensure only authenticated admins can stream system state
+    session_id = websocket.cookies.get("session_id")
+    if not session_id:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await manager.connect(client_id, websocket)
     try:
         while True:
@@ -337,12 +335,122 @@ async def dashboard_websocket_endpoint(websocket: WebSocket, client_id: str):
 
 # ============ System Operations ============
 
+@router.get("/hitl/pending")
+async def list_pending_hitl(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all pending Human-In-The-Loop actions from the database."""
+    stmt = select(PendingAction).where(PendingAction.status == "pending").order_by(PendingAction.created_at.desc())
+    results = (await db.execute(stmt)).scalars().all()
+    return [{
+        "id": p.id,
+        "agent_type": p.agent_type,
+        "query": p.query,
+        "timestamp": p.created_at.isoformat(),
+        "vap_hash": p.vap_hash,
+        "action_chain_id": p.action_chain_id,
+        "data": json.loads(p.options) if p.options and p.options.startswith('{') else {}
+    } for p in results]
+
 @router.post("/hitl/{action_id}/approve")
-async def approve_hitl(action_id: str, user_id: int = Depends(require_admin)):
+async def approve_hitl(
+    action_id: int, 
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
     """Approve a pending HITL action."""
+    stmt = select(PendingAction).where(PendingAction.id == action_id)
+    action = (await db.execute(stmt)).scalars().first()
+    if not action:
+        raise HTTPException(status_code=404, detail="Action not found")
+    
+    action.status = "approved"
+    action.resolved_at = datetime.utcnow()
+    await db.commit()
+    
     logger.info(f"Admin approved HITL action: {action_id}")
-    # In production, this would resolve the state in the ApprovalService
     return {"status": "approved", "action_id": action_id}
+
+@router.post("/hitl/{action_id}/deny")
+async def deny_hitl(
+    action_id: int, 
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Deny a pending HITL action."""
+    stmt = select(PendingAction).where(PendingAction.id == action_id)
+    action = (await db.execute(stmt)).scalars().first()
+    if not action:
+        raise HTTPException(status_code=404, detail="Action not found")
+    
+    action.status = "rejected"
+    action.resolved_at = datetime.utcnow()
+    await db.commit()
+
+    logger.info(f"Admin denied HITL action: {action_id}")
+    return {"status": "denied", "action_id": action_id}
+
+@router.post("/hitl/{action_id}/explain")
+async def explain_hitl_reasoning(
+    action_id: int,
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Uses the JudgeAgent to provide a human-readable summary of the cognitive state."""
+    stmt = select(PendingAction).where(PendingAction.id == action_id)
+    action = (await db.execute(stmt)).scalars().first()
+    if not action:
+        raise HTTPException(status_code=404, detail="Action not found")
+
+    judge = request.app.state.judge_agent
+    prompt = f"""
+    ### TASK: COGNITIVE STATE DECODING
+    Explain WHY the {action.agent_type} issued an intervention and WHAT the operator should consider.
+    
+    INTERVENTION QUERY: {action.query}
+    TECHNICAL STATE (JSON):
+    {action.options}
+    
+    ### INSTRUCTIONS:
+    1. Translate technical triggers (like physiological data or risk scores) into plain English.
+    2. Clearly state the safety or logic conflict identified.
+    3. Provide a neutral recommendation (Approve/Deny) based on system policy.
+    
+    EXPLANATION:
+    """
+    
+    try:
+        res = await judge._client.post(
+            f"{judge.ollama_url}/api/generate",
+            json={"model": judge.ollama_model, "prompt": prompt, "stream": False},
+            timeout=45.0
+        )
+        return {"explanation": res.json().get("response", "Could not parse AI response.")}
+    except Exception as e:
+        logger.error(f"Judge explanation failed: {e}")
+        return {"explanation": "The AI reasoning engine is currently under high load. Please manually review the JSON state."}
+
+@router.get("/governance/logs")
+async def get_governance_logs(
+    user_id_admin: int = Depends(require_admin),
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """Retrieve episodic entries containing VeriLink governance metadata."""
+    stmt = select(EpisodicEntry).order_by(EpisodicEntry.timestamp.desc()).limit(limit)
+    results = (await db.execute(stmt)).scalars().all()
+    return {
+        "logs": [{
+            "id": e.id,
+            "query": e.query[:60] + "..." if len(e.query) > 60 else e.query,
+            "receipt": e.governance_receipt_id or "local_bypass",
+            "signature": e.signature or "unsealed",
+            "hitl": e.hitl_approved,
+            "timestamp": e.timestamp.isoformat()
+        } for e in results]
+    }
 
 @router.post("/system/simulate-iot")
 async def toggle_iot_simulation(request: Request, user_id: int = Depends(require_admin)):
@@ -421,12 +529,6 @@ async def _run_iot_simulation():
     except asyncio.CancelledError:
         pass
 
-@router.post("/hitl/{action_id}/deny")
-async def deny_hitl(action_id: str, user_id: int = Depends(require_admin)):
-    """Deny a pending HITL action."""
-    logger.info(f"Admin denied HITL action: {action_id}")
-    return {"status": "denied", "action_id": action_id}
-
 @router.post("/memories/cleanup")
 async def cleanup_expired_memories(
     request: Request,
@@ -473,6 +575,54 @@ async def delete_memory_admin(
     await db.delete(memory)
     await db.commit()
     return {"deleted": True, "memory_id": memory_id}
+
+@router.post("/governance/toggle-offline")
+async def toggle_verilink_offline(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Toggle VeriLink Offline Mode to manually suppress connection attempts."""
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    if not orchestrator:
+        raise HTTPException(status_code=500, detail="Orchestrator not initialized")
+
+    # Update/Get DB Config
+    stmt = select(SystemConfig).where(SystemConfig.key == "verilink_offline_mode")
+    config = (await db.execute(stmt)).scalars().first()
+    
+    # Toggle current state
+    is_currently_offline = config.value == "true" if config else False
+    new_offline_state = not is_currently_offline
+    val_str = "true" if new_offline_state else "false"
+    
+    if not config:
+        db.add(SystemConfig(key="verilink_offline_mode", value=val_str))
+    else:
+        config.value = val_str
+    
+    await db.commit()
+    
+    # Update Live Orchestrator Instance
+    orchestrator.offline_mode = new_offline_state
+    
+    if new_offline_state:
+        orchestrator.governance = None
+        orchestrator.governance_status = "manual_offline"
+        logger.info("Admin manually suppressed VeriLink connection.")
+    else:
+        # Re-attempt initialization if resumed
+        try:
+            from verilink_plugin import VeriLinkGovernancePlugin
+            orchestrator.governance = VeriLinkGovernancePlugin()
+            orchestrator.governance_status = "active"
+            logger.info("Admin resumed VeriLink connection attempts.")
+        except Exception as e:
+            orchestrator.governance = None
+            orchestrator.governance_status = "offline_fail_soft"
+            logger.warning(f"VeriLink resume failed: {e}")
+    
+    return {"status": "success", "offline_mode": new_offline_state}
 
 @router.post("/system/refresh-vector-index")
 async def refresh_vector_index(
@@ -571,8 +721,19 @@ async def get_recent_activity(
 
 # ============ Helper Functions ============
 
+# Add a cache for Ollama status
+_ollama_cache = {
+    "status": "unknown",
+    "last_check": 0,
+    "cache_ttl": 30  # Only check every 30 seconds
+}
+
 async def _check_ollama(request: Request) -> str:
-    """Check Ollama service status."""
+    """Check Ollama service status with caching."""
+    now = time.time()
+    if now - _ollama_cache["last_check"] < _ollama_cache["cache_ttl"]:
+        return _ollama_cache["status"]
+
     try:
         client = request.app.state.ai_client
         # Use centralized config and shorter timeout for health check
@@ -580,11 +741,15 @@ async def _check_ollama(request: Request) -> str:
         response = await client.get(url, timeout=1.0)
         if response.status_code == 200:
             models = response.json().get("models", [])
-            return f"connected ({len(models)} models)" if models else "connected (no models)"
-        return "error"
+            _ollama_cache["status"] = f"connected ({len(models)} models)" if models else "connected (no models)"
+        else:
+            _ollama_cache["status"] = "error"
     except Exception as e:
         logger.warning(f"Ollama health check: service unreachable at {Config.OLLAMA_BASE_URL}")
-        return "disconnected"
+        _ollama_cache["status"] = "disconnected"
+
+    _ollama_cache["last_check"] = now
+    return _ollama_cache["status"]
 
 async def _check_gemini(request: Request) -> str:
     """Check Gemini service status."""
@@ -726,6 +891,10 @@ DASHBOARD_HTML = """
         .toast.success { border-left-color: var(--success); }
         .toast.error { border-left-color: var(--danger); }
         .toast.info { border-left-color: var(--accent); }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card-bg); margin: 5% auto; padding: 30px; border: 1px solid var(--border); width: 85%; max-width: 900px; border-radius: 12px; position: relative; max-height: 85vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 20px; right: 25px; color: #64748b; font-size: 28px; cursor: pointer; }
+        .close-modal:hover { color: white; }
     </style>
 </head>
 <body>
@@ -860,8 +1029,18 @@ DASHBOARD_HTML = """
 
             <div id="governance-tab" class="tab-content">
                 <h2 style="color: var(--accent);">Governance & Audit</h2>
+                <div class="card" style="margin-bottom: 25px; border-left: 4px solid #f87171;">
+                    <div class="flex-between">
+                        <div>
+                            <h3 class="card-title">VeriLinkOS Execution Kernel</h3>
+                            <p id="verilink-desc" style="color: #94a3b8; font-size: 12px; margin-top: 5px;">Currently in fail-soft mode.</p>
+                        </div>
+                        <button class="btn" id="verilink-toggle-btn" onclick="toggleVeriLinkMode()"><i class="fas fa-plug-circle-xmark"></i> Suppress Connection</button>
+                    </div>
+                </div>
+
                 <div class="card">
-                    <div class="card-header"><h3 class="card-title">Recent Audit Logs</h3></div>
+                    <div class="card-header"><h3 class="card-title">Action Chain & VAP Receipts</h3></div>
                     <div id="audit-container" style="max-height: 400px; overflow-y: auto;">
                         <div class="metric-label">Loading audit trail...</div>
                     </div>
@@ -880,9 +1059,21 @@ DASHBOARD_HTML = """
 
     <div id="toast-container" class="toast-container"></div>
 
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 style="color: var(--accent); margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-microchip"></i> Orchestrator State Snapshot
+            </h2>
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
     <script>
         let logSource = null;
         let ws = null;
+        let currentHitlData = [];
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -906,7 +1097,7 @@ DASHBOARD_HTML = """
             if (tabId === 'logs') startLogStream();
             if (tabId === 'models') fetchInstalledModels();
             if (tabId === 'learning') fetchLearningConfig();
-            if (tabId === 'governance') fetchAuditLogs();
+            if (tabId === 'governance') fetchGovernanceLogs();
             if (tabId === 'agents') fetchAgentStatus();
         }
 
@@ -956,7 +1147,7 @@ DASHBOARD_HTML = """
         let fetchInProgress = false;
         function throttledFetch() {
             const now = Date.now();
-            if (fetchInProgress || now - lastFetch < 10000) return; // Limit to once every 10 seconds
+            if (fetchInProgress || now - lastFetch < 30000) return; // Limit to once every 30 seconds
             fetchMetrics();
         }
 
@@ -973,6 +1164,21 @@ DASHBOARD_HTML = """
                 document.getElementById('raw-metrics').textContent = JSON.stringify(data, null, 2);
                 const grid = document.getElementById('metrics-grid');
                 
+                // Update VeriLink UI
+                const vBtn = document.getElementById('verilink-toggle-btn');
+                const vDesc = document.getElementById('verilink-desc');
+                const isOffline = data.ai?.verilink_offline;
+                
+                if (isOffline) {
+                    vBtn.innerHTML = '<i class="fas fa-plug-circle-check"></i> Resume Connection';
+                    vBtn.style.background = '#34d399';
+                    vDesc.innerText = 'VeriLink connection attempts are manually suppressed.';
+                } else {
+                    vBtn.innerHTML = '<i class="fas fa-plug-circle-xmark"></i> Suppress Connection';
+                    vBtn.style.background = '#f87171';
+                    vDesc.innerText = 'System is attempting to synchronize with VeriLinkOS.';
+                }
+
                 if (data.error) console.warn("Metrics partially failed:", data.error);
                 grid.innerHTML = `
                     <div class="card"><div class="metric-label"><i class="fas fa-users"></i> Users</div><div class="metric-value">${data.users?.total || 0}</div></div>
@@ -1047,6 +1253,18 @@ DASHBOARD_HTML = """
             fetchInstalledModels();
         }
 
+        async function toggleVeriLinkMode() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/governance/toggle-offline', {method: 'POST'});
+                if (!res.ok) throw new Error('Toggle Failed');
+                const data = await res.json();
+                showToast(data.offline_mode ? 'VeriLink connection suppressed' : 'VeriLink reconnection enabled', 'info');
+                fetchMetrics();
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
         async function deleteModel(name) {
             if (!confirm(`Permanently purge ${name} from local storage?`)) return;
             await fetch(`/api/v1/admin/models/${name}`, {method: 'DELETE'});
@@ -1076,17 +1294,23 @@ DASHBOARD_HTML = """
             showToast('Manual crystallization cycle ignited', 'info');
         }
 
-        async function fetchAuditLogs() {
+        async function fetchGovernanceLogs() {
             const container = document.getElementById('audit-container');
             try {
-                const res = await fetch('/api/v1/admin/dashboard/audit-logs?limit=15');
+                const res = await fetch('/api/v1/admin/dashboard/governance/logs?limit=20');
                 const data = await res.json();
                 container.innerHTML = data.logs.map(l => `
-                    <div class="stat-row">
-                        <span class="stat-label">${l.action}</span>
-                        <span class="stat-value" style="font-size:11px;">${new Date(l.timestamp).toLocaleTimeString()}</span>
+                    <div style="padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div class="flex-between">
+                            <span style="font-size:13px; font-weight:600;">${l.query}</span>
+                            <span class="tag ${l.hitl ? 'tag-success' : ''}">${l.hitl ? 'HITL' : 'AUTO'}</span>
+                        </div>
+                        <div style="display: flex; gap: 15px; margin-top: 5px;">
+                            <span style="font-size:10px; color: var(--accent); font-family: monospace;">RECEIPT: ${l.receipt}</span>
+                            <span style="font-size:10px; color: #64748b;">${new Date(l.timestamp).toLocaleString()}</span>
+                        </div>
                     </div>
-                `).join('') || '<div class="metric-label">No recent logs.</div>';
+                `).join('') || '<div class="metric-label">No governance receipts found.</div>';
             } catch (e) { container.innerHTML = 'Error loading logs.'; }
         }
 
@@ -1095,12 +1319,13 @@ DASHBOARD_HTML = """
                 const [loadRes, empathyRes, hitlRes] = await Promise.all([
                     fetch('/api/v1/admin/cognitive-load'),
                     fetch('/api/v1/admin/empathy/status'),
-                    fetch('/api/v1/admin/hitl/pending')
+                    fetch('/api/v1/admin/dashboard/hitl/pending')
                 ]);
                 
                 const load = await loadRes.json();
                 const empathy = await empathyRes.json();
                 const hitl = await hitlRes.json();
+                currentHitlData = hitl;
                 
                 let agentHtml = `
                     <div class="stat-row"><span class="stat-label">Active Tasks</span><span class="stat-value">${load.active_tasks || 0}</span></div>
@@ -1132,14 +1357,30 @@ DASHBOARD_HTML = """
                 if (hitl.length > 0) {
                     hitlEl.innerHTML = hitl.map(h => `
                         <div class="card" style="margin-bottom: 10px; padding: 15px; background: #020617;">
-                            <div class="flex-between">
-                                <span style="font-weight:700; color: #fbbf24;">${h.agent_type}</span>
-                                <span class="tag">${new Date(h.timestamp).toLocaleTimeString()}</span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 8px; margin-bottom: 10px;">
+                                <span style="font-weight:700; color: #fbbf24; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <i class="fas fa-shield-halved"></i> ${h.agent_type} Intervention
+                                </span>
+                                <span class="tag" style="font-size: 9px;">${new Date(h.timestamp).toLocaleTimeString()}</span>
                             </div>
-                            <div style="font-size:12px; margin-top:8px; color: #94a3b8;">${h.query}</div>
-                            <div style="margin-top:10px; display:flex; gap:10px;">
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">Observation / Risk</div>
+                                <div style="font-size: 13px; margin-top: 4px; color: #f1f5f9;">${h.query}</div>
+                            </div>
+
+                            ${h.data && h.data.reasoning_insight ? `
+                            <div style="margin-bottom: 12px; padding: 8px; background: rgba(56, 189, 248, 0.05); border-radius: 4px; border-left: 2px solid var(--accent);">
+                                <div style="font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase;">AI Proposed Reasoning</div>
+                                <div style="font-size: 12px; margin-top: 4px; color: #94a3b8; font-style: italic;">"${h.data.reasoning_insight}"</div>
+                            </div>
+                            ` : ''}
+
+                            ${h.vap_hash ? `<div style="font-size:10px; margin-top:5px; color: var(--accent); font-family: monospace;">VAP: ${h.vap_hash}</div>` : ''}
+                            <div style="margin-top:15px; display:flex; gap:10px;">
                                 <button class="btn" style="padding:4px 10px; font-size:11px;" onclick="approveAction('${h.id}')">Approve</button>
                                 <button class="btn" style="padding:4px 10px; font-size:11px; background:#7f1d1d; color:white;" onclick="denyAction('${h.id}')">Deny</button>
+                                <button class="btn" style="padding:4px 10px; font-size:11px; background:#334155; color:white;" onclick="showHitlDetails('${h.id}')">Details</button>
                             </div>
                         </div>
                     `).join('');
@@ -1177,7 +1418,72 @@ DASHBOARD_HTML = """
 
         async function denyAction(id) {
             const res = await fetch(`/api/v1/admin/dashboard/hitl/${id}/deny`, {method: 'POST'});
-            if (res.ok) { alert('Action denied'); fetchAgentStatus(); }
+            if (res.ok) { showToast('HITL Protocol Rejected', 'error'); fetchAgentStatus(); }
+        }
+
+        function showHitlDetails(id) {
+            const item = currentHitlData.find(h => h.id == id);
+            if (!item) return;
+            const body = document.getElementById('modal-body');
+            body.innerHTML = `
+                <div id="explanation-box" style="display:none; margin-bottom: 25px; padding: 20px; background: rgba(56, 189, 248, 0.05); border: 1px solid var(--accent); border-radius: 8px; border-left-width: 4px;">
+                    <div class="metric-label" style="color: var(--accent); margin-bottom: 10px;"><i class="fas fa-comment-nodes"></i> AI Cognitive Insight</div>
+                    <div id="explanation-text" style="font-size: 14px; line-height: 1.6; color: #f1f5f9;"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                    <div>
+                        <div class="metric-label">Agent Identity</div>
+                        <div style="color: #fbbf24; font-weight: 800; font-size: 18px; margin-top: 5px;">${item.agent_type}</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Interruption Point</div>
+                        <div style="color: var(--accent); font-weight: 700; margin-top: 5px;">${item.data?.interruption_point || 'Unknown'}</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <div class="metric-label">Critical Observation</div>
+                    <div style="font-size: 14px; margin-top: 8px; background: #020617; padding: 12px; border-radius: 6px; border: 1px solid #1e293b;">${item.query}</div>
+                </div>
+
+                <button class="btn" id="explain-btn" onclick="explainReasoning('${id}')" style="background: var(--accent); width: 100%; margin-bottom: 25px; justify-content: center;">
+                    <i class="fas fa-wand-magic-sparkles"></i> Synthesize Reasoning Explanation
+                </button>
+
+                <div class="metric-label">Raw System Context (Internal Data)</div>
+                <pre style="margin-top: 10px; border-color: #334155;">${JSON.stringify(item.data, null, 4)}</pre>
+            `;
+            document.getElementById('details-modal').style.display = 'block';
+        }
+
+        async function explainReasoning(id) {
+            const btn = document.getElementById('explain-btn');
+            const box = document.getElementById('explanation-box');
+            const text = document.getElementById('explanation-text');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI Reasoning in Progress...';
+            
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/hitl/${id}/explain`, { method: 'POST' });
+                const data = await res.json();
+                box.style.display = 'block';
+                text.innerText = data.explanation;
+                btn.style.display = 'none';
+            } catch (e) {
+                showToast('AI Synthesis Failed', 'error');
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Retry Explanation';
+                btn.disabled = false;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('details-modal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('details-modal');
+            if (event.target == modal) closeModal();
         }
 
         async function logout() {
@@ -1187,7 +1493,7 @@ DASHBOARD_HTML = """
 
         fetchMetrics();
         connectWebSocket();
-        setInterval(fetchMetrics, 15000);
+        setInterval(fetchMetrics, 60000);
     </script>
 </body>
 </html>

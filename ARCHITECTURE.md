@@ -45,15 +45,20 @@ PersonaVault utilizes the **Model Context Protocol (MCP)** to decouple the AI's 
 
 ## Data Layer
 
-### 1. Relational Metadata & Domain Entities (SQL)
-Uses **SQLAlchemy** (targeting PostgreSQL/SQLite) to manage structured data including:
+PersonaVault employs a three-layer memory architecture characterized by state changes:
+*   **Layer 1: Working (Gas)** - Transient context and real-time IoT data.
+*   **Layer 2: Episodic (Liquid)** - Interaction history and evaluation logs stored in relational SQL.
+*   **Layer 3: Semantic (Ice)** - Crystallized patterns and constraints stored in Vector and Graph stores.
+
+### 1. Relational Metadata & Interaction Logs (SQL)
+Uses **SQLAlchemy** (targeting PostgreSQL/SQLite) to manage Layer 2 episodic data and system state:
 *   User profiles and authentication.
 *   Session management.
 *   Audit logs and system configurations.
 *   Legal matters, Documents, and Workflow tasks.
 
-### 2. Semantic Search (Vector Simulation)
-During development, the `VectorService` manages embeddings within the SQL backbone (utilizing **pgvector** on PostgreSQL). This reduces infrastructure complexity while building core reasoning logic. It is responsible for:
+### 2. Semantic Search (Vector Store)
+During development, the `VectorService` utilizes **FAISS** for local embedding management and K-Nearest Neighbor (KNN) searches. This allows for high-speed retrieval of Layer 3 memories without requiring a dedicated cloud vector database. It is responsible for:
 *   Storing memory embeddings.
 *   Performing K-Nearest Neighbor (KNN) searches to find semantically relevant memories based on natural language queries.
 
@@ -63,7 +68,7 @@ The `GraphService` manages relationships between entities and memories. To maint
 ## 🛡️ Strategic Infrastructure Note
 
 PersonaVault employs an **"Integrated-to-Distributed"** evolution strategy:
-*   **Development Lattices (Current):** We utilize **SQLite** (Cloud Shell) or **PostgreSQL** as a multi-paradigm engine. It handles standard relational data, vector storage (pgvector), and graph relationships (simulated tables). This reduces operational overhead in environments like Google Cloud Shell.
+*   **Development Lattices (Current):** We utilize **SQLite** (Cloud Shell) for relational data, **FAISS** for vector retrieval, and simulated SQL tables for graph relationships. This reduces operational overhead while enabling the full cognitive loop.
 *   **Production Scale-Out:** The architecture is designed for a seamless migration to specialized engines:
     *   **PostgreSQL** (Relational Metadata)
     *   **Weaviate** (High-scale Vector Retrieval)

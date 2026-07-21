@@ -2,10 +2,13 @@ import asyncio
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 import json
+import logging
 from app.schemas.memory_schemas import EpisodicEntry, MemoryResult, RetrievalPlan, EvaluationMetrics
 from app.services.custom import PLASMA_ACTIVE
 
 # Robust import for VeriLink Governance
+logger = logging.getLogger(__name__)
+
 try:
     from verilink_plugin import VeriLinkGovernancePlugin
     VERILINK_AVAILABLE = True
@@ -25,15 +28,20 @@ class MultiAgentOrchestrator:
         self.active_tasks = 0
         self.agent_activity = {name: 0 for name in agents.keys()}
         self.recent_receipts = [] # For dashboard visualization
+        self.offline_mode = False # Manual suppression flag
         self.constitution = self._load_constitution()
         
         # Initialize VeriLink Governance
         if VERILINK_AVAILABLE:
             try:
                 self.governance = VeriLinkGovernancePlugin() # Removed unexpected 'config' argument
+                logger.info("🛡️ VeriLink Governance Plugin initialized.")
             except Exception as e:
-                print(f"⚠️ Governance Offline: VeriLink plugin loaded but service unreachable: {e}")
+                logger.warning(f"⚠️ VeriLink Plugin loaded but service unreachable: {e}")
                 self.governance = None
+        
+        self.governance_status = "active" if self.governance else "offline_fail_soft"
+        
         # Ensure HITL service is available
         if "hitl" not in self.agents:
             raise ValueError("HITLService must be provided in agents dictionary.")
@@ -86,6 +94,8 @@ class MultiAgentOrchestrator:
     async def process(self, query: str, context: Dict[str, Any] = None, sensitivity: str = "medium", risk_threshold: float = 0.8):
         self.active_tasks += 1
         user_id = context.get("user_id", 0) if context else 0
+        
+        logger.info(f"🧠 Cognitive Pipeline Ignited: '{query[:50]}...' (Sensitivity: {sensitivity})")
 
         # Initialize response variables for safety during evaluation/logging
         response_text = ""
@@ -97,10 +107,12 @@ class MultiAgentOrchestrator:
         route: Dict[str, Any] = {}
         evaluation: Optional[EvaluationMetrics] = None
         gov_receipt_id: Optional[str] = None
+        gov_status: str = "skipped"
         signature: Optional[str] = None
 
         # 1. Strategic Planning
         plan = await self._run_agent("planner", "create_plan", query, context=context)
+        logger.info(f"📋 Strategic Plan created. Complexity: {plan.complexity_score}")
 
         # Tag Plasma state based on high-complexity reasoning requirement (> 0.7)
         is_plasma = plan.complexity_score > 0.7
@@ -110,11 +122,12 @@ class MultiAgentOrchestrator:
         # Determine response tone based on situational awareness (Layer 1)
         situational_data = context.get("situational_awareness", {}) if context else {}
         response_tone = await self._run_agent("empathy", "determine_tone", situational_awareness=situational_data)
-        
+        logger.info(f"🎭 Empathy Agent set tone to: {response_tone}")
 
         try:
             # 2. Parallel Execution (Retrieval + Reasoning)
             tasks = []
+            logger.info("⚙️ Executing Retrieval and Reasoning in parallel...")
             if self.agents.get("retriever"):
                 tasks.append(self._run_agent("retriever", "hybrid_search", plan, user_id))
             else:
@@ -127,9 +140,10 @@ class MultiAgentOrchestrator:
 
             results = await asyncio.gather(*tasks)
             retrieval_data, reasoning_insight = results
+            logger.info(f"🔍 Retrieval complete ({len(retrieval_data)} results). Reasoning insight generated.")
             
             # 2.1 Pre-Governance Intent Check (Offline-Ready)
-            if self.governance:
+            if self.governance and not self.offline_mode:
                 # We wrap the reasoning in a 'test' to see if it violates core ethics
                 # even if the server is offline, this prepares the VAP receipt structure
                 try:
@@ -144,9 +158,11 @@ class MultiAgentOrchestrator:
                     
                     gov_receipt_id = getattr(gov_check, "receipt_id", "local_pending")
                     signature = getattr(gov_check, "signature", "local_seal_v1")
+                    gov_status = "verified" if gov_check.passed else "blocked"
                     
                     # IMMEDIATE VALUE: Stop the AI if local governance fails
                     if not gov_check.passed:
+                        logger.error(f"🚫 BLOCKED BY GUARDIAN: {gov_receipt_id}")
                         return {
                             "answer": "I am sorry, but system governance policies have flagged this reasoning path as unsafe.",
                             "confidence": 0.0,
@@ -163,12 +179,14 @@ class MultiAgentOrchestrator:
                     })
                     if len(self.recent_receipts) > 15: self.recent_receipts.pop(0)
                 except Exception:
-                    pass # Fail-soft if VeriLinkOS is unreachable
+                    logger.debug("VeriLink kernel unreachable - proceeding with local fail-soft.")
+                    gov_status = "offline_bypass" # Fail-soft if VeriLinkOS is unreachable
 
             # 3. Validation
             is_valid = True
             validation_res = {}
             if self.agents.get("validator"):
+                logger.info("⚖️ Validator Agent assessing reasoning risk...")
                 try:
                     validation_res = await self._run_agent("validator", "validate",
                         query=query, 
@@ -180,6 +198,7 @@ class MultiAgentOrchestrator:
                     risk_score = validation_res.get("risk_score", 0.0)
 
                     if risk_score >= risk_threshold or not is_valid:
+                        logger.warning(f"⚠️ High Risk Detected ({risk_score}). Escalating to HITL.")
                         # Trigger HITL for validation risk
                         orchestrator_state = {
                             "query": query,
@@ -197,7 +216,9 @@ class MultiAgentOrchestrator:
                         pending_action = await self._run_agent("hitl", "request_clarification",
                             agent_type="ValidatorAgent",
                             query=f"Validation failed for query: '{query}'. Reason: {validation_res.get('explanation')}",
-                            options=orchestrator_state
+                            options=orchestrator_state,
+                            vap_hash=gov_receipt_id, # Link cryptographic receipt to HITL record
+                            action_chain_id=signature  # Link to the VeriLink Action Chain
                         )
                         return {
                             "status": "HITL_REQUIRED",
@@ -208,6 +229,7 @@ class MultiAgentOrchestrator:
                     pass
             
             # 4. Intelligent Routing
+            logger.info("🚦 Routing query to optimal AI Tier...")
             route = await self._run_agent("router", "get_route",
                 query=query, 
                 complexity=plan.complexity_score, 
@@ -215,6 +237,7 @@ class MultiAgentOrchestrator:
             )
 
             # 5. Final Synthesis
+            logger.info(f"✍️ Synthesizing response via {route.get('provider', 'default')}...")
             generation = await self._run_agent("generator", "generate",
                 query, 
                 retrieval_data, 
@@ -232,17 +255,19 @@ class MultiAgentOrchestrator:
         # 6. Quality Evaluation (Judge)
         evaluation = None
         if self.agents.get("judge"):
+            logger.info("👨‍⚖️ Judge Agent performing quality audit...")
             evaluation = await self._run_agent("judge", "evaluate", query, response_text, retrieval_data)
 
         # 7. Log to Episodic Memory (Layer 2)
         if self.agents.get("episodic"):
+            logger.info("💾 Archiving interaction to Layer 2 (Episodic)...")
             entry = EpisodicEntry(
                 query=query,
                 plan=plan.dict() if hasattr(plan, 'dict') else plan,
                 results=[r.dict() if hasattr(r, 'dict') else r for r in retrieval_data],
                 answer=response_text,
                 evaluation=evaluation.dict() if hasattr(evaluation, 'dict') else evaluation,
-                governance_receipt_id=gov_receipt_id or "local_pending",
+                governance_receipt_id=gov_receipt_id or f"offline_{datetime.utcnow().strftime('%Y%m%d')}",
                 signature=signature,
                 hitl_approved=False,
                 timestamp=datetime.utcnow()
@@ -256,12 +281,13 @@ class MultiAgentOrchestrator:
             "confidence": generation.get("confidence", 0.0),
             "hitl_approved": False,
             "thermodynamic_state": "plasma" if is_plasma else "stable",
-            "governance_receipt": gov_receipt_id,
+            "governance_receipt": gov_receipt_id or "offline_mode",
             "trace": {
                 "plan": plan.dict(),
                 "retrieval": [r.dict() for r in retrieval_data],
                 "reasoning": reasoning_insight,
                 "empathy": response_tone,
+                "governance_status": gov_status,
                 "governance_receipt": gov_receipt_id,
                 "signature": signature
             }

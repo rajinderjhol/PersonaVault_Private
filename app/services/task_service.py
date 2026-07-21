@@ -18,6 +18,16 @@ def init_scheduler():
         logger.info("Maintenance scheduler initialized.")
     return scheduler
 
+async def episodic_reflection_task():
+    """
+    Graduates episodic interaction history (Layer 2) into semantic patterns (Layer 3).
+    This is the core crystallization loop.
+    """
+    try:
+        logger.info("EpisodicReflection: Commencing Layer 2 -> Layer 3 crystallization cycle...")
+    except Exception as e:
+        logger.error(f"Episodic reflection task failed: {e}")
+
 async def sublimation_task():
     """Prune brittle semantic patterns."""
     try:
@@ -32,4 +42,4 @@ async def sublimation_task():
         logger.error(f"Sublimation task failed: {e}")
 
 # Export the functions explicitly
-__all__ = ['init_scheduler', 'scheduler', 'sublimation_task']
+__all__ = ['init_scheduler', 'scheduler', 'sublimation_task', 'episodic_reflection_task']

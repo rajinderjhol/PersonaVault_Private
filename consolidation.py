@@ -17,6 +17,7 @@ class ConsolidationTask:
         self.batch_size = config.get("batch_size", 10)
         self.interval_hours = config.get("interval_hours", 1)
         self._running = True
+        self.trigger_event = asyncio.Event()
 
     async def run(self):
         """Continuous background loop for cognitive learning."""
@@ -35,7 +36,14 @@ class ConsolidationTask:
                 await sublimation_task()
                 
                 logger.info(f"ConsolidationTask: Cycle complete. Next run in {self.interval_hours} hour(s).")
-                await asyncio.sleep(self.interval_hours * 3600)
+                
+                # Wait for the next interval OR for a manual trigger from the dashboard
+                try:
+                    await asyncio.wait_for(self.trigger_event.wait(), timeout=self.interval_hours * 3600)
+                    self.trigger_event.clear()
+                    logger.info("ConsolidationTask: Manual trigger received via Admin Dashboard.")
+                except asyncio.TimeoutError:
+                    pass # Interval elapsed naturally
             except Exception as e:
                 logger.error(f"ConsolidationTask loop error: {e}")
                 await asyncio.sleep(300) # Wait 5 minutes before retrying on failure

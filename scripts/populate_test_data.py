@@ -151,10 +151,16 @@ async def populate():
         # 7. HITL Pending Action - FIXED: Using correct model fields
         pending = PendingAction(
             agent_type="ValidatorAgent",  # Who is requesting approval
-            query="Should the system execute a critical_override to flush all caches?",  # What's being asked
-            options=json.dumps(["Approve", "Deny", "Escalate to Admin"]),  # Available options
+            query="ValidatorAgent identified a safety policy conflict in the proposed execution path.",  # What's being asked
+            options=json.dumps({
+                "reasoning_insight": "User requested a system-wide override while heart rate is elevated (98 BPM). Policy 009 requires manual verification for high-entropy commands under physiological stress.",
+                "original_query": "Flush all system caches and restart the cognitive core.",
+                "risk_score": 0.85,
+                "interruption_point": "physiological_safety_gate"
+            }),
             status="pending",  # pending, approved, rejected, timed_out
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
+            vap_hash="0x7f2a...6611_test_vector"
             # user_response and resolved_at will be set when the action is resolved
         )
         db.add(pending)

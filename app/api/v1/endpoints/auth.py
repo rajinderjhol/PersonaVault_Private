@@ -1,21 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from app.core.permissions import ROLE_PERMISSIONS
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from pydantic import BaseModel
 from app.db.session import get_db
 from app.models import User, UserSession
 import uuid
 from datetime import datetime, timedelta
+from passlib.context import CryptContext
+
+# Password hashing configuration
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 router = APIRouter()
 
-async def get_current_user_id():
-    """
-    Mock dependency to return a default user ID.
-    Replace this with actual JWT/Session validation logic.
-    """
-    return 1
+async def get_current_user_id(request: Request, db: AsyncSession = Depends(get_db)):
+    """Validates the session cookie against the database."""
+    session_token = request.cookies.get("session_id")
+    if not session_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    # Use joinedload to fetch the User along with the Session to prevent N+1 later
+    stmt = (
+        select(UserSession)
+        .options(joinedload(UserSession.user))
+        .where(UserSession.session_token == session_token)
+        .where(UserSession.is_active == True)
+        .where(UserSession.expires_at > datetime.utcnow())
+    )
+    result = await db.execute(stmt)
+    session = result.scalars().first()
+    if not session:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
+    return session.user_id
 
 class LoginRequest(BaseModel):
     username: str
@@ -31,7 +49,8 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
     result = await db.execute(stmt)
     user = result.scalars().first()
     
-    if not user or user.hashed_password != payload.password:
+    # Verify the hashed password using bcrypt
+    if not user or not pwd_context.verify(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     
     # Create actual session record in database

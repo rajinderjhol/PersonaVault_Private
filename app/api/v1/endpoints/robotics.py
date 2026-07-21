@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 from app.db.session import get_db
 from app.services.perception import RoboticsPerceptionService
 from app.services.experience import ExperienceLearningService
@@ -8,15 +9,18 @@ from app.core.dependencies import require_memory_write
 
 router = APIRouter(prefix="/robotics", tags=["robotics"])
 
+class RobotObservation(BaseModel):
+    observation: dict
+    robot_id: str
+
 @router.post("/observe")
 async def robot_observation(
-    observation: dict,
-    robot_id: str,
+    payload: RobotObservation,
     user_id: int = Depends(require_memory_write),
     db: AsyncSession = Depends(get_db)
 ):
     service = RoboticsPerceptionService(db)
-    return await service.process_robot_observation(observation, robot_id, user_id)
+    return await service.process_robot_observation(payload.observation, payload.robot_id, user_id)
 
 @router.post("/learn")
 async def robot_learn(
