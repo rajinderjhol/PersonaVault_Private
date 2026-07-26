@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.db.session import get_db
 from app.models import User, UserSession
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 
 # Password hashing configuration
@@ -27,7 +27,7 @@ async def get_current_user_id(request: Request, db: AsyncSession = Depends(get_d
         .options(joinedload(UserSession.user))
         .where(UserSession.session_token == session_token)
         .where(UserSession.is_active == True)
-        .where(UserSession.expires_at > datetime.utcnow())
+        .where(UserSession.expires_at > datetime.now(timezone.utc).replace(tzinfo=None))
     )
     result = await db.execute(stmt)
     session = result.scalars().first()
@@ -55,13 +55,14 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
     
     # Create actual session record in database
     session_token = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     # Session valid for 30 days if "stay signed in", else 24 hours
-    expires_at = datetime.utcnow() + timedelta(days=30 if payload.stay_signed_in else 1)
+    expires_at = now + timedelta(days=30 if payload.stay_signed_in else 1)
     
     new_session = UserSession(
         user_id=user.id,
         session_token=session_token,
-        created_at=datetime.utcnow(),
+        created_at=now,
         expires_at=expires_at,
         is_active=True
     )

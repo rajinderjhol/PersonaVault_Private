@@ -17,7 +17,11 @@ PersonaVault is not a single agent but a **collaborative swarm** of specialized 
 Agents communicate via a shared **Cognitive Blackboard** and negotiate actions based on a unified understanding of the user's state and preferences.
 
 ### Cognitive State
-The system maintains a "Cognitive State" representing its current reasoning confidence. When uncertainty is high (detected by the Judge Agent), the system enters a "Pending Human Clarification" state, triggering the HITL module.
+The system maintains a "Cognitive State" representing its current reasoning confidence. This state is visualized via the **Live Swarm Feed** and the **Chain-of-Thought (CoT) Graph**.
+
+#### Human-In-The-Loop (HITL) Paradigms
+1.  **Blocking HITL (Approval Gates)**: When uncertainty is high (< 0.6) or governance is violated, the swarm halts for explicit user approval.
+2.  **Active Steering (Leapfrog HITL)**: Operators can observe the reasoning process in the live feed and inject instructions directly into the L1 Blackboard to redirect agents without suspending execution.
 
 #### Confidence Scoring
 *   **High (>= 0.8)**: Autonomous execution.

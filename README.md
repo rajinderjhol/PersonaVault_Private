@@ -65,6 +65,8 @@ graph TD
 *   **Cognitive Grounding**: Automatically adjusts AI tone and facts based on real-time IoT data and analyzed user personas.
 *   **Self-Improving Pipeline**: A "Judge" agent evaluates every response; recurring errors are automatically "graduated" into Layer 3 constraints.
 *   **Crystallization Engine**: Background task manager for Layer 2 -> Layer 3 memory consolidation.
+*   **Swarm Traceability**: Real-time Chain-of-Thought (CoT) graph visualizing multi-agent negotiation paths.
+*   **Active Swarm Steering**: Interactive terminal for low-latency human intervention in the cognitive loop.
 *   **Explainable HITL**: Human-in-the-loop safety gates with raw state inspection and AI-synthesized cognitive insights.
 *   **Admin Simulation Lab**: Built-in IoT telemetry generator for testing real-time monitoring and HITL triggers.
 
@@ -92,6 +94,7 @@ PersonaVault goes beyond the MemoHarness proposal by adding:
 | **Continuous Runtime Learning** | Consolidation Task (Layer 2 → Layer 3) | Self-improves without retraining |
 | **Emotional Intelligence** | EmpathyAgent | Human-aligned responses |
 | **Human-in-the-Loop** | ApprovalService + HITL Workflow | Enterprise-grade governance |
+| **Active Steering** | Interactive Swarm Terminal | Real-time human intervention |
 | **Model Agnosticism** | AIRouter (Ollama ↔ Gemini ↔ Custom) | No vendor lock-in |
 | **Local-First Sovereignty** | SQLite + Local Inference | Privacy and data control |
 

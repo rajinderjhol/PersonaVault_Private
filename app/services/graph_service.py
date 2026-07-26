@@ -1,7 +1,7 @@
 import os
 import logging
 from neo4j import GraphDatabase
-from config import Config
+from app.config import Config
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)

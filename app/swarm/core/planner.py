@@ -5,7 +5,7 @@ from app.services.semantic_memory import SemanticMemory
 
 logger = logging.getLogger(__name__)
 
-class PlanningAgent:
+class PlannerAgent:
     """
     Analyzes query intent and creates a retrieval strategy.
     Uses Semantic Memory to apply learned patterns.

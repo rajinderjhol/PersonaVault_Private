@@ -6,7 +6,7 @@ from typing import List, Optional
 from app.db.session import get_db
 from app.models import IoTDevice, IoTData
 from app.api.v1.endpoints.auth import get_current_user_id
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ async def register_device(device: DeviceCreate, user_id: int = Depends(get_curre
     if existing:
         raise HTTPException(status_code=400, detail="Device already registered")
     
-    new_device = IoTDevice(user_id=user_id, **device.model_dump(), last_seen=datetime.utcnow())
+    new_device = IoTDevice(user_id=user_id, **device.model_dump(), last_seen=datetime.now(timezone.utc))
     db.add(new_device)
     await db.commit()
     return {"status": "success", "device_id": new_device.id}
@@ -51,7 +51,7 @@ async def ingest_data(payload: DataIngest, user_id: int = Depends(get_current_us
         value=payload.value,
         linked_memory_id=payload.linked_memory_id
     )
-    device.last_seen = datetime.utcnow()
+    device.last_seen = datetime.now(timezone.utc)
     db.add(data_entry)
     await db.commit()
     return {"status": "data_ingested"}

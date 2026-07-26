@@ -11,9 +11,9 @@ class HRIMemoryService:
     Manages memory for human-robot interaction.
     """
     
-    def __init__(self, db_session: AsyncSession):
+    def __init__(self, db_session: AsyncSession, memory_service: MemoryService):
         self.db = db_session
-        self.memory_service = MemoryService(db=db_session)
+        self.memory_service = memory_service
 
     async def store_interaction(self,
                                user_id: int,

@@ -1,21 +1,21 @@
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
-from app.services.planning_agent import PlanningAgent
-from app.services.retrieval_agent import RetrievalAgent
-from app.services.generator_agent import GeneratorAgent
-from app.services.judge_agent import JudgeAgent
+from app.swarm.core.planner import PlannerAgent
+from app.swarm.core.retriever import RetrievalAgent
+from app.swarm.core.generator import GeneratorAgent
+from app.swarm.core.judge import JudgeAgent
 from app.services.working_memory import WorkingMemory
 from app.services.episodic_memory import EpisodicMemory
 from app.services.semantic_memory import SemanticMemory
 from app.schemas.memory_schemas import EpisodicEntry, SemanticPattern, MemoryResult
-from app.services.ai_router import AIRouter
+from app.swarm.core.router import AIRouter
 from app.services.awareness_service import AwarenessService
 from app.api.v1.endpoints.persona import PersonaProfiler
 
 logger = logging.getLogger(__name__)
 
-class PipelineOrchestrator:
+class MultiAgentOrchestrator:
     """
     Main closed-loop execution engine for PersonaVault.
     
@@ -24,19 +24,26 @@ class PipelineOrchestrator:
     Layer 2 (Episodic): Task history and short-term interactions.
     Layer 3 (Semantic): Long-term learned patterns and constraints.
     """
-    def __init__(self, db_session):
+    def __init__(self, db_session, agents: Dict[str, Any] = None):
         self.db = db_session
         self.working_memory = WorkingMemory()
         self.episodic_memory = EpisodicMemory(db_session)
         self.semantic_memory = SemanticMemory(db_session)
-        self.planning = PlanningAgent(self.semantic_memory)
-        self.retrieval = RetrievalAgent()
-        self.generator = GeneratorAgent()
-        self.judge = JudgeAgent()
-        self.ai_router = AIRouter(engine_mode="Local-First (Ollama)")
+        
+        # Use provided agents from DI container (main.py) or default to local init
+        self.agents = agents or {}
+        self.planning = self.agents.get("planner") or PlannerAgent(self.semantic_memory)
+        self.retrieval = self.agents.get("retriever") or RetrievalAgent()
+        self.generator = self.agents.get("generator") or GeneratorAgent()
+        self.judge = self.agents.get("judge") or JudgeAgent()
+        self.ai_router = self.agents.get("router") or AIRouter(engine_mode="Local-First (Ollama)")
+        self.reasoner = self.agents.get("reasoner")
+        self.validator = self.agents.get("validator")
+        self.hitl = self.agents.get("hitl")
+        self.empathy = self.agents.get("empathy")
+
         self.awareness = AwarenessService()
         self.persona_profiler = PersonaProfiler(db_session)
-
     async def run(self, query: str, context: Dict[str, Any]):
         """
         Executes a full cognitive cycle for a given user query.
@@ -59,9 +66,10 @@ class PipelineOrchestrator:
         # 2. RETRIEVE: Execute hybrid search (FAISS + BM25 + Neo4j)
         results = await self.retrieval.hybrid_search(plan, user_id)
         
-        # 3. CONTEXT: Gather real-time situational awareness and persona
-        situational_context = await self.awareness.get_contextual_awareness(user_id, self.db)
-        user_persona = await self.persona_profiler.get_or_create_profile(user_id)
+        # 3. CONTEXT: Gather real-time situational awareness (using a fresh session from factory)
+        async with self.db() as session:
+            situational_context = await self.awareness.get_contextual_awareness(user_id, session)
+            user_persona = await self.persona_profiler.get_or_create_profile(user_id)
 
         # 4. ROUTE: Determine the processing path
         route = await self.ai_router.get_route(query)
@@ -77,7 +85,13 @@ class PipelineOrchestrator:
         if not evaluation.passed:
             logger.warning(f"Judge rejected answer: {evaluation.feedback}")
             regen_instructions = f"Refine answer based on feedback: {evaluation.feedback}\nQuery: {query}"
-            generation = await self.generator.generate(regen_instructions, context=results, route=route)
+            generation = await self.generator.generate(
+                regen_instructions, 
+                context=results, 
+                situational_awareness=situational_context, 
+                persona=user_persona, 
+                route=route
+            )
             response_text = generation.get("answer", "")
             evaluation = await self.judge.evaluate(query, response_text, results)
 

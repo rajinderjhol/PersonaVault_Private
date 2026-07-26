@@ -49,11 +49,7 @@ async def chat_completion(chat_req: ChatRequest, request: Request, current_user:
 
 @router.post('/search-memories')
 async def search_memories(search_req: MemorySearchRequest, request: Request, db: AsyncSession = Depends(get_db), current_user: int = Depends(get_current_user)):
-    service = MemoryService(
-        db=db, 
-        vector_service=request.app.state.vector_service,
-        graph_service=request.app.state.graph_service
-    )
+    service = request.app.state.memory_service
     results = await service.search_memories(user_id=current_user, query=search_req.query)
     return {"results": results, "query": search_req.query, "timestamp": datetime.utcnow().isoformat()}
 

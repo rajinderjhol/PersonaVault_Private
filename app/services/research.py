@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 import logging
-from app.services.retrieval_agent import RetrievalAgent # Assuming RetrievalAgent is in app/services
+from app.swarm.core.retriever import RetrievalAgent
 logger = logging.getLogger(__name__)
 
 class LegalResearchService:

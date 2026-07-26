@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any
-from app.services.generator_agent import GeneratorAgent
-from app.services.judge_agent import JudgeAgent
+from app.swarm.core.generator import GeneratorAgent
+from app.swarm.core.judge import JudgeAgent
 from app.schemas.memory_schemas import MemoryResult
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
-from orchestrator import MultiAgentOrchestrator
+from app.swarm.orchestrator import MultiAgentOrchestrator
 from app.schemas.memory_schemas import MemoryResult, EpisodicEntry, RetrievalPlan
 
 logger = logging.getLogger(__name__)

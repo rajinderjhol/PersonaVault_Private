@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import User, UserSession
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ async def rbac_middleware(request: Request, call_next):
             stmt = select(UserSession).where(
                 UserSession.session_token == session_id,
                 UserSession.is_active == True,
-                UserSession.expires_at > datetime.utcnow()
+                UserSession.expires_at > datetime.now(timezone.utc).replace(tzinfo=None)
             )
             result = await db.execute(stmt)
             session_record = result.scalars().first()

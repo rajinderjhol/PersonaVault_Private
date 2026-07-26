@@ -5,7 +5,7 @@ import faiss
 import pickle
 import httpx
 import time
-from config import Config
+from app.config import Config
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,8 @@ class VectorService:
         self.index = None
         self.metadata = {}
         self.dimension = getattr(Config, "OLLAMA_EMBEDDING_DIM", 768)
-        self._load_or_create_index()
+        # Index loading is now handled explicitly by the application lifespan
+        # to avoid blocking module imports.
     
     def _load_or_create_index(self):
         """Load existing index or create new one."""
@@ -52,6 +53,10 @@ class VectorService:
     async def _get_embedding(self, text: str) -> np.ndarray:
         """Get embedding from local Ollama instance."""
         try:
+            if not self._client:
+                logger.error("VectorService: HTTP client not initialized. Cannot fetch embeddings.")
+                return np.zeros(self.dimension).astype(np.float32)
+                
             response = await self._client.post(
                 f"{Config.OLLAMA_BASE_URL}/api/embeddings",
                 json={"model": Config.OLLAMA_EMBEDDING_MODEL, "prompt": text},

@@ -42,6 +42,7 @@ async def robot_interaction(
     user_id: int = Depends(require_memory_write),
     db: AsyncSession = Depends(get_db)
 ):
-    service = HRIMemoryService(db)
+    # Inject the central memory service
+    service = HRIMemoryService(db, request.app.state.memory_service)
     interaction_id = await service.store_interaction(user_id, robot_id, interaction_text)
     return {"status": "success", "memory_id": interaction_id}

@@ -2,6 +2,7 @@ import warnings
 warnings.filterwarnings("ignore", message=".*google.generativeai.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 import httpx
+import uvicorn
 from contextlib import asynccontextmanager
 import asyncio
 
@@ -17,43 +18,48 @@ from datetime import datetime, timezone, timedelta
 from app.utils.websocket import manager
 from app.services.iot_service import IoTService
 from prometheus_client import make_asgi_app, Counter, Histogram, REGISTRY
-from sqlalchemy import text, select, func
+from sqlalchemy import text, select, func, inspect
 from uvicorn.config import LOGGING_CONFIG
 from passlib.context import CryptContext
 
+# Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, admin_dashboard
+    robotics, widgets, files, admin, system_admin, admin_dashboard, mcp
 )
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
 from app.core.rate_limit import rate_limiter
+from app.core.dependencies import require_admin
 from app.config import Config
 
 # Import Cognitive Swarm Components
-from orchestrator import MultiAgentOrchestrator
-from app.services.ai_router import AIRouter
-from app.services.planning_agent import PlanningAgent
-from app.services.retrieval_agent import RetrievalAgent
-from app.services.generator_agent import GeneratorAgent
-from app.services.judge_agent import JudgeAgent
-from app.services.reasoner_agent import ReasonerAgent
-from app.services.empathy_agent import EmpathyAgent
+from app.swarm.orchestrator import MultiAgentOrchestrator
+from app.swarm.core.planner import PlannerAgent
+from app.swarm.core.retriever import RetrievalAgent
+from app.swarm.core.generator import GeneratorAgent
+from app.swarm.core.judge import JudgeAgent
+from app.swarm.core.reasoner import ReasonerAgent
+from app.swarm.core.validator import ValidatorAgent
+from app.swarm.core.router import AIRouter
+from app.swarm.interaction.empathy import EmpathyAgent
+from app.swarm.interaction.hitl import HITLService
+from app.services.blackboard import CognitiveBlackboard
 from app.services.episodic_memory import EpisodicMemory
 from app.services.semantic_memory import SemanticMemory
-from app.services.validator_agent import ValidatorAgent
-from app.services.hitl_service import HITLService
 from app.services.approval import ApprovalService
+from app.db.memory_repository import SQLMemoryRepository
+from app.services.memory_service import MemoryService
+from app.services.consolidation_service import ConsolidationTask
 
 # Create tables
 from app.models import (
-    AuditLog, UserSession, Memory, User, SystemConfig, Organization, Base,
+    AuditLog, UserSession, Memory, User, SystemConfig, Organization,
     LegalMatter, LegalDocument, WorkflowTask, AISetting, IoTDevice, IoTData,
-    SemanticPattern, PersonalContext, UserPersona, MedicalAlert
+    SemanticPattern, PersonalContext, UserPersona, MedicalAlert, PendingAction, EpisodicEntry
 )
-from app.core.dependencies import require_admin
 from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
 from app.services.task_service import init_scheduler
@@ -61,13 +67,7 @@ from app.services.task_service import init_scheduler
 # Password hashing for seeding
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Prometheus metric registration guard to prevent "Duplicated timeseries" error on reload
-if "personavault_api_requests_total" not in REGISTRY._names_to_collectors:
-    API_REQUEST_COUNT = Counter("personavault_api_requests_total", "Total count of API requests", ["method", "endpoint", "status"])
-    API_REQUEST_LATENCY = Histogram("personavault_api_request_latency_seconds", "Latency of API requests in seconds", ["method", "endpoint"])
-else:
-    API_REQUEST_COUNT = REGISTRY._names_to_collectors["personavault_api_requests_total"]
-    API_REQUEST_LATENCY = REGISTRY._names_to_collectors["personavault_api_request_latency_seconds"]
+from app.services.custom import API_REQUEST_COUNT, API_REQUEST_LATENCY
 
 # Ensure required directories exist
 os.makedirs("storage/memory_db", exist_ok=True)
@@ -84,16 +84,24 @@ init_scheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown events, including database seeding."""
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None) # Naive UTC for DB consistency
     # Initialize shared HTTP client
-    app.state.ai_client = httpx.AsyncClient()
+    app.state.ai_client = httpx.AsyncClient(
+        timeout=httpx.Timeout(60.0),
+        limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+    )
+    
+    # Inject shared client into global services
+    vector_service._client = app.state.ai_client
 
     # Initialize the Cognitive Swarm
     logger.info("Lifespan: Igniting Cognitive Swarm...")
+    app.state.blackboard = CognitiveBlackboard()
     app.state.ai_router = AIRouter(engine_mode="Local-First (Ollama)")
     app.state.semantic_memory = SemanticMemory(SessionLocal)
     app.state.episodic_memory = EpisodicMemory(SessionLocal)
     
-    app.state.planning_agent = PlanningAgent(semantic_memory=app.state.semantic_memory)
+    app.state.planning_agent = PlannerAgent(semantic_memory=app.state.semantic_memory)
     app.state.retrieval_agent = RetrievalAgent(
         vector_store=vector_service,
         graph_service=graph_service
@@ -110,7 +118,7 @@ async def lifespan(app: FastAPI):
     app.state.hitl_service = HITLService(SessionLocal)
     app.state.approval_service = ApprovalService(SessionLocal)
 
-    app.state.orchestrator = MultiAgentOrchestrator(agents={
+    app.state.orchestrator = MultiAgentOrchestrator(db_session=SessionLocal, agents={
         "planner": app.state.planning_agent,
         "retriever": app.state.retrieval_agent,
         "reasoner": app.state.reasoner_agent,
@@ -119,7 +127,9 @@ async def lifespan(app: FastAPI):
         "judge": app.state.judge_agent,
         "router": app.state.ai_router,
         "empathy": app.state.empathy_agent,
-        "hitl": app.state.hitl_service
+        "hitl": app.state.hitl_service,
+        "episodic": app.state.episodic_memory,
+        "semantic": app.state.semantic_memory
     })
     
     # Initialize database tables (Lattices)
@@ -150,6 +160,7 @@ async def lifespan(app: FastAPI):
                     email="admin@personavault.local",
                     hashed_password=pwd_context.hash("admin123"), # Hash the password!
                     role="admin",
+                    last_login=now_utc,
                     organization_id=org.id,
                     is_active=True
                 )
@@ -159,24 +170,36 @@ async def lifespan(app: FastAPI):
             logger.warning(f"Lifespan seeding issue: {e}")
             await db.rollback()
             
-    # Initialize unified MemoryService and Ignite background Crystallization Task
-    from app.services.memory_service import MemoryService
-    from consolidation import ConsolidationTask
-    app.state.memory_service = MemoryService(
+    # Initialize Cognitive Lattices (Load FAISS and Simulated Graph)
+    logger.info("Lifespan: Initializing memory lattices...")
+    vector_service._load_or_create_index()
+    # Graph service simulation is SQL-backed and ready after metadata creation
+            
+    # Initialize Repository and MemoryService
+    app.state.memory_repository = SQLMemoryRepository(
         db=SessionLocal,
         vector_service=vector_service,
         graph_service=graph_service
     )
+    app.state.memory_service = MemoryService(repository=app.state.memory_repository)
+
+    # Ignite background Crystallization Task
     app.state.consolidation_task = ConsolidationTask(
         orchestrator=app.state.orchestrator,
         memory_service=app.state.memory_service,
         config={"batch_size": 10, "interval_hours": 1.0}
     )
+    # Inject attributes to ensure manual triggers work
+    app.state.consolidation_task.trigger_event = asyncio.Event()
+
     asyncio.create_task(app.state.consolidation_task.run())
 
-    # Ignite Physical Telemetry Adapter
-    from medical_adapter import MedicalTelemetryAdapter
-    app.state.medical_adapter = MedicalTelemetryAdapter(orchestrator=app.state.orchestrator)
+    # Ignite Physical Telemetry Adapter (now HealthAgent in the Swarm)
+    from app.swarm.specialized.health import HealthAgent
+    app.state.medical_adapter = HealthAgent(
+        orchestrator=app.state.orchestrator,
+        client=app.state.ai_client
+    )
             
     logger.info("✨ PersonaVault: Cognitive Engine Ignition Complete.")
     logger.info("  -> Admin Dashboard: http://localhost:8000/admin/dashboard")
@@ -234,15 +257,17 @@ async def prometheus_middleware(request: Request, call_next):
     with API_REQUEST_LATENCY.labels(method=method, endpoint=endpoint).time():
         response = await call_next(request)
         
-    API_REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=response.status_code).inc()
+    API_REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=str(response.status_code)).inc()
     return response
 
 # Enterprise Governance Middlewares
+# Registered in order: Outer -> Inner
 app.middleware("http")(audit_middleware)
 app.middleware("http")(rbac_middleware)
 app.middleware("http")(rate_limiter)
 
-# Register DB middleware LAST so it executes FIRST in the request chain
+# Register DB middleware LAST so it wraps all other governance middlewares.
+# It will be the first to open a session and the absolute last to close it.
 @app.middleware("http")
 async def db_session_middleware(request: Request, call_next):
     async with SessionLocal() as db:
@@ -262,6 +287,7 @@ app.include_router(personalization.router, prefix="/api/v1")
 app.include_router(automation.router, prefix="/api/v1")
 app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
+app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
 
 # Admin and System routes (Mounted at /api/v1 to preserve internal module route names)
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
