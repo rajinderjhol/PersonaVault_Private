@@ -61,7 +61,11 @@ async def delete_model_endpoint(request: Request, model_name: str, user_id: int 
 @router.get("/admin/governance/status")
 async def get_governance_status(request: Request, user_id: int = Depends(require_admin)):
     orchestrator = request.app.state.orchestrator
-    return {"active": orchestrator.governance is not None, "api_url": "http://localhost:8000", "recent_receipts": getattr(orchestrator, "recent_receipts", [])}
+    return {
+        "active": orchestrator.governance is not None, 
+        "api_url": getattr(Config, "BASE_URL", "http://localhost:8000"), 
+        "recent_receipts": getattr(orchestrator, "recent_receipts", [])
+    }
 
 @router.get("/admin/governance/constitution")
 async def get_governance_constitution(user_id: int = Depends(require_admin)):

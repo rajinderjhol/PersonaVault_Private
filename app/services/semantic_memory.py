@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy import select, delete
 from app.models import SemanticPattern as SemanticPatternModel
 from app.schemas.memory_schemas import SemanticPattern
-from typing import List, Union
+from typing import List, Union, Optional
 
 class SemanticMemory:
     """Long-term knowledge from learned patterns."""
@@ -32,6 +32,13 @@ class SemanticMemory:
         finally:
             if callable(self.db):
                 await session.close()
+
+    async def get_patterns_by_similarity(self, query_embedding: List[float], threshold: float = 0.7) -> List[SemanticPattern]:
+        """
+        Fetch patterns based on semantic similarity of triggers (Phase 4 readiness).
+        Currently falls back to retrieving all patterns for the Planner to evaluate.
+        """
+        return await self.get_patterns()
 
     async def remove_pattern(self, trigger: str):
         """Remove a semantic pattern by its trigger string."""

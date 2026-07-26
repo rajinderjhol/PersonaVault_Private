@@ -24,7 +24,6 @@ async def get_current_user_id(request: Request, db: AsyncSession = Depends(get_d
     # Use joinedload to fetch the User along with the Session to prevent N+1 later
     stmt = (
         select(UserSession)
-        .options(joinedload(UserSession.user))
         .where(UserSession.session_token == session_token)
         .where(UserSession.is_active == True)
         .where(UserSession.expires_at > datetime.now(timezone.utc).replace(tzinfo=None))
@@ -33,7 +32,7 @@ async def get_current_user_id(request: Request, db: AsyncSession = Depends(get_d
     session = result.scalars().first()
     if not session:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
-    return session.user_id
+    return session.user_id 
 
 class LoginRequest(BaseModel):
     username: str
@@ -105,5 +104,20 @@ async def create_user(db: AsyncSession, **user_data):
     In a complete implementation, this would handle password hashing (e.g., using passlib)
     and persist the user to the database.
     """
-    # Placeholder implementation to satisfy imports in enterprise.py
-    return {"status": "created", "user_email": user_data.get("email"), "id": 1}
+    username = user_data.get("username")
+    email = user_data.get("email")
+    password = user_data.get("password")
+    role = user_data.get("role", "user")
+    organization_id = user_data.get("organization_id")
+
+    hashed_password = pwd_context.hash(password)
+    new_user = User(
+        username=username,
+        email=email,
+        hashed_password=hashed_password,
+        role=role,
+        organization_id=organization_id
+    )
+    db.add(new_user)
+    await db.flush() # Flush to get the ID before returning
+    return {"status": "created", "user_email": email, "id": new_user.id}

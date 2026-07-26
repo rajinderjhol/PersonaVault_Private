@@ -1,10 +1,35 @@
 import os
 import logging
+import time
+import functools
 from neo4j import GraphDatabase
 from app.config import Config
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
+
+def retry_on_failure(max_retries=3, delay=1):
+    """Decorator to retry Neo4j operations with exponential backoff."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            last_error = None
+            for attempt in range(max_retries):
+                try:
+                    if not self.driver:
+                        self._connect()
+                    return func(self, *args, **kwargs)
+                except Exception as e:
+                    last_error = e
+                    logger.warning(f"GraphService: Attempt {attempt + 1} failed: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(delay * (2 ** attempt))
+                        if any(k in str(e).lower() for k in ["connection", "unavailable", "expired"]):
+                            self._connect()
+            logger.error(f"GraphService: All {max_retries} retries failed for {func.__name__}: {last_error}")
+            return [] if func.__name__ == 'execute_query' else None
+        return wrapper
+    return decorator
 
 class GraphService:
     """Service for managing relational memory patterns in Neo4j."""
@@ -24,6 +49,7 @@ class GraphService:
             logger.warning(f"GraphService: Neo4j connection failed: {e}. Relational features disabled.")
             self.driver = None
 
+    @retry_on_failure(max_retries=3, delay=1)
     def create_memory_node(self, memory_id: int, title: str, user_id: int):
         """Create a memory node in Neo4j."""
         if not self.driver:
@@ -37,6 +63,7 @@ class GraphService:
         except Exception as e:
             logger.error(f"GraphService: Error creating node for memory_id={memory_id}: {e}")
 
+    @retry_on_failure(max_retries=3, delay=1)
     def create_relationship(self, memory_id1: int, memory_id2: int, relation_type: str):
         """Creates a directional relationship between two memory nodes."""
         if not self.driver:
@@ -50,6 +77,7 @@ class GraphService:
         except Exception as e:
             logger.error(f"GraphService: Error creating relationship: {e}")
 
+    @retry_on_failure(max_retries=3, delay=1)
     def execute_query(self, query: str) -> List[Dict]:
         """Execute a Cypher query."""
         if not self.driver:

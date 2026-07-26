@@ -26,6 +26,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
+    # relationship
+    sessions = relationship("UserSession", back_populates="user")
 
 class Organization(Base):
     __tablename__ = "organizations"
@@ -95,6 +97,8 @@ class UserSession(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=False)
     is_active = Column(Boolean, default=True)
+    # relationship
+    user = relationship("User", back_populates="sessions")
 
 class SystemConfig(Base):
     __tablename__ = "system_configs"

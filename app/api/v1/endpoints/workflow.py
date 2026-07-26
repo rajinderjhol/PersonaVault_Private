@@ -6,6 +6,7 @@ import httpx
 from typing import List, Dict, Any, Optional
 from app.models import WorkflowTask
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.config import Config
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
@@ -33,9 +34,9 @@ Return JSON list of steps: [{{"step": 1, "action": "...", "params": {{...}}}}]
 """
         steps = []
         try:
-            ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+            ollama_url = Config.OLLAMA_BASE_URL
             res = await self.client.post(f"{ollama_url}/api/generate", json={
-                "model": "llama3", "prompt": prompt, "stream": False
+                "model": getattr(Config, "OLLAMA_REASONER_MODEL", "llama3"), "prompt": prompt, "stream": False
             }, timeout=30.0)
             if res.status_code == 200:
                 steps = json.loads(res.json().get("response", "[]"))

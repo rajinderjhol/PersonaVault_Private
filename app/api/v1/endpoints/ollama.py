@@ -106,11 +106,12 @@ async def get_past_settings(
 @router.post("/test-connection")
 async def test_connection(
     request: Request,
-    base_url: str = Body("http://localhost:11434", embed=True),
+    base_url: Optional[str] = Body(None, embed=True),
     current_user: int = Depends(get_current_user)
 ):
     """Test connection to Ollama"""
     try:
+        base_url = base_url or Config.OLLAMA_BASE_URL
         client = request.app.state.ai_client
         response = await client.get(f"{base_url}/api/tags", timeout=5.0)
         if response.status_code == 200:

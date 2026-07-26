@@ -3,12 +3,22 @@ import logging
 import json
 import httpx
 from typing import Dict, Any, List
+import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import UserPersona, EpisodicEntry
+from app.config import Config
 import os
 
 logger = logging.getLogger(__name__)
+
+def _extract_json_payload(text: str) -> str:
+    """Cleans LLM response to extract pure JSON, handling markdown backticks."""
+    text = text.strip()
+    match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    return text
 
 router = APIRouter(prefix="/personalization", tags=["personalization"])
 
@@ -80,12 +90,13 @@ Identify:
 Return JSON only: {{"writing_style": "...", "communication_style": "...", "interests": []}}
 """
         try:
-            ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+            ollama_url = Config.OLLAMA_BASE_URL
             res = await self.client.post(f"{ollama_url}/api/generate", json={
-                "model": "llama3", "prompt": prompt, "stream": False
+                "model": getattr(Config, "OLLAMA_BASE_MODEL", "llama3"), "prompt": prompt, "stream": False
             }, timeout=30.0)
             if res.status_code == 200:
-                analysis = json.loads(res.json().get("response", "{}"))
+                raw_response = res.json().get("response", "{}")
+                analysis = json.loads(_extract_json_payload(raw_response))
                 profile = await self.get_or_create_profile(user_id)
                 profile.writing_style = analysis.get("writing_style", profile.writing_style)
                 profile.communication_style = analysis.get("communication_style", profile.communication_style)

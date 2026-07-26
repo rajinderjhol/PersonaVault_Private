@@ -161,7 +161,7 @@ async def get_system_metrics(
                 "verilink_offline": getattr(orchestrator, "offline_mode", False)
             },
             "system": {
-                "vector_index_size": len(request.app.state.vector_service.metadata) if hasattr(request.app.state, "vector_service") and getattr(request.app.state.vector_service, "metadata", None) is not None else 0,
+                "vector_index_size": len(getattr(request.app.state.vector_service, "metadata", [])) if hasattr(request.app.state, "vector_service") else 0,
                 "graph_healthy": request.app.state.graph_service.check_health() if hasattr(request.app.state, "graph_service") and hasattr(request.app.state.graph_service, 'check_health') else False,
                 "vector_healthy": request.app.state.vector_service.check_health() if hasattr(request.app.state, "vector_service") and hasattr(request.app.state.vector_service, 'check_health') else False,
                 "storage_used": storage_data,
@@ -1006,12 +1006,10 @@ async def _check_gemini(request: Request) -> str:
     try:
         import google.generativeai as genai # type: ignore
         genai.configure(api_key=api_key)
-        # Client-side configuration check.
-        # The actual list_models() can be blocking, so we'll just check if the client is configured.
-        # For a true async check, you'd need an async Gemini client.
-        # For now, we assume if the key is configured and genai loads, it's "connected".
-        # A more robust check would involve a small, quick API call.
-        return "connected"
+        # Perform a lightweight call to verify the key and connectivity
+        for _ in genai.list_models():
+            return "connected"
+        return "error (no models)"
     except Exception as e:
         logger.error(f"Gemini health check failed: {e}")
         return "error"
@@ -1047,17 +1045,16 @@ async def _get_storage_usage() -> dict:
             "used_gb": round(used / (1024**3), 2),
             "free_gb": round(free / (1024**3), 2),
             "used_percent": round((used / total) * 100, 2) if total > 0 else 0,
-            "breakdown_mb": {
-                "venv": get_dir_size(os.path.join(project_dir, "backend/.venv")),
+            "monitored_paths_mb": {
                 "uploads": get_dir_size(os.path.join(project_dir, "backend/storage/uploads")),
-                "cargo_cache": get_dir_size(os.path.expanduser("~/.cargo")),
-                "rustup": get_dir_size(os.path.expanduser("~/.rustup")),
-                "vector_storage": get_dir_size(os.path.join(project_dir, "backend/storage"))
+                "vector_storage": get_dir_size(os.path.join(project_dir, "backend/storage")),
+                "logs": get_dir_size(os.path.join(project_dir, "backend/storage/logs"))
             },
             "checked_at": datetime.now(timezone.utc).isoformat()
         }
-    except:
-        return {"error": "Unable to get storage info"}
+    except Exception as e:
+        logger.error(f"Storage check failed: {e}")
+        return {"error": f"Storage diagnostics unavailable: {str(e)}"}
 
 async def _get_cpu_usage() -> float:
     """Get CPU usage."""
@@ -1078,8 +1075,9 @@ async def _get_memory_usage() -> dict:
             "free_gb": round(mem.free / (1024**3), 2),
             "used_percent": mem.percent
         }
-    except:
-        return {"error": "Unable to get memory info"}
+    except Exception as e:
+        logger.error(f"Memory check failed: {e}")
+        return {"error": "Unable to retrieve system memory info"}
 
 # ============ DASHBOARD UI moved to dashboard_template.py ============
 
