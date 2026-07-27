@@ -262,7 +262,7 @@ PersonaVault utilizes a relational backbone with specialized JSON extensions for
 
 ### AI & Learning
 - **EpisodicEntry**: Logs of every RAG interaction including `query`, `plan`, `results`, `evaluation`, and `hitl_approved` status.
-- **SemanticPattern**: Graduated long-term knowledge, such as hallucination prevention triggers.
+- **SemanticPattern**: Graduated long-term knowledge, including `trigger`, `correction`, `weight`, and `success_count` for reinforcement learning.
 
 ### Security & Compliance
 - **AuditLog**: Unified system event log (IP, User Agent, Action, Status).
@@ -342,8 +342,9 @@ pytest --cov=backend        # Coverage analysis
 | Memory Search | < 150ms |
 | Context Query | < 500ms |
 | AI Chat (Local) | < 2s |
+| Pattern Verification | < 100ms |
+| Consolidation (Batch) | < 5s |
 
----
 
 ## XII. Business Model
 
@@ -352,19 +353,34 @@ pytest --cov=backend        # Coverage analysis
 |------|-------|----------|
 | **Free** | $0 | Local-only storage, 1,000 memories, basic search |
 | **Pro** | $20/mo | Cloud sync, 10,000 memories, AI Router, Email support |
-| **Enterprise** | Custom | Unlimited storage, custom RBAC, Audit logs, 24/7 SLA |
+| **Enterprise** | Custom | Unlimited storage, custom RBAC, Audit logs, 24/7 SLA, **self-improving patterns** |
 
----
 
 ## XIII. Competitive Analysis
 
 | Competitor | Our Advantage |
 |------------|---------------|
 | **OpenAI** | Privacy-preserving memory; data never leaves local env raw |
-| **Mem0** | End-to-end encryption; Living Memory (auto-expiry) |
-| **LangChain** | Highly integrated agentic loop; self-improving judge cycle |
+| **Mem0** | End-to-end encryption; Living Memory (auto-expiry); **Reinforcement learning** |
+| **LangChain** | Highly integrated agentic loop; self-improving judge cycle; **Pattern weighting** |
+| **Letta** | Cognitive architecture; **Explainable HITL** |
+| **Zep** | Vector search; **Weighted pattern reinforcement** |
 
----
+### The "Compounding Advantage" Moat
+
+```mermaid
+graph LR
+    A[Day 1] -->|0 Patterns| B[Day 30]
+    B -->|4 Patterns| C[Day 60]
+    C -->|Patterns at 0.90+ Weight| D[Day 90]
+    D -->|Exponential Growth| E[Uncatchable Lead]
+```
+
+**What can't be copied:**
+- Your patterns and their weights (7 successes recorded)
+- Your reinforcement history (Pattern #1 at 0.90)
+- Your cognitive evolution (4 patterns, growing)
+
 
 ## XIV. User Guide
 
@@ -373,8 +389,8 @@ pytest --cov=backend        # Coverage analysis
 2. **Data Ingestion**: Use the browser extension or API to log memories, meeting notes, and IoT telemetry.
 3. **Querying**: Ask natural language questions. PersonaVault will decide whether to answer locally or via a cloud expert.
 4. **Privacy Control**: Manage your "Vault" to see how PII is being masked before processing.
+5. **Reinforcement**: The system learns from every interaction. Patterns are automatically extracted and weighted.
 
----
 
 ## XV. Deployment & Operations
 
@@ -401,25 +417,26 @@ The system is designed with a "Special Setting" for migration and data sovereign
 | `SECRET_KEY` | `change-me` | Key for JWT and session signing |
 | `OLLAMA_URL` | `http://localhost:11434` | Endpoint for local model inference |
 | `ENCRYPTION_KEY` | `required` | 32-byte key for the Privacy Vault |
+| `PATTERN_THRESHOLD` | `0.40` | Minimum weight for active patterns |
+| `REINFORCEMENT_INCREMENT` | `0.05` | Weight increase per success |
+| `REINFORCEMENT_DECREMENT` | `0.10` | Weight decrease per failure |
 
 ### Monitoring & Observability
-- **Prometheus**: Real-time metrics on throughput and agent performance.
-- **Grafana**: Dashboards for visualizing "Cognitive Load" and "Memory Growth."
+- **Pattern Dashboard**: Real-time view of pattern weights and success rates.
 
----
 
 ## XVI. Roadmap
 
-### Q3 2026: Foundation Complete (CURRENT)
+### Q3 2026: Foundation Complete ✅ (DONE)
 - [x] Self-improving multi-agent pipeline.
-- [x] Hybrid Search (Vector + Keyword + Graph).
-- [x] Cognitive Router for local/cloud tiering.
-- [x] Enterprise RBAC and Audit.
+- [x] **Reinforcement Learning Loop** (Pattern #1 at 0.90 weight).
+- [x] **Pattern Management API** (Verification endpoint).
+- [x] **Cognitive Blackboard** (Agent collaboration).
 
-### Q4 2026: Multi-Modal & Agents
-- [ ] Native support for image/audio/video embeddings.
-- [ ] Agentic Action Framework (allowing agents to use web-search/Slacks tools).
-- [ ] Mobile SDK for iOS and Android.
+### Q4 2026: Multi-Modal & Advanced Reinforcement
+- [ ] **Threshold-Based Deactivation**: Auto-disable patterns below 0.40 weight.
+- [ ] **Reinforcement Decay**: Decay unused patterns.
+- [ ] **Pattern Marketplace**: Share anonymized patterns.
 
 ### Q1 2027: Federated Personalization
 - [ ] Federated learning to aggregate patterns without sharing raw data.

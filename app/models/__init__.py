@@ -227,6 +227,9 @@ class SemanticPattern(Base):
     pattern_type = Column(String, index=True)
     trigger = Column(Text)
     correction = Column(Text)
+    success_count = Column(Integer, default=0)    # ← NEW
+    weight = Column(Float, default=0.7)           # ← NEW
+    is_active = Column(Boolean, default=True) # ← NEW
     occurrence_count = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

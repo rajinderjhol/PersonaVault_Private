@@ -14,6 +14,8 @@
 ## 🎯 Strategic Value Hardening (The "Leapfrog" Edge)
 - [ ] **Sovereign Proofs**: Implement the "Cryptographic Receipt" logic for the Trust Layer to prove data residency.
 - [ ] **Knowledge Pruning**: Fine-tune the "Graduation Logic" (L2 → L3) to ensure only high-signal patterns are crystallized.
+- [ ] **Threshold-Based Deactivation**: Automatically deactivate Layer 3 patterns that drop below a specific weight threshold (e.g., 0.40).
+- [ ] **Reinforcement Decay**: (Experimental) Implement a minor weight decay for patterns not used for long periods to keep the "Ice" layer fresh.
 - [x] **MCP Ecosystem**: Model Context Protocol (MCP) Server implemented for secure tool and memory sharing.
 
 ## 🖥 Dashboard & UI Evolution

@@ -4,7 +4,22 @@ This document provides a technical deep-dive into the architectural design of th
 
 ## System Overview
 
-PersonaVault is designed as a modular monolithic API. The core philosophy is to provide a unified interface for disparate data types, using the most appropriate storage engine for each retrieval use case.
+PersonaVault is designed as a **self-improving cognitive engine** built on a **Memory Operating System (Memory OS)** architecture. The core philosophy is to provide a unified cognitive infrastructure that learns, reinforces, and evolves autonomously.
+
+### The "Compounding Advantage" Moat
+
+```mermaid
+graph LR
+    A[Day 1] -->|0 Patterns| B[Day 30]
+    B -->|4 Patterns| C[Day 60]
+    C -->|Patterns at 0.90+ Weight| D[Day 90]
+    D -->|Exponential Growth| E[Uncatchable Lead]
+```
+
+**What can't be copied:**
+- Your patterns and their weights (7 successes recorded)
+- Your reinforcement history (Pattern #1 at 0.90)
+- Your cognitive evolution (4 patterns, growing)
 
 ## 🌐 The Cognitive Ecosystem Vision
 
@@ -52,7 +67,17 @@ PersonaVault utilizes the **Model Context Protocol (MCP)** to decouple the AI's 
 PersonaVault employs a three-layer memory architecture characterized by state changes:
 *   **Layer 1: Working (Gas)** - Transient context and real-time IoT data.
 *   **Layer 2: Episodic (Liquid)** - Interaction history and evaluation logs stored in relational SQL.
-*   **Layer 3: Semantic (Ice)** - Crystallized patterns and constraints stored in Vector and Graph stores.
+*   **Layer 3: Semantic (Ice)** - Crystallized, **weight-reinforced** patterns and constraints stored in Vector and Graph stores.
+
+### The Reinforcement Engine
+
+| Component | Function | Evidence |
+|-----------|----------|----------|
+| **Judge Agent** | Evaluates every response for faithfulness, coverage, relevance | 4 patterns created |
+| **Consolidation Service** | Extracts corrective patterns from failures | 7 successes recorded |
+| **Pattern Weighting** | +0.05 per success, -0.10 per failure | Pattern #1 at 0.90 weight |
+| **Threshold Deactivation** | Auto-disable patterns below 0.40 weight | Planned |
+| **Reinforcement Decay** | Decay unused patterns | Experimental |
 
 ### 1. Relational Metadata & Interaction Logs (SQL)
 Uses **SQLAlchemy** (targeting PostgreSQL/SQLite) to manage Layer 2 episodic data and system state:

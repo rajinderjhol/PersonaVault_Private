@@ -21,7 +21,7 @@ class AwarenessService:
             stmt = select(PersonalContext).where(
                 PersonalContext.user_id == user_id, 
                 PersonalContext.context_type == ctx_type
-            ).order_by(PersonalContext.timestamp.desc())
+            ).order_by(PersonalContext.created_at.desc())
             res = await db.execute(stmt)
             latest = res.scalars().first()
             if latest:

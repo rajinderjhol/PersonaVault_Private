@@ -1,0 +1,100 @@
+{
+  "total_test_cases": 10,
+  "entries_created": 10,
+  "patterns_created": 10,
+  "patterns_reinforced": 30,
+  "final_patterns": [
+    {
+      "id": 1,
+      "type": "hallucination",
+      "trigger": "What is the best way to implement semantic search?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "type": "hallucination",
+      "trigger": "How does PersonaVault handle multi-tenancy?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 3,
+      "type": "hallucination",
+      "trigger": "What is the role of the Judge agent?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 4,
+      "type": "hallucination",
+      "trigger": "How does the Empathy agent work?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 5,
+      "type": "hallucination",
+      "trigger": "What is the purpose of the Blackboard?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 6,
+      "type": "hallucination",
+      "trigger": "How does the system handle data privacy?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 7,
+      "type": "hallucination",
+      "trigger": "What is the crystallization engine?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 8,
+      "type": "hallucination",
+      "trigger": "How does FAISS indexing work?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 9,
+      "type": "hallucination",
+      "trigger": "What is the MCP protocol?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    },
+    {
+      "id": 10,
+      "type": "hallucination",
+      "trigger": "How does the HITL workflow work?",
+      "weight": 0.8500000000000001,
+      "success_count": 3,
+      "occurrence_count": 1,
+      "is_active": true
+    }
+  ],
+  "elapsed_time_seconds": 0.5,
+  "success_rate": "10/10 patterns > 0.80"
+}

@@ -293,23 +293,77 @@ async def get_blackboard_snapshot(request: Request, user_id: int = Depends(requi
 
 @router.post("/swarm/trigger")
 async def trigger_swarm_interaction(request: Request, body: dict, user_id: int = Depends(require_admin)):
-    """Directly inject a query into the Swarm via the Blackboard for testing."""
+    """Directly inject a query into the Swarm and process it."""
     query = body.get("query", "")
     if not query:
         raise HTTPException(status_code=400, detail="Query content required")
     
     blackboard = getattr(request.app.state, "blackboard", None)
-    if blackboard:
-        await blackboard.post_insight(
-            agent_name="Admin-Terminal",
-            insight={"query": query, "status": "ignition_requested", "origin": "dashboard"},
-            importance=1.0
-        )
-        await manager.broadcast(json.dumps({
-            "type": "thought_stream",
-            "agent": "Orchestrator",
-            "content": f"New query received: '{query}'. Igniting negotiation swarm..."
-        }))
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    
+    if not blackboard:
+        return {"status": "error", "message": "Blackboard not available"}
+    
+    await blackboard.post_insight(
+        agent_name="Admin-Terminal",
+        insight={"query": query, "status": "processing", "origin": "dashboard"},
+        importance=1.0
+    )
+    
+    await manager.broadcast(json.dumps({
+        "type": "thought_stream",
+        "agent": "Orchestrator",
+        "content": f"🚀 Processing query: '{query[:50]}...'"
+    }))
+    
+    if orchestrator:
+        try:
+            result = await orchestrator.run(
+                query=query,
+                context={"user_id": user_id, "origin": "dashboard"}
+            )
+            
+            await blackboard.post_insight(
+                agent_name="Orchestrator",
+                insight={
+                    "query": query,
+                    "status": "completed",
+                    "answer": result.get("answer", "No answer generated"),
+                    "evaluation": result.get("evaluation", {}),
+                    "confidence": result.get("confidence", 0.0)
+                },
+                importance=0.9
+            )
+            
+            await manager.broadcast(json.dumps({
+                "type": "thought_stream",
+                "agent": "Orchestrator",
+                "content": f"✅ Query processed successfully!"
+            }))
+            
+            return {
+                "status": "swarm_completed",
+                "message": f"Query processed: {query[:50]}...",
+                "result": result.get("answer", ""),
+                "confidence": result.get("confidence", 0.0),
+                "evaluation": result.get("evaluation", {})
+            }
+        except Exception as e:
+            logger.error(f"Swarm processing error: {e}")
+            await blackboard.post_insight(
+                agent_name="Orchestrator",
+                insight={
+                    "query": query,
+                    "status": "error",
+                    "error": str(e)
+                },
+                importance=0.5
+            )
+            return {
+                "status": "swarm_error",
+                "message": f"Error processing query: {str(e)}"
+            }
+    
     return {"status": "swarm_ignited", "message": f"Query '{query}' posted to Blackboard."}
 
 @router.post("/swarm/respond")

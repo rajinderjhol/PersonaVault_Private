@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy import select, delete
 from app.models import SemanticPattern as SemanticPatternModel
-from app.schemas.memory_schemas import SemanticPattern
+from app.models import SemanticPattern
 from typing import List, Union, Optional
 
 class SemanticMemory:

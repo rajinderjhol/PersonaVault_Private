@@ -27,6 +27,7 @@ from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
     robotics, widgets, files, admin, system_admin, admin_dashboard, mcp
 )
+from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.core.audit import audit_middleware
@@ -288,6 +289,7 @@ app.include_router(automation.router, prefix="/api/v1")
 app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
+app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 
 # Admin and System routes (Mounted at /api/v1 to preserve internal module route names)
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])

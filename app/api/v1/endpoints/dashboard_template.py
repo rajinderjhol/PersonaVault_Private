@@ -784,6 +784,57 @@ DASHBOARD_HTML = """
         fetchMetrics();
         connectWebSocket();
         setInterval(fetchMetrics, 60000);
+
+    // ============ AUTO-REFRESH AGENT STATUS ============
+    function startAgentStatusPolling() {
+        setInterval(async function() {
+            try {
+                const response = await fetch('/api/v1/admin/dashboard/cognitive-load');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update active tasks
+                    const taskElements = document.querySelectorAll('.stat-row .stat-label');
+                    taskElements.forEach(el => {
+                        if (el.textContent.trim() === 'Active Tasks') {
+                            const row = el.closest('.stat-row');
+                            if (row) {
+                                const value = row.querySelector('.stat-value');
+                                if (value) {
+                                    value.textContent = data.active_tasks || 0;
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Update agent statuses
+                    if (data.agent_activity) {
+                        document.querySelectorAll('.stat-row').forEach(row => {
+                            const label = row.querySelector('.stat-label');
+                            if (label) {
+                                const agentName = label.textContent.toLowerCase().trim();
+                                for (const [agent, status] of Object.entries(data.agent_activity)) {
+                                    if (agentName.includes(agent) || agent.includes(agentName)) {
+                                        const value = row.querySelector('.stat-value');
+                                        if (value) {
+                                            const isActive = status === 1 || status === 'active' || status === true;
+                                            value.textContent = isActive ? 'ACTIVE' : 'IDLE';
+                                            value.className = isActive ? 'tag tag-success' : 'tag';
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                // Silent fail - don't spam console
+            }
+        }, 2000); // Check every 2 seconds
+    }
+    
+    // Start polling when page loads
+    document.addEventListener('DOMContentLoaded', startAgentStatusPolling);
     </script>
 </body>
 </html>

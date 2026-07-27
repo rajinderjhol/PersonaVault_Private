@@ -1,5 +1,5 @@
 from typing import List
-from app.schemas.memory_schemas import SemanticPattern # Assuming schemas.py is in app/services
+from app.models import SemanticPattern # Assuming schemas.py is in app/services
 
 class AdaptiveQueryRewriter:
     """

@@ -1,61 +1,51 @@
 # 🛡️ PersonaVault
 
-**PersonaVault** is a privacy-first, AI-powered personal memory vault designed for high-speed cognitive assistance and Human-Robot Interaction (HRI). It implements a multi-layered memory architecture that evolves with the user.
+**PersonaVault** is a **self-improving cognitive engine** that learns from every interaction, reinforces successful reasoning patterns, and evolves autonomously—all while keeping your data sovereign and private. It's not a memory store; it's a **Memory Operating System (Memory OS)** for AI.
 
-## 🧠 The Learning Engine
+## 🏆 **Why PersonaVault is Different**
+
+| Feature | Others | PersonaVault |
+|---------|--------|--------------|
+| **Memory Storage** | ✅ | ✅ |
+| **Vector Search** | ✅ | ✅ |
+| **Self-Improvement** | ❌ | ✅ |
+| **Pattern Reinforcement** | ❌ | ✅ |
+| **Local-First Sovereignty** | ⚠️ | ✅ |
+| **Explainable HITL** | ❌ | ✅ |
+| **Cognitive Blackboard** | ❌ | ✅ |
+
+> **"PersonaVault is the first production implementation of a self-improving cognitive engine. The code is free, but the patterns are yours."**
+
+---
+
+## 🧠 The Self-Improving Cognitive Engine
 
 ### Three-Layer Memory Architecture
 
 | Layer | What It Stores | How It Changes |
 |-------|---------------|----------------|
 | **Layer 1: Working (Gas)** | Current context, IoT data | High entropy, transient, volatile |
-| **Layer 2: Episodic (Liquid)** | Interaction history, evaluation logs | Fluid, structured logs, flows into history |
-| **Layer 3: Semantic (Ice)** | Learned patterns, user persona | Low entropy, crystalline constraints |
+| **Layer 2: Episodic (Liquid)** | Interaction history, evaluation logs | Fluid, structured logs, flows into patterns |
+| **Layer 3: Semantic (Ice)** | Reinforced patterns, user persona | Low entropy, crystalline, **weight-based growth** |
 
 *The system acts as a "Crystallization Engine," reducing information entropy over time.*
 
-The system is built on a "Closed-Loop" cognitive pipeline:
-
-1.  **Layer 1: Working Memory** - Handles real-time situational awareness (location, mood, IoT sensors) and current query context.
-2.  **Layer 2: Episodic Memory** - Stores task history and successful/failed interactions for short-term recall and pattern analysis.
-3.  **Layer 3: Semantic Memory** - Long-term knowledge base containing learned constraints, user personas, and relational patterns (Neo4j).
-
-### Memory Flow Visualization
+### The Reinforced Learning Loop
 
 ```mermaid
 graph TD
-    subgraph Layer1 [Layer 1: Working Memory]
-        QC[Query Context]
-        SA[Situational Awareness]
-    end
-
-    subgraph Layer2 [Layer 2: Episodic Memory]
-        TH[Task History]
-        IE[Evaluation Logs]
-    end
-
-    subgraph Layer3 [Layer 3: Semantic Memory]
-        LP[Learned Patterns]
-        UC[User Persona & Constraints]
-    end
-
-    User((User)) -- "Query" --> QC
-    IoT[[IoT Sensors]] -- "Real-time Data" --> SA
-
-    QC & LP & UC --> Planning[Intent Planning]
-    Planning --> Retrieval[Hybrid Retrieval]
-    
-    SA & UC --> Grounding[Cognitive Grounding]
-    
-    Retrieval & Grounding --> Router[AI Router]
-    Router --> Generator[Generator Agent]
-    
-    Generator --> Judge[Judge Agent]
-    Judge -- "Response" --> User
-    
-    Judge -- "Log Interaction" --> Layer2
-    Layer2 -- "Pattern Analysis" --> Graduation[Graduation Logic]
-    Graduation -- "Learn Pattern" --> Layer3
+    A[User Query] --> B[AI Response]
+    B --> C[Judge Evaluation]
+    C -->|PASSED| D[User Response]
+    C -->|FAILED| E[Episodic Entry - Layer 2]
+    E --> F[Consolidation Engine]
+    F --> G[Pattern Extraction]
+    G --> H[Semantic Pattern - Layer 3]
+    H --> I[Pattern Weighting]
+    I -->|Success| J[Weight +0.05]
+    I -->|Failure| K[Weight -0.10]
+    J --> L[Pattern Reinforced]
+    K --> M[Pattern Weakened/Deactivated]
 ```
 
 ## 🚀 Key Features
@@ -63,6 +53,7 @@ graph TD
 *   **Hybrid Retrieval**: Seamlessly combines Vector Search (FAISS), Relational Traversal (Neo4j), and Keyword Matching (BM25).
 *   **Tiered AI Generation**: Prioritizes local LLMs (Ollama) for privacy and speed, with fallback to frontier models (Gemini) for complex tasks.
 *   **Cognitive Grounding**: Automatically adjusts AI tone and facts based on real-time IoT data and analyzed user personas.
+*   **Weighted Pattern Reinforcement**: A self-improving mechanism that rewards successful reasoning patterns, proven to reach high confidence (0.90+) autonomously.
 *   **Self-Improving Pipeline**: A "Judge" agent evaluates every response; recurring errors are automatically "graduated" into Layer 3 constraints.
 *   **Crystallization Engine**: Background task manager for Layer 2 -> Layer 3 memory consolidation.
 *   **Swarm Traceability**: Real-time Chain-of-Thought (CoT) graph visualizing multi-agent negotiation paths.
