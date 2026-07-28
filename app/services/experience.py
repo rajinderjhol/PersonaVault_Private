@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from app.swarm.orchestrator import MultiAgentOrchestrator
 from app.schemas.memory_schemas import MemoryResult, EpisodicEntry, RetrievalPlan
 
@@ -57,7 +57,7 @@ class ExperienceLearningService:
                 results=context,
                 answer=task_result.get("outcome", ""),
                 evaluation=evaluation,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             await episodic.store(entry)
             logger.info(f"Robot experience logged to episodic memory for task {task_id}")

@@ -25,7 +25,7 @@ from passlib.context import CryptContext
 # Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, mcp
+    robotics, widgets, files, admin, system_admin, admin_dashboard, mcp
 )
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
@@ -34,7 +34,6 @@ from app.api.v1.endpoints.packs import router as packs_router
 from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
-from app.api.v1.endpoints.dashboard.dashboard_router import router as dashboard_router
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
 from app.core.rate_limit import rate_limiter
@@ -298,18 +297,13 @@ app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 
 # Admin and System routes (Mounted at /api/v1 to preserve internal module route names)
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
-app.include_router(dashboard_router, tags=["dashboard"])
+app.include_router(admin_dashboard.router, prefix="/api/v1", tags=["admin"])
+app.include_router(dashboard_router, prefix="/api/v1", tags=["dashboard"])
 app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
-
-# Dashboard UI Redirect
-@app.get("/admin/dashboard", response_class=HTMLResponse)
-async def admin_dashboard_redirect(request: Request):
-    """Redirect to the actual dashboard location."""
-    return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=302)
 
 # Global Exception Handler for Graceful Degradation
 @app.exception_handler(Exception)
@@ -323,17 +317,13 @@ async def global_exception_handler(request: Request, exc: Exception):
 # WebSocket endpoint for real-time IoT and communication
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    # Complete the handshake first to avoid proxy timeout/errors
-    await websocket.accept()
-    
-    # SECURITY HANDSHAKE: Validate session
+    # SECURITY HANDSHAKE: Validate session before accepting the connection
     session_id = websocket.cookies.get("session_id")
     if not session_id:
-        logger.warning(f"WebSocket auth failed for {client_id}: No session_id cookie found.")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await manager.connect(client_id, websocket) # manager.connect should NO LONGER call accept()
+    await manager.connect(client_id, websocket)
     try:
         while True:
             data = await websocket.receive_text()
@@ -439,6 +429,7 @@ async def engine_health():
 async def detailed_health(request: Request, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     # Use the existing admin_dashboard helper check for Ollama consistency
     from app.api.v1.endpoints.admin_dashboard import _check_ollama
+from app.api.v1.endpoints.dashboard import router as dashboard_router
     
     active_sessions = (await db.execute(select(func.count(UserSession.id)))).scalar_one()
     total_memories = (await db.execute(select(func.count(Memory.id)))).scalar_one()
@@ -459,6 +450,36 @@ async def detailed_health(request: Request, user_id: int = Depends(require_admin
             "pending_audits": pending_audits
         }
     }
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": {
+            "database": "connected",
+            "vector_store": "active",
+            "graph_store": "connected" if graph_service.driver else "disabled",
+            "ai_service": await _check_ollama(request)
+        },
+        "metrics": {
+            "active_sessions": active_sessions,
+            "total_memories": total_memories,
+            "pending_audits": pending_audits
+        }
+    }
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": {
+            "database": "connected",
+            "vector_store": "active",
+            "graph_store": "connected" if graph_service.driver else "disabled",
+            "ai_service": await _check_ollama(request)
+        },
+        "metrics": {
+            "active_sessions": active_sessions,
+            "total_memories": total_memories,
+            "pending_audits": pending_audits
+        }
+    }
+
+# Health check
 @app.get("/health")
 async def health_check():
     return {

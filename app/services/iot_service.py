@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models import IoTData, MedicalAlert, IoTDevice
@@ -24,7 +24,7 @@ class IoTService:
                     user_id=user_id,
                     data_type=data_type,
                     value=value,
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now(timezone.utc)
                 )
                 db.add(iot_data)
                 
@@ -36,7 +36,7 @@ class IoTService:
                 result = await db.execute(stmt)
                 device = result.scalars().first()
                 if device:
-                    device.last_sync = datetime.utcnow()
+                    device.last_sync = datetime.now(timezone.utc)
                 
                 await db.commit() # Already async-safe with your SessionLocal
             except Exception as e:
@@ -79,7 +79,7 @@ class IoTService:
                     severity=severity,
                     message=message,
                     data={"value": value, "threshold": threshold},
-                    created_at=datetime.utcnow()
+                    created_at=datetime.now(timezone.utc)
                 )
                 db.add(alert)
                 logger.warning(f"Health alert generated: {alert_type} for user {user_id}")

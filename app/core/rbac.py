@@ -17,9 +17,11 @@ PUBLIC_PATHS = {
     "/health",
     "/health/liveness",
     "/health/readiness",
+    "/health/engine",
     "/metrics",
     "/api/v1/auth/login",
     "/api/v1/auth/register",
+    "/login", 
     "/favicon.ico"
 }
 
@@ -57,13 +59,16 @@ async def rbac_middleware(request: Request, call_next):
             )
             result = await db.execute(stmt)
             session_record = result.scalars().first()
-            
             if session_record:
                 user_stmt = select(User).where(User.id == session_record.user_id)
                 user_result = await db.execute(user_stmt)
                 user = user_result.scalars().first()
+            else:
+                logger.warning(f"RBAC: No active session found for token {session_id[:8]}...")
         except Exception as e:
             logger.error(f"RBAC: Error validating session: {e}")
+    elif not user and not session_id and not any(path == p for p in PUBLIC_PATHS):
+        logger.warning(f"RBAC: No session_id cookie found for protected path {path}")
 
     # 3. Enforce Administrative Access
     is_admin_path = any(path.startswith(prefix) for prefix in ADMIN_PREFIXES)
@@ -86,6 +91,7 @@ async def rbac_middleware(request: Request, call_next):
     # 4. Global API Authentication Check
     # Protect all /api/v1 routes except authentication endpoints
     if path.startswith("/api/v1") and not path.startswith("/api/v1/auth") and not user:
+        logger.warning(f"RBAC: Blocked unauthenticated API request to {path}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "Authentication required", "code": "AUTH_001"}

@@ -69,6 +69,7 @@ Domain-specific intelligence packs that can be installed for any industry.
 | **Contract Intelligence** | Legal | ✅ Active | 15 |
 | **Procurement Intelligence** | Supply Chain | ✅ Active | 1 |
 | **Insurance Intelligence** | Insurance | ✅ Active | 4 |
+| **Robotics Intelligence** | Robotics/HRI | ✅ Active | 0 |
 
 ---
 
@@ -141,6 +142,15 @@ pip install -r requirements.txt
 ## 🏆 **The Moat**
 
 > **"Every decision across your organisation makes your entire enterprise more intelligent, while all value remains under your control."**
+
+---
+
+### 🦾 **Robotics Intelligence**
+- **Human-Robot Interaction (HRI)** - Track and learn from every user interaction
+- **Explainable Robot Decisions** - Every robot action has a full decision timeline
+- **Safety Pattern Recognition** - Detect behavioral anomalies before they become incidents
+- **User Personalization** - Learn and adapt to individual user preferences
+- **Trust Tracking** - Measure and improve user trust over time
 
 ---
 

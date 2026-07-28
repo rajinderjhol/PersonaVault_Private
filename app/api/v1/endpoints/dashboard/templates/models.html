@@ -1,0 +1,19 @@
+<div id="models-tab">
+    <h2 style="color: var(--accent);">📦 Model Management</h2>
+    
+    <div class="card" style="margin-bottom:25px; border-top: 4px solid #38bdf8;">
+        <h3 style="margin-top:0; color:#38bdf8;">Pull New Model</h3>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="new-model-input" placeholder="e.g. llama3.2:3b" class="input-field" style="flex:1;">
+            <button class="btn" onclick="triggerModelPull()"><i class="fas fa-download"></i> Pull Model</button>
+        </div>
+        <div id="pull-status" style="margin-top:15px; font-family:monospace; font-size:11px; color:#fbbf24; white-space:pre-wrap; max-height:200px; overflow-y:auto;"></div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #34d399;">
+        <h3 style="margin-top:0; color:#34d399;">Installed Models</h3>
+        <div id="models-list" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="metric-label">Loading models...</div>
+        </div>
+    </div>
+</div>

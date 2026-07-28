@@ -1,0 +1,10 @@
+<div id="logs-tab">
+    <h2 style="color: var(--accent);">📜 System Logs</h2>
+    <div class="card" style="height: calc(100vh - 250px); display:flex; flex-direction:column;">
+        <div class="flex-between" style="margin-bottom:10px;">
+            <h3 style="margin:0; color:#34d399;">Live Engine Logs</h3>
+            <button class="refresh-btn" onclick="document.getElementById('log-container').innerHTML = ''"><i class="fas fa-eraser"></i> Clear View</button>
+        </div>
+        <div id="log-container" class="log-container"></div>
+    </div>
+</div>

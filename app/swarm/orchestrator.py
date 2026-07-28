@@ -1,7 +1,7 @@
 import logging
 import json
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from app.swarm.core.planner import PlannerAgent
 from app.swarm.core.retriever import RetrievalAgent
 from app.swarm.core.generator import GeneratorAgent
@@ -221,7 +221,7 @@ class MultiAgentOrchestrator:
                 results=results,
                 answer=response_text,
                 evaluation=evaluation,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             await self.episodic_memory.store(entry)
             self.agent_activity["episodic"] = "idle"

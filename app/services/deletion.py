@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from app.models import User, Memory, UserSession, AISetting
@@ -31,10 +31,10 @@ class DataDeletionService:
         user = res.scalars().first()
         if user:
             user.is_active = False
-            user.deleted_at = datetime.utcnow()
+            user.deleted_at = datetime.now(timezone.utc)
             user.deletion_reason = reason
         
         await self.db.commit()
         
         # 4. Trigger deletion from Vector and Graph stores would happen here
-        return {"status": "deleted", "deleted_at": datetime.utcnow().isoformat()}
+        return {"status": "deleted", "deleted_at": datetime.now(timezone.utc).isoformat()}

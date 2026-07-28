@@ -32,7 +32,6 @@ from app.services.custom import (
 from app.config import Config
 from app.utils.websocket import manager
 from app.services.iot_service import IoTService
-from app.api.v1.endpoints.dashboard_template import DASHBOARD_HTML
 
 logger = logging.getLogger(__name__)
 
@@ -596,6 +595,9 @@ async def get_audit_logs(
 @router.websocket("/ws/{client_id}")
 async def dashboard_websocket_endpoint(websocket: WebSocket, client_id: str):
     """WebSocket for real-time dashboard metrics and IoT updates."""
+    # Accept first to stabilize the Cloud Shell proxy handshake
+    await websocket.accept()
+
     # SECURITY HANDSHAKE: Ensure only authenticated admins can stream system state
     session_id = websocket.cookies.get("session_id")
     if not session_id:
@@ -1134,11 +1136,3 @@ async def _get_memory_usage() -> dict:
         return {"error": "Unable to retrieve system memory info"}
 
 # ============ DASHBOARD UI moved to dashboard_template.py ============
-
-
-@router.get("/", response_class=HTMLResponse)
-async def admin_dashboard_ui(request: Request):
-    """Serve the full modular admin dashboard UI."""
-    if not request.cookies.get("session_id"):
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    return DASHBOARD_HTML

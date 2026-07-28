@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models import PersonalContext, IoTData
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -15,7 +15,7 @@ class AwarenessService:
     async def get_contextual_awareness(user_id: int, db: AsyncSession):
         """Retrieves user situational context for grounded AI responses."""
         context_types = ['location', 'activity', 'mood', 'environment']
-        awareness = {"timestamp": datetime.utcnow().isoformat()}
+        awareness = {"timestamp": datetime.now(timezone.utc).isoformat()}
         
         for ctx_type in context_types:
             stmt = select(PersonalContext).where(

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 from app.services.episodic_memory import EpisodicMemory
 from app.services.vector_service import vector_service
@@ -24,7 +24,7 @@ class RoboticsPerceptionService:
         """
         Process a robot's observation and store it in grounded episodic memory.
         """
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
         
         # 1. Extract entities (agents, objects, actions) - Stub for actual CV/NLP integration
         entities = observation_data.get("entities", [])

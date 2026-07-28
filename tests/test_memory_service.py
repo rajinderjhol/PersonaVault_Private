@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from app.models import Memory
 from app.services.memory_service import MemoryService
 
@@ -13,7 +13,7 @@ def test_delete_expired_memories(session):
         title="Expired Memory",
         content="This should be deleted",
         modality="text",
-        created_at=datetime.utcnow() - timedelta(days=10),
+        created_at=datetime.now(timezone.utc) - timedelta(days=10),
         expiry_days=5
     )
     session.add(expired_memory)
@@ -24,7 +24,7 @@ def test_delete_expired_memories(session):
         title="Active Memory",
         content="This memory should stay",
         modality="text",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         expiry_days=30
     )
     session.add(active_memory)
@@ -35,7 +35,7 @@ def test_delete_expired_memories(session):
         title="Permanent Memory",
         content="This memory never expires",
         modality="text",
-        created_at=datetime.utcnow() - timedelta(days=100),
+        created_at=datetime.now(timezone.utc) - timedelta(days=100),
         expiry_days=0  # 0 means never expire
     )
     session.add(permanent_memory)
@@ -77,7 +77,7 @@ def test_delete_expired_memories_with_no_expired(session):
         title="Active Memory",
         content="This memory is active",
         modality="text",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         expiry_days=30
     )
     session.add(active_memory)

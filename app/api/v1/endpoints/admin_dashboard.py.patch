@@ -1,46 +1,39 @@
-# In the /swarm/trigger endpoint, add orchestrator processing
+# Add this to admin_dashboard.py to fix logs streaming
 
-@router.post("/swarm/trigger")
-async def trigger_swarm_interaction(request: Request, body: dict, user_id: int = Depends(require_admin)):
-    """Directly inject a query into the Swarm and process it."""
-    query = body.get("query", "")
-    if not query:
-        raise HTTPException(status_code=400, detail="Query content required")
-    
-    blackboard = getattr(request.app.state, "blackboard", None)
-    orchestrator = getattr(request.app.state, "orchestrator", None)
-    
-    if blackboard:
-        await blackboard.post_insight(
-            agent_name="Admin-Terminal",
-            insight={"query": query, "status": "processing", "origin": "dashboard"},
-            importance=1.0
-        )
+# Ensure the logs stream works properly
+@router.get("/logs/stream")
+async def stream_engine_logs(request: Request, user_id: int = Depends(require_admin)):
+    """SSE endpoint for live real uvicorn system logs."""
+    # Use absolute path
+    import os
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
+    log_file = os.path.join(project_root, "storage/logs/uvicorn.log")
+
+    async def log_generator():
+        if not os.path.exists(log_file):
+            yield "data: [SYSTEM] Log file not found. Waiting for logs...\n\n"
+            # Keep connection open and retry
+            while not await request.is_disconnected():
+                if os.path.exists(log_file):
+                    break
+                await asyncio.sleep(1)
+            if await request.is_disconnected():
+                return
         
-        # Actually process the query through the orchestrator
-        if orchestrator:
-            # Run the query through the cognitive pipeline
-            result = await orchestrator.run(
-                query=query,
-                context={"user_id": user_id, "origin": "dashboard"}
-            )
+        with open(log_file, "r") as f:
+            # Start from the end
+            f.seek(0, os.SEEK_END)
+            # Send last 20 lines for context
+            f.seek(max(0, f.tell() - 4096))
+            lines = f.readlines()
+            for line in lines[-25:]:
+                yield f"data: {line.strip()}\n\n"
             
-            # Post result back to blackboard
-            await blackboard.post_insight(
-                agent_name="Orchestrator",
-                insight={
-                    "query": query,
-                    "status": "completed",
-                    "result": result.get("answer", "No answer generated"),
-                    "evaluation": result.get("evaluation", {})
-                },
-                importance=0.9
-            )
-            
-            return {
-                "status": "swarm_completed",
-                "message": f"Query processed: {query[:50]}...",
-                "result": result.get("answer", "")
-            }
+            while not await request.is_disconnected():
+                line = f.readline()
+                if line == "":
+                    await asyncio.sleep(0.5)
+                    continue
+                yield f"data: {line}\n\n"
     
-    return {"status": "swarm_ignited", "message": f"Query '{query}' posted to Blackboard."}
+    return StreamingResponse(log_generator(), media_type="text/event-stream")

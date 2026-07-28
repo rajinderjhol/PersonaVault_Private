@@ -1,6 +1,6 @@
 import httpx
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
 from fastapi.responses import StreamingResponse
@@ -51,7 +51,7 @@ async def chat_completion(chat_req: ChatRequest, request: Request, current_user:
 async def search_memories(search_req: MemorySearchRequest, request: Request, db: AsyncSession = Depends(get_db), current_user: int = Depends(get_current_user)):
     service = request.app.state.memory_service
     results = await service.search_memories(user_id=current_user, query=search_req.query)
-    return {"results": results, "query": search_req.query, "timestamp": datetime.utcnow().isoformat()}
+    return {"results": results, "query": search_req.query, "timestamp": datetime.now(timezone.utc).isoformat()}
 
 @router.get("/settings")
 async def get_current_settings(

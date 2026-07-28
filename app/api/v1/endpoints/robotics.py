@@ -37,6 +37,7 @@ async def robot_learn(
 
 @router.post("/hri")
 async def robot_interaction(
+    request: Request,
     robot_id: str,
     interaction_text: str,
     user_id: int = Depends(require_memory_write),

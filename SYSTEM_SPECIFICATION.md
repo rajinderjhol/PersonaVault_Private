@@ -458,4 +458,129 @@ The system is designed with a "Special Setting" for migration and data sovereign
 - [ ] Federated learning to aggregate patterns without sharing raw data.
 - [ ] Marketplace for "Cognitive Skillsets" (Pre-trained legal/medical patterns).
 - [ ] Homomorphic search on fully encrypted data clusters.
+
+---
+
+## XVII. Decision Intelligence API
+
+### Decision Timeline
+
+#### GET /api/v1/timeline/{event_id}
+Get the full decision timeline for an event.
+
+**Response:**
+```json
+{
+  "event_id": 1,
+  "event_type": "incident_response",
+  "decision": "escalated",
+  "timeline": [
+    {
+      "step": 1,
+      "type": "detection",
+      "label": "Event Detected",
+      "description": "Security incident detected",
+      "confidence": 0.91,
+      "actor": "soc_analyst",
+      "timestamp": "2026-07-28T07:15:37.166800"
+    },
+    {
+      "step": 2,
+      "type": "policy_match",
+      "label": "Policy Matched",
+      "description": "Matched 1 policies",
+      "policies": ["High Risk Escalation"]
+    },
+    {
+      "step": 3,
+      "type": "ai_recommendation",
+      "label": "AI Recommendation",
+      "description": "AI recommended escalated with 91% confidence",
+      "confidence": 0.91,
+      "decision": "escalated"
+    },
+    {
+      "step": 4,
+      "type": "decision",
+      "label": "Decision Made",
+      "description": "Decision: escalated",
+      "reason": "Phishing attempt detected",
+      "actor": "soc_analyst",
+      "outcome": "success"
+    },
+    {
+      "step": 5,
+      "type": "audit",
+      "label": "Audit Logged",
+      "description": "Audit ID: audit-xxx",
+      "audit_id": "audit-xxx"
+    }
+  ]
+}
+```
+
+### Decision Replay
+
+#### GET /api/v1/timeline/replay/{event_id}
+Replay a decision at a specific point in time.
+
+**Response:**
+```json
+{
+  "event_id": 1,
+  "original_decision": {
+    "decision": "escalated",
+    "confidence": 0.91,
+    "reason": "Phishing attempt detected"
+  },
+  "analysis": {
+    "would_decision_change": false,
+    "policies_at_time": ["High Risk Escalation"]
+  }
+}
+```
+
+### Trend Analysis
+
+#### GET /api/v1/timeline/trends/{event_type}
+Get decision trends for an event type.
+
+**Response:**
+```json
+{
+  "event_type": "incident_response",
+  "period_days": 30,
+  "total_events": 54,
+  "average_confidence": 0.908,
+  "trend": "improving",
+  "decision_distribution": { "escalated": 54 },
+  "outcome_distribution": { "success": 54, "failure": 0 }
+}
+```
+
+---
+
+## XVIII. Performance Metrics
+
+| Metric | Target | Current |
+|--------|--------|---------|
+| Memory Creation | < 50ms | ✅ |
+| Memory Search | < 150ms | ✅ |
+| Timeline Creation | < 500ms | ✅ |
+| Replay Analysis | < 500ms | ✅ |
+| Trend Analysis | < 1s | ✅ |
+| Pattern Verification | < 100ms | ✅ |
+| Consolidation (Batch) | < 5s | ✅ |
+| AI Chat (Local) | < 2s | ✅ |
+
+---
+
+## XIX. Robotics Intelligence API
+
+### Robot Decision
+
+#### POST /api/v1/behaviour/event
+Create a robot decision event. (See v2.0 behaviour event schema)
+
+*Last Updated: July 2026*
 ```

@@ -1,0 +1,20 @@
+<div id="trends-tab">
+    <h2 style="color: var(--accent);">📈 Trend Analysis</h2>
+    <div class="card">
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <select id="trend-domain" class="input-field" style="flex:1;">
+                <option value="incident_response">Security Intelligence</option>
+                <option value="compliance_review">Compliance Intelligence</option>
+                <option value="contract_review">Contract Intelligence</option>
+                <option value="procurement_decision">Procurement Intelligence</option>
+                <option value="underwriting_decision">Insurance Intelligence</option>
+                <option value="robot_decision">Robotics Intelligence</option>
+            </select>
+            <input type="number" id="trend-days" value="30" class="input-field" style="width:100px;">
+            <button class="btn" onclick="fetchTrends()"><i class="fas fa-chart-line"></i> Analyze</button>
+        </div>
+        <div id="trend-result">
+            <div class="metric-label">Select a domain and click Analyze.</div>
+        </div>
+    </div>
+</div>

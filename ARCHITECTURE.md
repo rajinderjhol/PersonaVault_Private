@@ -1,25 +1,147 @@
 # PersonaVault Architecture
 
-This document provides a technical deep-dive into the architectural design of the PersonaVault backend.
-
 ## System Overview
 
-PersonaVault is designed as a **self-improving cognitive engine** built on a **Memory Operating System (Memory OS)** architecture. The core philosophy is to provide a unified cognitive infrastructure that learns, reinforces, and evolves autonomously.
+PersonaVault is a **Sovereign Organisational Intelligence Platform** built on a **Decision Operating System** architecture. The core philosophy is to capture, learn, and improve how organisations make decisions.
 
-### The "Compounding Advantage" Moat
+---
 
-```mermaid
-graph LR
-    A[Day 1] -->|0 Patterns| B[Day 30]
-    B -->|4 Patterns| C[Day 60]
-    C -->|Patterns at 0.90+ Weight| D[Day 90]
-    D -->|Exponential Growth| E[Uncatchable Lead]
+## The Decision Intelligence Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🏛️ PersonaVault - Decision Operating System             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Event → Decision → Behaviour → Explain → Audit → Learn   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │               Behaviour Packs                        │    │
+│  │  Security │ Legal │ Insurance │ Procurement │ Compliance │ │
+│  │  Robotics                                            │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                 Decision Engine                      │    │
+│  │  • Policy Engine    • Reinforcement                 │    │
+│  │  • Explainability   • Audit                        │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │               Behaviour Memory                       │    │
+│  │  • Events  • Decisions  • Outcomes  • Context      │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │               Three-Layer Memory                     │    │
+│  │  Layer 1 (Gas) → Layer 2 (Liquid) → Layer 3 (Ice) │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**What can't be copied:**
-- Your patterns and their weights (7 successes recorded)
-- Your reinforcement history (Pattern #1 at 0.90)
-- Your cognitive evolution (4 patterns, growing)
+---
+
+## 📊 Current Platform Metrics
+
+| Domain | Events | Confidence | Trend |
+|--------|--------|------------|-------|
+| Security Intelligence | 54 | 90.8% | 📈 Improving |
+| Compliance Intelligence | 7 | 94.6% | 📈 Improving |
+| Contract Intelligence | 15 | 87.9% | 📈 Improving |
+| Procurement Intelligence | 1 | 80.0% | 📈 Improving |
+| Insurance Intelligence | 4 | 91.5% | 📈 Improving |
+| Robotics Intelligence | 0 | 92.0% | 📈 Improving |
+| **TOTAL** | **81** | **90.5%** | **📈 Improving** |
+
+---
+
+## 🔍 Decision Timeline System
+
+Every decision is captured in a 5-step timeline:
+
+1. **Detection** - Event identified
+2. **Policy Match** - Relevant policies applied
+3. **AI Recommendation** - AI suggests action with confidence
+4. **Decision Made** - Human or AI decision with reasoning
+5. **Audit Logged** - Full audit record with traceability
+
+---
+
+## 🔄 Decision Replay System
+
+Replay any decision at any point in time:
+- Compare decisions across time
+- See how policies would change
+- Understand evolution of decision patterns
+
+---
+
+## 📈 Trend Analysis System
+
+Track confidence and decision patterns over time:
+- Average confidence per domain
+- Decision distribution analysis
+- Improvement trends
+- Outcome distribution
+
+---
+
+## 📦 Behaviour Packs
+
+Declarative configuration for any domain:
+
+```yaml
+pack:
+  name: Security Intelligence
+  domain: security
+  entities: [incident, alert, investigation]
+  events: [incident_response]
+  policies: [...]
+  metrics: [...]
+  evaluation_rules: [...]
+```
+
+---
+
+## 🔒 Governance Layer
+
+- **Audit Trail**: Complete record of every decision
+- **Explainability**: Human-readable explanations
+- **Compliance**: Built-in governance and policies
+- **Sovereignty**: Data remains under your control
+
+---
+
+## 🚀 Performance Metrics
+
+| Operation | Target (P95) | Current |
+|-----------|--------------|---------|
+| Timeline Creation | < 500ms | ✅ |
+| Replay Analysis | < 500ms | ✅ |
+| Trend Analysis | < 1s | ✅ |
+| AI Chat (Local) | < 2s | ✅ |
+
+---
+
+## 🦾 Robotics Intelligence Pack
+
+The Robotics Intelligence Pack enables robots with memory, personality, and explainable decision-making:
+
+| Feature | Description |
+|---------|-------------|
+| **User Profiling** | Learns individual user preferences and personality traits |
+| **Decision Timeline** | Full history of every robot decision with reasoning |
+| **Safety Monitoring** | Pattern-based safety event detection and prevention |
+| **Trust Tracking** | Measures user trust scores over time |
+| **Personalization** | Adapts behavior based on user history |
+
+**Use Cases:**
+- Healthcare companion robots
+- Manufacturing & logistics robots
+- Assistive robots for elderly care
+- Service & social robots
+- Security & surveillance robots
 
 ## 🌐 The Cognitive Ecosystem Vision
 
@@ -131,6 +253,20 @@ The system is designed for production-grade monitoring:
 *   **Cognified Admin Dashboard**: A specialized router (`admin_dashboard.py`) providing real-time metrics, disk usage breakdown, and AI provider health.
 *   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs (SSE).
 *   **Model Management**: Direct interface for pulling and deleting Ollama models.
+
+## 🏆 The Moat
+
+> **"Every decision across your organisation makes your entire enterprise more intelligent, while all value remains under your control."**
+
+### The "Compounding Advantage"
+
+```mermaid
+graph LR
+    A[Day 1] -->|0 Patterns| B[Day 30]
+    B -->|4 Patterns| C[Day 60]
+    C -->|Patterns at 0.90+ Weight| D[Day 90]
+    D -->|Exponential Growth| E[Uncatchable Lead]
+```
 
 ## Request Lifecycle
 

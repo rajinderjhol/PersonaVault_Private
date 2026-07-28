@@ -1,0 +1,27 @@
+<div id="mcp-tab">
+    <h2 style="color: var(--accent);">🔌 MCP Registry</h2>
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">Registered Nodes</div>
+            <div id="mcp-servers-list"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">Available Tools</div>
+            <div id="mcp-tools-list"></div>
+        </div>
+        <div class="card" style="grid-column: span 2; border-top: 4px solid var(--success);">
+            <div class="card-title">MCP Protocol Tester</div>
+            <div style="display:flex; gap:10px;">
+                <select id="mcp-test-tool" class="input-field" style="margin:0; flex:1;">
+                    <option value="vault_search">vault_search</option>
+                    <option value="vault_add">vault_add</option>
+                    <option value="blackboard_post">blackboard_post</option>
+                    <option value="get_empathy_context">get_empathy_context</option>
+                </select>
+                <input type="text" id="mcp-test-args" placeholder='{"query": "test"}' class="input-field" style="margin:0; flex:2;">
+                <button class="btn" onclick="executeMcpTest()">Run Tool Call</button>
+            </div>
+            <pre id="mcp-test-output" style="margin-top:15px; display:none; background:#020617; padding:15px; border-radius:8px; color:var(--accent); border:1px solid var(--border);"></pre>
+        </div>
+    </div>
+</div>

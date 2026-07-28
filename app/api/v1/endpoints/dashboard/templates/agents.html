@@ -1,0 +1,40 @@
+<div id="agents-tab">
+    <h2 style="color: var(--accent);">🤖 Agent Orchestration</h2>
+    
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">Cognitive Load</div>
+            <div id="agent-load-stats"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">Empathy & Tone</div>
+            <div id="empathy-stats"></div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--accent); margin-bottom:25px;">
+        <div class="card-title">Layer 1: Cognitive Blackboard</div>
+        <p style="color: #94a3b8; font-size: 12px;">Real-time shared insights between agents.</p>
+        <div id="blackboard-feed" style="max-height:200px; overflow-y:auto;">
+            <div class="metric-label">No active insights.</div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--accent); margin-bottom:25px;">
+        <div class="card-title">Swarm Command Console</div>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="swarm-query-input" placeholder="e.g. Analyze the memory patterns..." class="input-field" style="margin:0; flex:1;">
+            <button class="btn" onclick="triggerSwarm()"><i class="fas fa-play"></i> Ignite Swarm</button>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #a855f7;">
+        <div class="card-title">Chain-of-Thought (CoT) Negotiation Swarm</div>
+        <div id="mermaid-graph-container" style="background:#020617; border-radius:8px; padding:20px; overflow-x:auto; min-height:250px; display:flex; justify-content:center; align-items:center;">
+            <div class="metric-label">Awaiting negotiation signal...</div>
+        </div>
+        <div id="thought-log" style="background:#020617; border:1px solid var(--border); border-radius:8px; padding:15px; margin-top:15px; font-family:monospace; font-size:12px; max-height:200px; overflow-y:auto;">
+            <div style="color:#64748b; font-style:italic;">> Initialize Live Swarm Feed...</div>
+        </div>
+    </div>
+</div>

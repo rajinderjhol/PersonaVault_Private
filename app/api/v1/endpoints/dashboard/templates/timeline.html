@@ -1,0 +1,16 @@
+<div id="timeline-tab">
+    <h2 style="color: var(--accent);">⏱️ Decision Timeline</h2>
+    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">
+        Every decision captured in a 5-step timeline: Detection → Policy → AI → Decision → Audit
+    </p>
+    <div class="card">
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <input type="number" id="timeline-event-id" placeholder="Event ID" class="input-field" style="flex:1;">
+            <button class="btn" onclick="fetchTimeline()"><i class="fas fa-search"></i> Load Timeline</button>
+            <button class="btn" style="background:#334155;" onclick="listEvents()"><i class="fas fa-list"></i> List Events</button>
+        </div>
+        <div id="timeline-list">
+            <div class="metric-label">Enter an Event ID and click Load Timeline.</div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,19 @@
+<div id="learning-tab">
+    <h2 style="color: var(--accent);">⚡ Graduation Logic</h2>
+    <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 class="card-title" style="margin:0;">Crystallization Engine</h3>
+            <span class="tag tag-success">ACTIVE</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px;">Configure the background task that graduates Liquid memories into Semantic Ice.</p>
+        <div style="margin: 20px 0;">
+            <div class="flex-between" style="display:flex; justify-content:space-between; padding:8px 0;"><span style="color:#94a3b8;">Batch Size</span><input type="number" id="input-batch-size" value="10" style="width:80px; background:#020617; border:1px solid var(--border); color:white; padding:4px;"></div>
+            <div class="flex-between" style="display:flex; justify-content:space-between; padding:8px 0;"><span style="color:#94a3b8;">Interval (Hours)</span><input type="number" step="0.1" id="input-interval" value="1.0" style="width:80px; background:#020617; border:1px solid var(--border); color:white; padding:4px;"></div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" style="flex:1; background:#334155; color:white;" onclick="saveLearningConfig()">Save</button>
+            <button class="btn" style="flex:2; background:#a855f7;" onclick="triggerLearning()"><i class="fas fa-crystal-ball"></i> Trigger Now</button>
+        </div>
+        <div id="learning-status" style="font-size:11px; color:#94a3b8; margin-top:12px; text-align:center;">Crystallization monitoring online.</div>
+    </div>
+</div>

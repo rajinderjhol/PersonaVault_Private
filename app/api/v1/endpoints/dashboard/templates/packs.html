@@ -1,0 +1,13 @@
+<div id="packs-tab">
+    <h2 style="color: var(--accent);">📦 Domain Intelligence Packs</h2>
+    
+    <div id="packs-grid" class="grid"></div>
+    
+    <div class="card" style="margin-top: 20px; border-top: 4px solid var(--accent);">
+        <h3 class="card-title">📥 Install New Pack</h3>
+        <p style="color: #94a3b8; font-size: 13px;">Upload a behaviour_pack.yaml file</p>
+        <input type="file" id="pack-file-input" accept=".yaml,.yml" class="input-field">
+        <button class="btn" onclick="installPack()"><i class="fas fa-download"></i> Install Pack</button>
+        <div id="pack-install-status" style="margin-top:15px; font-family:monospace; font-size:11px; color:#fbbf24;"></div>
+    </div>
+</div>

@@ -1,0 +1,16 @@
+<div id="governance-tab">
+    <h2 style="color: var(--accent);">⚖️ Governance & Audit</h2>
+    <div class="card">
+        <div class="flex-between" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="card-title" style="margin:0;">VeriLinkOS Execution Kernel</h3>
+            <button class="btn" id="verilink-toggle-btn" onclick="toggleVeriLinkMode()"><i class="fas fa-plug-circle-xmark"></i> Suppress Connection</button>
+        </div>
+        <p id="verilink-desc" style="color: #94a3b8; font-size: 12px; margin-top: 5px;">Currently in fail-soft mode.</p>
+    </div>
+    <div class="card">
+        <h3 class="card-title">Action Chain & VAP Receipts</h3>
+        <div id="audit-container" style="max-height:400px; overflow-y:auto;">
+            <div class="metric-label">Loading audit trail...</div>
+        </div>
+    </div>
+</div>

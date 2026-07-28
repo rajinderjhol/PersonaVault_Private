@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.future import select
 from app.models import PendingAction
 
@@ -21,7 +21,7 @@ class HITLService:
                 action_data=action,
                 context=context,
                 status="pending",
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
             db.add(request)
             await db.commit()
@@ -45,7 +45,7 @@ class HITLService:
             
             request.status = "approved"
             request.approved_by = approver_id
-            request.approved_at = datetime.utcnow()
+            request.approved_at = datetime.now(timezone.utc)
             await db.commit()
             
             return {
@@ -63,7 +63,7 @@ class HITLService:
             
             request.status = "denied"
             request.approved_by = approver_id
-            request.approved_at = datetime.utcnow()
+            request.approved_at = datetime.now(timezone.utc)
             request.denial_reason = reason
             await db.commit()
             

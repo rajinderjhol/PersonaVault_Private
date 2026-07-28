@@ -1,0 +1,24 @@
+<div id="overview-tab">
+    <div id="metrics-grid" class="grid">
+        <div class="card"><div class="metric-label">Loading...</div></div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #34d399; margin-bottom: 25px;">
+        <h3 class="card-title">📊 Platform Summary</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">
+            <div><div class="metric-label">Domains</div><div id="domain-count" class="metric-value" style="font-size:28px;">0</div></div>
+            <div><div class="metric-label">Total Events</div><div id="event-count" class="metric-value" style="font-size:28px;">0</div></div>
+            <div><div class="metric-label">Avg Confidence</div><div id="avg-confidence" class="metric-value" style="font-size:28px;">0%</div></div>
+            <div><div class="metric-label">Overall Trend</div><div id="overall-trend" class="metric-value" style="font-size:28px; color:#34d399;">📈</div></div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #fbbf24; margin-bottom: 25px;">
+        <h3 class="card-title">🧪 Laboratory & Simulation</h3>
+        <p style="color: #94a3b8; font-size: 13px;">Trigger virtual telemetry to test real-time monitoring and HITL triggers.</p>
+        <button class="btn" id="sim-btn" onclick="toggleSimulation()"><i class="fas fa-bolt"></i> Ignite IoT Simulation</button>
+    </div>
+
+    <h2 style="margin-top: 40px; color: #94a3b8; font-size: 14px; text-transform: uppercase;">Raw Intelligence Feed</h2>
+    <pre id="raw-metrics" style="background:#020617; padding:20px; border-radius:8px; color:var(--accent); border:1px solid var(--border); line-height:1.5; white-space:pre-wrap; word-break:break-all; font-size:13px; max-height:400px; overflow:auto;">Fetching system state...</pre>
+</div>

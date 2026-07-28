@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone, timedelta, timezone
 from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models import (
@@ -117,14 +117,14 @@ async def populate():
                     device_id=device.device_id,
                     data_type="temperature",
                     value=json.dumps({"temp": 42.5, "unit": "C"}), 
-                    timestamp=datetime.utcnow() - timedelta(minutes=5),
+                    timestamp=datetime.now(timezone.utc) - timedelta(minutes=5),
                     user_id=user.id
                 ),
                 IoTData(
                     device_id=device.device_id,
                     data_type="temperature",
                     value=json.dumps({"temp": 43.1, "unit": "C"}), 
-                    timestamp=datetime.utcnow() - timedelta(minutes=2),
+                    timestamp=datetime.now(timezone.utc) - timedelta(minutes=2),
                     user_id=user.id
                 )
             ]
@@ -142,7 +142,7 @@ async def populate():
                 results=json.dumps([{"content": "Internal manual snippet", "source": "vector_store", "score": 0.88}]),
                 evaluation=json.dumps(sample["eval"]),
                 hitl_approved=False,
-                timestamp=datetime.utcnow() - timedelta(hours=2)
+                timestamp=datetime.now(timezone.utc) - timedelta(hours=2)
             )
             db.add(entry)
         await db.flush()

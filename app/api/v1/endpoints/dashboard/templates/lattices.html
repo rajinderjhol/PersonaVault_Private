@@ -1,0 +1,36 @@
+<div id="lattices-tab">
+    <h2 style="color: var(--accent);">🕸️ Memory Lattices</h2>
+    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">
+        Visualization of the conversion from Volatile Context (Gas) to Episodic Memory (Liquid) and Semantic Constraints (Ice).
+    </p>
+    <div class="card" style="margin-bottom: 25px; border-left: 4px solid #a855f7;">
+        <div class="metric-label">Memory Distribution Ratio</div>
+        <div class="mem-viz-container" style="margin:15px 0; background:#020617; border-radius:6px; height:24px; display:flex; overflow:hidden; border:1px solid #334155;">
+            <div id="bar-l1" class="viz-l1" style="width:10%; background:#fbbf24; height:100%; transition:width 0.6s ease-in-out;"></div>
+            <div id="bar-l2" class="viz-l2" style="width:50%; background:#38bdf8; height:100%; transition:width 0.6s ease-in-out;"></div>
+            <div id="bar-l3" class="viz-l3" style="width:10%; background:#a855f7; height:100%; transition:width 0.6s ease-in-out;"></div>
+        </div>
+        <div class="viz-legend" style="display:flex; gap:20px; font-size:11px; color:#94a3b8;">
+            <span><span style="color:#fbbf24;">●</span> Layer 1 (Gas) - Active</span>
+            <span><span style="color:#38bdf8;">●</span> Layer 2 (Liquid) - <span id="layer2-count">0</span></span>
+            <span><span style="color:#a855f7;">●</span> Layer 3 (Ice) - <span id="layer3-count">0</span></span>
+        </div>
+    </div>
+    <div class="grid">
+        <div class="card" style="border-top:4px solid #fbbf24;">
+            <div class="metric-label">Layer 1 (Gas)</div>
+            <div class="metric-value" style="color:#fbbf24;">Active</div>
+            <div style="font-size:11px; color:#94a3b8;">Working Memory</div>
+        </div>
+        <div class="card" style="border-top:4px solid #38bdf8;">
+            <div class="metric-label">Layer 2 (Liquid)</div>
+            <div id="layer2-card-count" class="metric-value" style="color:#38bdf8;">0</div>
+            <div style="font-size:11px; color:#94a3b8;">Episodic Memory</div>
+        </div>
+        <div class="card" style="border-top:4px solid #a855f7;">
+            <div class="metric-label">Layer 3 (Ice)</div>
+            <div id="layer3-card-count" class="metric-value" style="color:#a855f7;">0</div>
+            <div style="font-size:11px; color:#94a3b8;">Semantic Patterns</div>
+        </div>
+    </div>
+</div>

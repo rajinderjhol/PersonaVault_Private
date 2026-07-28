@@ -5,7 +5,7 @@ from sqlalchemy import delete
 from app.models import Memory
 from app.core.base_memory import AbstractMemoryRepository
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class SQLMemoryRepository(AbstractMemoryRepository):
         session = await self._get_session()
         is_factory = callable(self.db)
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             stmt = select(Memory).where(Memory.expiry_days > 0)
             res = await session.execute(stmt)
             candidates = res.scalars().all()
