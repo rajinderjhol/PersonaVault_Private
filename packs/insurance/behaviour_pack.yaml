@@ -1,0 +1,420 @@
+# Insurance & Underwriting Intelligence Pack
+# Learn your underwriting team's decision patterns
+
+pack:
+  id: insurance-intelligence
+  name: Insurance & Underwriting Intelligence
+  version: 1.0.0
+  domain: insurance
+  description: Learn your underwriting team's decision patterns and improve risk assessment
+
+# ============ ENTITIES ============
+entities:
+  - name: policy
+    description: An insurance policy
+    fields:
+      - name: policy_type
+        type: string
+        enum: [auto, home, life, health, commercial, cyber]
+      - name: coverage_amount
+        type: float
+      - name: premium
+        type: float
+      - name: deductible
+        type: float
+      - name: term_years
+        type: integer
+      - name: effective_date
+        type: date
+      - name: expiration_date
+        type: date
+      - name: status
+        type: string
+        enum: [pending, underwriting, approved, declined, bound]
+
+  - name: risk
+    description: A risk assessment
+    fields:
+      - name: risk_type
+        type: string
+        enum: [property, liability, credit, operational, cyber]
+      - name: risk_score
+        type: float
+        min: 0.0
+        max: 1.0
+      - name: risk_category
+        type: string
+        enum: [low, medium, high, critical]
+      - name: risk_factors
+        type: array
+        items: string
+      - name: mitigation
+        type: string
+
+  - name: claim
+    description: An insurance claim
+    fields:
+      - name: claim_type
+        type: string
+        enum: [property, liability, health, auto]
+      - name: claim_amount
+        type: float
+      - name: claim_status
+        type: string
+        enum: [pending, approved, denied, investigation]
+      - name: incident_date
+        type: date
+      - name: claim_date
+        type: date
+      - name: adjuster_notes
+        type: text
+
+  - name: customer
+    description: A customer profile
+    fields:
+      - name: customer_type
+        type: string
+        enum: [individual, business]
+      - name: industry
+        type: string
+      - name: annual_revenue
+        type: float
+      - name: claims_history
+        type: integer
+      - name: policy_count
+        type: integer
+      - name: tenure_years
+        type: integer
+      - name: risk_profile
+        type: string
+        enum: [low, medium, high]
+
+  - name: underwriter
+    description: An underwriter
+    fields:
+      - name: name
+        type: string
+      - name: specialty
+        type: string
+        enum: [auto, home, life, health, commercial, cyber]
+      - name: authority_limit
+        type: float
+      - name: approval_count
+        type: integer
+      - name: denial_count
+        type: integer
+
+# ============ EVENTS ============
+events:
+  - name: underwriting_decision
+    description: An underwriting decision event
+    fields:
+      - name: policy_id
+        type: string
+        required: true
+      - name: underwriter_id
+        type: string
+        required: true
+      - name: decision
+        type: string
+        enum: [approved, declined, pending, escalated]
+        required: true
+      - name: decision_reason
+        type: string
+        required: true
+      - name: risk_score
+        type: float
+        min: 0.0
+        max: 1.0
+      - name: premium_adjustment
+        type: float
+      - name: time_spent_minutes
+        type: integer
+      - name: conditions
+        type: array
+        items: string
+
+  - name: claim_decision
+    description: A claim decision event
+    fields:
+      - name: claim_id
+        type: string
+        required: true
+      - name: claim_amount
+        type: float
+        required: true
+      - name: decision
+        type: string
+        enum: [approved, denied, partially_approved]
+        required: true
+      - name: approval_amount
+        type: float
+      - name: denial_reason
+        type: string
+      - name: adjuster_id
+        type: string
+      - name: time_spent_days
+        type: integer
+
+  - name: renewal_decision
+    description: A policy renewal decision
+    fields:
+      - name: policy_id
+        type: string
+        required: true
+      - name: decision
+        type: string
+        enum: [renew, non_renew, modify]
+        required: true
+      - name: premium_change
+        type: float
+      - name: coverage_change
+        type: string
+
+# ============ DECISION TYPES ============
+decision_types:
+  - id: approve
+    label: Approve
+    description: Approve the policy/claim
+  - id: decline
+    label: Decline
+    description: Decline the policy/claim
+  - id: escalate
+    label: Escalate
+    description: Escalate for review
+  - id: modify
+    label: Modify
+    description: Modify terms and approve
+  - id: investigate
+    label: Investigate
+    description: Investigate further
+
+# ============ METRICS ============
+metrics:
+  - id: approval_rate
+    label: Approval Rate
+    description: Percentage of policies approved
+    target: "> 85"
+    unit: percent
+    good: higher
+
+  - id: claim_accuracy
+    label: Claim Accuracy
+    description: Accuracy of claim decisions
+    target: "> 95"
+    unit: percent
+    good: higher
+
+  - id: loss_ratio
+    label: Loss Ratio
+    description: Claims paid vs premiums collected
+    target: "< 60"
+    unit: percent
+    good: lower
+
+  - id: underwriting_time
+    label: Underwriting Time
+    description: Average time to underwrite
+    target: "< 45"
+    unit: minutes
+    good: lower
+
+  - id: risk_score_accuracy
+    label: Risk Score Accuracy
+    description: Accuracy of risk assessments
+    target: "> 90"
+    unit: percent
+    good: higher
+
+  - id: policy_retention
+    label: Policy Retention
+    description: Percentage of policies renewed
+    target: "> 80"
+    unit: percent
+    good: higher
+
+# ============ POLICIES ============
+policies:
+  # Underwriting Policies
+  - name: high_risk_decline
+    description: Decline policies with high risk scores
+    triggers:
+      - risk_score > 0.8
+      - risk_category == "critical"
+      - multiple high-risk factors
+    actions:
+      - action: decline
+        reason: "High risk score exceeds threshold"
+        severity: high
+    confidence_threshold: 0.85
+
+  - name: medium_risk_escalate
+    description: Escalate medium risk policies for review
+    triggers:
+      - risk_score > 0.6
+      - risk_score <= 0.8
+      - complex risk factors
+    actions:
+      - action: escalate
+        target: "Senior Underwriter"
+        message: "Medium risk policy requiring review"
+    confidence_threshold: 0.7
+
+  - name: auto_approve_low_risk
+    description: Auto-approve low risk policies
+    triggers:
+      - risk_score <= 0.4
+      - risk_category == "low"
+      - claims_history == 0
+    actions:
+      - action: approve
+        reason: "Low risk, auto-approved"
+    confidence_threshold: 0.9
+
+  - name: fraud_flag
+    description: Flag potential fraud
+    triggers:
+      - claims_history > 3
+      - claim_amount > 100000
+      - suspicious_patterns
+    actions:
+      - action: escalate
+        team: "Fraud Investigation"
+        severity: high
+    confidence_threshold: 0.8
+
+  # Claim Policies
+  - name: claim_auto_approve
+    description: Auto-approve small, low-risk claims
+    triggers:
+      - claim_amount < 1000
+      - claim_type in ["auto", "property"]
+      - claims_history == 0
+    actions:
+      - action: approve
+        reason: "Small claim, auto-approved"
+    confidence_threshold: 0.9
+
+  - name: claim_investigate
+    description: Investigate suspicious claims
+    triggers:
+      - claim_amount > 50000
+      - claim_type == "liability"
+      - incident_date - claim_date > 60
+    actions:
+      - action: investigate
+        team: "Claims Investigation"
+    confidence_threshold: 0.8
+
+  - name: claim_deny_fraud
+    description: Deny fraudulent claims
+    triggers:
+      - fraud_flag == true
+      - investigation_found == true
+    actions:
+      - action: decline
+        reason: "Fraud detected"
+        severity: high
+    confidence_threshold: 0.9
+
+  # Renewal Policies
+  - name: renew_low_risk
+    description: Renew low risk policies automatically
+    triggers:
+      - risk_profile == "low"
+      - claims_history == 0
+      - payment_history == "excellent"
+    actions:
+      - action: renew
+        premium_change: -5%
+    confidence_threshold: 0.9
+
+  - name: non_renew_high_risk
+    description: Non-renew high risk policies
+    triggers:
+      - risk_profile == "high"
+      - claims_history > 2
+      - loss_ratio > 150%
+    actions:
+      - action: non_renew
+        reason: "High risk, non-renew"
+    confidence_threshold: 0.8
+
+# ============ EVALUATION RULES ============
+evaluation_rules:
+  - metric: approval_rate
+    success_condition: "> 85"
+    failure_condition: "< 70"
+  
+  - metric: claim_accuracy
+    success_condition: "> 95"
+    failure_condition: "< 85"
+  
+  - metric: loss_ratio
+    success_condition: "< 60"
+    failure_condition: "> 75"
+  
+  - metric: underwriting_time
+    success_condition: "< 45"
+    failure_condition: "> 60"
+  
+  - metric: risk_score_accuracy
+    success_condition: "> 90"
+    failure_condition: "< 75"
+  
+  - metric: policy_retention
+    success_condition: "> 80"
+    failure_condition: "< 60"
+
+# ============ DASHBOARD VIEWS ============
+views:
+  - name: Underwriting Dashboard
+    description: Key underwriting metrics
+    metrics:
+      - approval_rate
+      - underwriting_time
+      - risk_score_accuracy
+      - policy_retention
+  
+  - name: Claims Dashboard
+    description: Key claims metrics
+    metrics:
+      - claim_accuracy
+      - loss_ratio
+  
+  - name: Executive Dashboard
+    description: Executive overview
+    metrics:
+      - loss_ratio
+      - approval_rate
+      - policy_retention
+
+# ============ WORKFLOW ============
+workflow:
+  - step: submit
+    description: Submit application
+  - step: underwrite
+    description: Underwriting review
+  - step: decision
+    description: Decision made
+  - step: bind
+    description: Policy bound
+  - step: service
+    description: Policy servicing
+
+# ============ ROLES ============
+roles:
+  - name: underwriter
+    permissions: [review, approve, decline, escalate]
+  
+  - name: senior_underwriter
+    permissions: [review, approve, decline, escalate, override]
+  
+  - name: claims_adjuster
+    permissions: [review, approve, deny, investigate]
+  
+  - name: underwriter_manager
+    permissions: [review, approve, decline, escalate, override, approve_high_risk]
+  
+  - name: executive
+    permissions: [view_all, approve_override]

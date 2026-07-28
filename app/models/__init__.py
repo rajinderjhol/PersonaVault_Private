@@ -360,3 +360,13 @@ __all__ = [
     'WorkflowTask',
     'PendingAction'
 ]
+
+# Learning models
+from app.models.learning.behaviour_event import BehaviourEvent
+from app.models.learning.decision_trajectory import DecisionTrajectory
+from app.models.learning.policy import Policy
+# Behaviour Pack models
+from app.models.learning.behaviour_pack import BehaviourPack
+from app.models.learning.behaviour_event import BehaviourEvent
+from app.models.learning.decision_trajectory import DecisionTrajectory
+from app.models.learning.policy import Policy

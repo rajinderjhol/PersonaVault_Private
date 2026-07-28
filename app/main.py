@@ -30,6 +30,10 @@ from app.api.v1.endpoints import (
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
+from app.api.v1.endpoints.packs import router as packs_router
+from app.api.v1.endpoints.governance import router as governance_router
+from app.api.v1.endpoints.timeline import router as timeline_router
+from app.api.v1.endpoints.behaviour import router as behaviour_router
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
 from app.core.rate_limit import rate_limiter
@@ -294,6 +298,10 @@ app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 # Admin and System routes (Mounted at /api/v1 to preserve internal module route names)
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
 app.include_router(admin_dashboard.router, prefix="/api/v1", tags=["admin"])
+app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
+app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
+app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
+app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 
 # Global Exception Handler for Graceful Degradation

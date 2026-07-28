@@ -1,0 +1,36 @@
+pack:
+  id: procurement-intelligence
+  name: Procurement Intelligence
+  version: 1.0.0
+  domain: procurement
+  description: Learn your procurement team's decision patterns
+
+entities:
+  - name: supplier
+    fields:
+      - name: string
+      - tier: string
+      - risk_level: float
+
+events:
+  - name: supplier_review
+    fields:
+      - supplier_id: string
+      - decision: string
+      - reviewer_id: integer
+      - time_spent: integer
+
+policies:
+  - name: tier_1_supplier
+    triggers: ["preferred", "strategic", "tier 1"]
+    actions:
+      - action: approve
+        priority: high
+    confidence_threshold: 0.7
+
+  - name: high_risk_flag
+    triggers: ["high risk", "single source", "financial risk"]
+    actions:
+      - action: flag
+        severity: high
+    confidence_threshold: 0.6

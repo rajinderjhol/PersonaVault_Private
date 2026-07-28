@@ -1,0 +1,37 @@
+pack:
+  id: security-intelligence
+  name: Security Intelligence
+  version: 1.0.0
+  domain: security
+  description: Learn your SOC team's incident response patterns
+
+entities:
+  - name: incident
+    fields:
+      - type: string
+      - severity: string
+      - investigation_steps: array
+      - resolution: string
+
+events:
+  - name: incident_response
+    fields:
+      - incident_id: string
+      - decision: string
+      - analyst_id: integer
+      - time_to_resolve: integer
+
+policies:
+  - name: critical_incident_escalate
+    triggers: ["critical", "p1", "breach", "ransomware"]
+    actions:
+      - action: escalate
+        team: "SOC Lead"
+    confidence_threshold: 0.8
+
+  - name: phishing_quarantine
+    triggers: ["phishing", "suspicious email", "malware"]
+    actions:
+      - action: quarantine
+        time: "immediate"
+    confidence_threshold: 0.7

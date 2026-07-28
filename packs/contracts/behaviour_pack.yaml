@@ -1,0 +1,160 @@
+# Contract Intelligence Behaviour Pack
+# Learn your legal team's review patterns
+
+pack:
+  id: contract-intelligence
+  name: Contract Intelligence
+  version: 1.0.0
+  domain: legal
+  description: Learn your legal team's review patterns and improve contract review speed and accuracy.
+
+entities:
+  - name: clause
+    description: A clause in a contract
+    fields:
+      - name: text
+        type: text
+        required: true
+      - name: type
+        type: string
+        required: true
+      - name: risk_level
+        type: float
+        default: 0.0
+      - name: suggested_action
+        type: string
+        enum: [approve, reject, negotiate, escalate]
+  
+  - name: party
+    description: A party to the contract
+    fields:
+      - name: name
+        type: string
+        required: true
+      - name: type
+        type: string
+        enum: [individual, company, government]
+  
+  - name: contract
+    description: A contract document
+    fields:
+      - name: title
+        type: string
+        required: true
+      - name: parties
+        type: array
+        items: party
+      - name: clauses
+        type: array
+        items: clause
+      - name: value
+        type: float
+      - name: jurisdiction
+        type: string
+
+events:
+  - name: contract_review
+    description: A contract review event
+    fields:
+      - name: contract_id
+        type: string
+        required: true
+      - name: reviewer_id
+        type: string
+        required: true
+      - name: time_spent
+        type: integer
+        unit: seconds
+      - name: clauses_reviewed
+        type: integer
+      - name: clauses_flagged
+        type: integer
+      - name: clauses_accepted
+        type: integer
+      - name: clauses_rejected
+        type: integer
+      - name: risk_score
+        type: float
+
+decision_types:
+  - id: approve
+    label: Approve
+    description: Accept the clause as-is
+  - id: reject
+    label: Reject
+    description: Reject the clause
+  - id: negotiate
+    label: Negotiate
+    description: Request changes to the clause
+  - id: escalate
+    label: Escalate
+    description: Escalate for review
+
+metrics:
+  - id: time_per_contract
+    label: Time per Contract
+    description: Average time to review a contract
+    target: "< 30"
+    unit: minutes
+    good: lower
+  
+  - id: clauses_flagged
+    label: Clauses Flagged
+    description: Percentage of clauses flagged correctly
+    target: "> 95"
+    unit: percent
+    good: higher
+  
+  - id: risk_score_reduction
+    label: Risk Score Reduction
+    description: Reduction in risk score over time
+    target: "> 20"
+    unit: percent
+    good: higher
+
+policies:
+  - name: unlimited_liability
+    description: Flag unlimited liability clauses
+    triggers:
+      - unlimited
+      - no cap
+      - unlimited liability
+      - without limit
+    actions:
+      - action: flag
+        severity: high
+        message: "This clause contains unlimited liability, which is typically rejected."
+    confidence_threshold: 0.7
+  
+  - name: indemnity_clause
+    description: Flag indemnity clauses
+    triggers:
+      - indemnify
+      - hold harmless
+      - indemnity
+    actions:
+      - action: flag
+        severity: medium
+        message: "This is an indemnity clause. Check coverage and scope."
+    confidence_threshold: 0.6
+  
+  - name: governing_law
+    description: Check governing law
+    triggers:
+      - governing law
+      - applicable law
+      - jurisdiction
+    actions:
+      - action: flag
+        severity: low
+        message: "Check that governing law aligns with your jurisdiction."
+    confidence_threshold: 0.5
+
+evaluation_rules:
+  - metric: time_per_contract
+    success_condition: "< 30"
+    failure_condition: "> 60"
+  
+  - metric: clauses_flagged
+    success_condition: "> 95"
+    failure_condition: "< 85"
