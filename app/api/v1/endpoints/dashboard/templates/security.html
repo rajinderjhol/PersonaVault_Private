@@ -3,4 +3,11 @@
     <div class="card" id="security-status-card">
         <div class="metric-label">Loading vault status...</div>
     </div>
+    <div class="card" style="margin-top: 20px; border-top: 4px solid var(--warning);">
+        <h3 class="card-title">VeriLink Status</h3>
+        <p id="verilink-security-status" style="color: #fbbf24; font-size: 13px;">
+            ⚠️ VeriLink is available but not configured. External governance and audit trails are currently inactive.
+        </p>
+        <p style="color: #94a3b8; font-size: 12px;">Go to the <a href="#" onclick="switchTab('governance')" style="color: var(--accent); text-decoration: underline;">Governance tab</a> to configure VeriLink.</p>
+    </div>
 </div>

@@ -1,7 +1,10 @@
 # backend/app/api/v1/endpoints/admin_dashboard.py
 """
-Admin Dashboard API Endpoints for PersonaVault.
-Provides system metrics, monitoring, and management capabilities.
+DEPRECATED: This monolithic endpoint file is being phased out in favor of 
+modular routers located in app/api/v1/endpoints/dashboard/.
+
+Legacy support for system metrics, monitoring, and management.
+New functionality should be implemented in the respective modular sub-routers.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
@@ -35,6 +38,8 @@ from app.services.iot_service import IoTService
 
 logger = logging.getLogger(__name__)
 
+logger.warning("Module app.api.v1.endpoints.admin_dashboard is DEPRECATED. Move logic to modular sub-routers.")
+
 def _safe_metric_get(metric, default=0):
     """Safely get value from a Prometheus metric object or numeric constant."""
     try:
@@ -57,7 +62,7 @@ async def get_system_metrics(
     db: AsyncSession = Depends(get_db)
 ):
     """Get comprehensive system metrics for the dashboard."""
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.utcnow()
     start_of_day = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
     metrics = {} # Initialized to prevent NameError in error handler
 

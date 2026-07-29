@@ -21,6 +21,7 @@ PIPELINE_LATENCY = Histogram("pipeline_latency_seconds", "Pipeline execution tim
 JUDGE_REJECTION_RATE = Counter("judge_rejections_total", "Total judge rejections")
 PATTERN_GRADUATION_RATE = Counter("pattern_graduations_total", "Total pattern graduations")
 CRYSTALLIZATION_VELOCITY = Gauge("crystallization_rate", "Patterns graduated per 100 interactions")
+AGENT_STATUS = Gauge("agent_status", "Current status of agents (0=idle, 1=active)", ["agent_name"])
 EVAPORATION_COUNT = Counter("evaporations_total", "Total memories faded from Layer 2 to the void")
 CONDENSATION_VELOCITY = Gauge("condensation_rate", "Telemetry condensed into episodic memory")
 SUBLIMATION_COUNT = Counter("sublimations_total", "Total brittle patterns returned to liquid/gas state")

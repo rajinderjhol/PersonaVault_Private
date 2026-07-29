@@ -279,3 +279,15 @@ class MultiAgentOrchestrator:
                 )
                 await self.semantic_memory.add_pattern(new_pattern)
                 await self._broadcast_thought("Semantic", f"✨ Pattern created: {new_pattern.trigger[:30]}...")
+
+    # ============ CONFLICT RESOLUTION ============
+    # Optional: Add conflict detection to the orchestrator
+    async def check_for_conflicts(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Check if a state update would create conflicts."""
+        # This is a lightweight check using the blackboard
+        if hasattr(self, 'blackboard') and self.blackboard:
+            conflicts = await self.blackboard._detect_conflicts(event_data)
+            if conflicts:
+                logger.warning(f"⚠️ Conflicts detected: {len(conflicts)}")
+                return {"has_conflicts": True, "conflicts": conflicts}
+        return {"has_conflicts": False}

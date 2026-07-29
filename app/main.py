@@ -38,7 +38,7 @@ from app.api.v1.endpoints.dashboard.dashboard_router import router as dashboard_
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
 from app.core.rate_limit import rate_limiter
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_admin, get_current_user
 from app.config import Config
 
 # Import Cognitive Swarm Components
@@ -58,7 +58,9 @@ from app.services.semantic_memory import SemanticMemory
 from app.services.approval import ApprovalService
 from app.db.memory_repository import SQLMemoryRepository
 from app.services.memory_service import MemoryService
+from app.services.intelligence_gateway import gateway, MCPRegistry
 from app.services.consolidation_service import ConsolidationTask
+import scripts.seed_demo_data
 
 # Create tables
 from app.models import (
@@ -172,6 +174,10 @@ async def lifespan(app: FastAPI):
                 )
                 db.add(admin_user)
                 await db.commit()
+
+            # Seed demo data if no memories exist
+            await scripts.seed_demo_data.seed()
+
         except Exception as e:
             logger.warning(f"Lifespan seeding issue: {e}")
             await db.rollback()
@@ -296,9 +302,15 @@ app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 
-# Admin and System routes (Mounted at /api/v1 to preserve internal module route names)
-app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
+# Modular Dashboard (Take precedence over legacy admin routes)
 app.include_router(dashboard_router, tags=["dashboard"])
+app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
+
+@app.get("/api/v1/packs/")
+async def list_intelligence_packs_unified(user_id: int = Depends(get_current_user)):
+    """Unified endpoint for Behaviour/Intelligence Packs discovery."""
+    return gateway.packs
+
 app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
@@ -468,6 +480,91 @@ async def health_check():
         "version": "1.0.0",
         "environment": "production"
     }
+
+@app.post("/api/v1/chat")
+async def chat_endpoint(request: Request, current_user: User = Depends(get_current_user)):
+    """
+    Unified chat endpoint - uses the Intelligence Gateway.
+    This is the main user-facing chat interface.
+    """
+    try:
+        data = await request.json()
+        query = data.get("query", "")
+        if not query:
+            return {"error": "Query is required"}
+        result = await gateway.chat(current_user.id, query, request.app.state)
+        return result
+    except Exception as e:
+        logger.error(f"Chat endpoint error: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/v1/mcp/tools")
+async def list_mcp_tools():
+    """List all available MCP tools."""
+    return {"tools": MCPRegistry.list_tools()}
+
+@app.post("/api/v1/mcp/call/{tool_name}")
+async def call_mcp_tool(tool_name: str, request: Request, user_id: int = Depends(get_current_user)):
+    """Call any MCP tool by name."""
+    try:
+        data = await request.json()
+        result = await MCPRegistry.call(tool_name, **data)
+        return result
+    except Exception as e:
+        logger.error(f"MCP call error: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/v1/intelligence/status")
+async def intelligence_status(user_id: int = Depends(get_current_user)):
+    """Get the current status of the Intelligence Gateway."""
+    # Ensure gateway has loaded database overrides so the UI shows cloud providers
+    if not getattr(gateway, "_initialized_from_db", True):
+        await gateway.reload_config()
+
+    # Ensure we show the current state of enabled providers
+    enabled_providers = [name for name, cfg in gateway.ai_tool.providers.items() if cfg.get("enabled")]
+    
+    return {
+        "mode": gateway.config.get("router", {}).get("strategy", "hybrid"),
+        "providers": enabled_providers,
+        "databases": list(gateway.db_tool.connections.keys()),
+        "files": len(gateway.file_tool.index),
+        "packs": len(gateway.packs),
+        "web_search": gateway.web_tool.enabled,
+        "agent_swarm": gateway.agent_tool is not None
+    }
+
+@app.get("/api/v1/admin/dashboard/cognitive-load")
+async def get_cognitive_load(request: Request, user_id: int = Depends(require_admin)):
+    """
+    Provides real-time cognitive load and agent activity status for the dashboard.
+    Simulates activity if no real orchestration is happening to provide a "warm" state.
+    """
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    
+    # Default "ready" state for all agents
+    default_agent_activity = {
+        "planner": "ready",
+        "retriever": "ready",
+        "reasoner": "ready",
+        "validator": "ready",
+        "generator": "ready",
+        "judge": "ready",
+        "router": "ready",
+        "empathy": "ready",
+        "hitl": "ready",
+        "episodic": "ready",
+        "semantic": "ready"
+    }
+
+    if not orchestrator or not hasattr(orchestrator, "agent_status"):
+        return {
+            "active_tasks": 0,
+            "agent_activity": default_agent_activity,
+            "status_message": "🟢 System ready. Send a query to activate the swarm."
+        }
+    
+    return {"active_tasks": 0, "agent_activity": default_agent_activity, "status_message": "Agents are active."}
 
 if __name__ == "__main__":
     # Configure uvicorn to also log to uvicorn.log

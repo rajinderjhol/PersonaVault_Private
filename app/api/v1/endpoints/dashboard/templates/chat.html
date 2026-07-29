@@ -1,0 +1,50 @@
+<div id="chat-tab">
+    <h2 style="color: var(--accent);">💬 PersonaVault Chat</h2>
+    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">
+        Ask questions and get answers from your connected intelligence sources.
+    </p>
+
+    <div class="card" style="margin-bottom: 20px; flex-grow: 1; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; padding: 15px; background: #020617; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px;">
+            <div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Welcome to PersonaVault! I can answer questions using:
+Your stored memories
+Local files (if indexed)
+Connected databases (if configured)
+AI providers (Ollama, Gemini, etc.)
+What would you like to know?</div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+            <input type="text" id="chat-input" placeholder="Ask me anything..." class="input-field" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') sendChatMessage()">
+            <button class="btn" onclick="sendChatMessage()">Send</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: #94a3b8; font-size: 12px;">🔌 Connected Intelligence:</span>
+                <span id="status-provider" class="tag tag-info">Loading...</span>
+                <span style="color: #94a3b8; font-size: 12px;">Files:</span>
+                <span id="status-files" class="tag tag-info">0</span>
+                <span style="color: #94a3b8; font-size: 12px;">Mode:</span>
+                <span id="status-mode" class="tag tag-info">hybrid</span>
+            </div>
+            <button class="btn" style="background: #7f1d1d; padding: 5px 10px; font-size: 12px;" onclick="clearChat()">Clear Chat</button>
+        </div>
+
+        <!-- New AI Provider Selector -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border);">
+            <label for="primary-ai-provider-select-chat" style="color: #94a3b8; font-size: 12px;">Primary AI Provider:</label>
+            <select id="primary-ai-provider-select-chat" class="input-field" style="flex: 1; margin: 0;" onchange="updatePrimaryAIProviderChat(this.value)">
+                <option value="ollama">Ollama (Local)</option>
+                <!-- Options will be dynamically loaded by JS -->
+            </select>
+            <span id="primary-ai-provider-status-chat" class="tag tag-info">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // This script block will be loaded with the chat.html fragment.
+    // The functions fetchAIProvidersForChat and updatePrimaryAIProviderChat need to be defined globally
+    // or within the scope of the dashboard's main script.
+    // Since base.html already has a script block, I'll define them there.
+    // The calls to these functions will be in base.html's refreshTabContent.
+</script>

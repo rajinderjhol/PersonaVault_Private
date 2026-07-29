@@ -1,0 +1,42 @@
+# storage/config/personavault.yaml
+router:
+  strategy: "hybrid"
+
+ai_providers:
+  ollama:
+    enabled: true
+    host: "http://localhost:11434"
+    model: "tinydolphin"
+
+files:
+  paths:
+    - path: "~/Documents"
+      enabled: true
+      extensions: [".txt", ".md", ".pdf"]
+
+packs:
+  - name: "Security Intelligence Pack"
+    domain: "IT/Security"
+    version: "1.0.0"
+    is_active: true
+    description: "Detects and analyzes security incidents."
+  - name: "Compliance Intelligence Pack"
+    domain: "Risk/Compliance"
+    version: "1.0.0"
+    is_active: true
+    description: "Ensures adherence to regulatory standards."
+  - name: "Contract Intelligence Pack"
+    domain: "Legal"
+    version: "1.0.0"
+    is_active: true
+    description: "Analyzes and extracts insights from legal contracts."
+  - name: "Procurement Intelligence Pack"
+    domain: "Supply Chain"
+    version: "1.0.0"
+    is_active: true
+    description: "Optimizes procurement processes and identifies risks."
+  - name: "Insurance Intelligence Pack"
+    domain: "Insurance"
+    version: "1.0.0"
+    is_active: true
+    description: "Assesses risks and processes claims in the insurance domain."

@@ -7,7 +7,7 @@
     <div class="card" style="margin-bottom:20px;">
         <div style="display:flex; gap:10px;">
             <input type="number" id="replay-event-id" placeholder="Event ID" class="input-field" style="flex:1;">
-            <button class="btn" onclick="window.startReplay()"><i class="fas fa-play"></i> Replay</button>
+            <button class="btn" onclick="startReplay()"><i class="fas fa-play"></i> Replay</button>
         </div>
     </div>
     
@@ -17,12 +17,12 @@
             <div class="flex-between">
                 <h3 class="card-title">⏱️ Decision Timeline</h3>
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="window.setReplaySpeed(0.5)">0.5x</button>
-                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="window.setReplaySpeed(1)">1x</button>
-                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="window.setReplaySpeed(2)">2x</button>
-                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="window.setReplaySpeed(4)">4x</button>
+                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="setReplaySpeed(0.5)">0.5x</button>
+                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="setReplaySpeed(1)">1x</button>
+                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="setReplaySpeed(2)">2x</button>
+                    <button class="btn" style="padding:4px 12px; background:#334155;" onclick="setReplaySpeed(4)">4x</button>
                     <span id="replay-speed-label" style="color:#94a3b8; font-size:12px;">Speed: 1x</span>
-                    <button class="btn" id="btn-replay-control" style="padding:4px 12px; background:#38bdf8;" onclick="window.toggleReplayPlay()">
+                    <button class="btn" id="btn-replay-control" style="padding:4px 12px; background:#38bdf8;" onclick="toggleReplayPlay()">
                         <i class="fas fa-pause"></i>
                     </button>
                 </div>

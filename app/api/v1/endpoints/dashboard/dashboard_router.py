@@ -27,10 +27,11 @@ from app.config import Config
 from app.utils.websocket import manager
 from app.services.iot_service import IoTService
 from app.services.custom import (
-    CRYSTALLIZATION_VELOCITY, SUBLIMATION_COUNT, PLASMA_ACTIVE,
+    CRYSTALLIZATION_VELOCITY, SUBLIMATION_COUNT, PLASMA_ACTIVE, AGENT_STATUS,
     EVAPORATION_COUNT, CONDENSATION_VELOCITY
 )
 from app.models import User, IoTDevice, IoTData, SystemConfig
+from app.services.intelligence_gateway import gateway # Import the global gateway instance
 
 router = APIRouter(prefix="/api/v1/admin/dashboard", tags=["admin"])
 
@@ -49,8 +50,12 @@ logger = logging.getLogger(__name__)
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
-def _safe_metric_get(metric, default=0):
+def _safe_metric_get(metric, default=0, labels=None):
     try:
+        if labels:
+            # For prometheus Gauge with labels
+            return metric.labels(**labels)._value.get()
+        if hasattr(metric, '_value') and hasattr(metric._value, 'get'): return metric._value.get()
         if hasattr(metric, 'value'): return metric.value
         return float(metric) if metric is not None else default
     except: return default
@@ -164,9 +169,10 @@ async def dashboard_websocket_endpoint(websocket: WebSocket, client_id: str):
 @router.get("/cognitive-load")
 async def get_agent_load(request: Request, user_id: int = Depends(require_admin)):
     orchestrator = getattr(request.app.state, "orchestrator", None)
-    activity = {name: (1 if _safe_metric_get(PLASMA_ACTIVE) > 0 else 0) for name in getattr(orchestrator, "agents", {}).keys()}
+    # Get real statuses from AGENT_STATUS metric
+    activity = {name: int(_safe_metric_get(AGENT_STATUS, labels={"agent_name": name})) for name in getattr(orchestrator, "agents", {}).keys()}
     return {
-        "active_tasks": int(_safe_metric_get(PLASMA_ACTIVE)),
+        "active_tasks": sum(activity.values()),
         "agent_activity": activity
     }
 
@@ -207,6 +213,14 @@ async def get_mcp_registry(request: Request, user_id: int = Depends(require_admi
             {"name": "blackboard_post", "description": "Inject an insight into the cognitive mesh"}
         ]
     }
+
+@router.get("/chat/history")
+async def get_chat_history(user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Retrieve recent chat history from episodic memory logs."""
+    stmt = select(Memory).where(Memory.tags.like("%interaction_log%")).order_by(Memory.created_at.desc()).limit(20)
+    result = await db.execute(stmt)
+    logs = result.scalars().all()
+    return [{"content": l.content, "timestamp": l.created_at.isoformat()} for l in reversed(logs)]
 
 
 @router.get("/hitl/pending")
@@ -275,6 +289,171 @@ async def toggle_verilink_offline(request: Request, user_id: int = Depends(requi
             logger.warning(f"VeriLink resume failed: {e}")
 
     return {"status": "success", "offline_mode": new_state}
+
+
+# ============ BLACKBOARD & SWARM TRACE ============
+
+@router.get("/blackboard/snapshot")
+async def get_blackboard_snapshot(
+    request: Request,
+    user_id: int = Depends(require_admin)
+):
+    """Get the current blackboard state (cognitive shared memory)."""
+    blackboard = getattr(request.app.state, "blackboard", None)
+    if blackboard:
+        snapshot = blackboard.get_snapshot()
+        return {
+            "current_state": snapshot.get("current_state", {}),
+            "active_agents": snapshot.get("active_agents", []),
+            "conflict_history": snapshot.get("conflict_history", [])
+        }
+    return {"current_state": {}, "active_agents": [], "conflict_history": []}
+
+
+@router.get("/swarm/negotiation-trace")
+async def get_negotiation_trace(
+    request: Request,
+    user_id: int = Depends(require_admin)
+):
+    """Get the real swarm negotiation trace from blackboard history."""
+    blackboard = getattr(request.app.state, "blackboard", None)
+    if blackboard and blackboard.history:
+        history = blackboard.history[-10:] # Recent steps
+        sequence = []
+        for i in range(len(history)):
+            step = history[i]
+            target = history[i+1].get("agent", "Blackboard") if i < len(history) - 1 else "Blackboard"
+            sequence.append({
+                "agent": step.get("agent", "Unknown"),
+                "to": target,
+                "action": step.get("data", {}).get("event", "insight")
+            })
+        return {"sequence": sequence}
+
+    return {"sequence": []}
+
+@router.get("/config/primary-ai-provider")
+async def get_primary_ai_provider_dashboard(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the current primary AI provider for the dashboard."""
+    stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
+    result = await db.execute(stmt)
+    config = result.scalars().first()
+    return {"primary_provider": config.value if config else "ollama"}
+
+@router.post("/config/primary-ai-provider")
+async def update_primary_ai_provider_dashboard(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update the primary AI provider and reload gateway config."""
+    data = await request.json()
+    provider = data.get("provider")
+
+    stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
+    result = await db.execute(stmt)
+    config = result.scalars().first()
+    if not config:
+        config = SystemConfig(key="primary_ai_provider", value=provider)
+        db.add(config)
+    else:
+        config.value = provider
+    await db.commit()
+    await gateway.reload_config() # Trigger the gateway to reload its configuration
+    return {"status": "success", "new_primary_provider": provider}
+
+@router.get("/config/ai-provider-settings/{provider}")
+async def get_ai_provider_settings(
+    provider: str,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get host and API key for a specific provider."""
+    stmt = select(SystemConfig).where(SystemConfig.key.in_([
+        f"ai_provider_{provider}_host", 
+        f"ai_provider_{provider}_api_key",
+        f"ai_provider_{provider}_model"
+    ]))
+    result = await db.execute(stmt)
+    configs = result.scalars().all()
+    res = {"host": "", "api_key": "", "model": ""}
+    for c in configs:
+        if "host" in c.key: res["host"] = c.value
+        if "api_key" in c.key: res["api_key"] = c.value
+        if "model" in c.key: res["model"] = c.value
+    return res
+
+@router.post("/config/ai-provider-settings")
+async def update_ai_provider_settings(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Save cloud API settings and reload gateway."""
+    data = await request.json()
+    provider = data.get("provider")
+    if not provider: raise HTTPException(400, "Provider required")
+    
+    for key_suffix in ["host", "api_key", "model"]:
+        val = data.get(key_suffix)
+        db_key = f"ai_provider_{provider}_{key_suffix}"
+        stmt = select(SystemConfig).where(SystemConfig.key == db_key)
+        config = (await db.execute(stmt)).scalars().first()
+        if not config: db.add(SystemConfig(key=db_key, value=str(val or "")))
+        else: config.value = str(val or "")
+
+    # Mark as enabled
+    en_key = f"ai_provider_{provider}_enabled"
+    stmt_en = select(SystemConfig).where(SystemConfig.key == en_key)
+    config_en = (await db.execute(stmt_en)).scalars().first()
+    if not config_en: db.add(SystemConfig(key=en_key, value="true"))
+    else: config_en.value = "true"
+    
+    await db.commit()
+    await gateway.reload_config()
+    return {"status": "success"}
+
+@router.get("/config/ai-providers/cloud")
+async def list_cloud_providers(db: AsyncSession = Depends(get_db)):
+    """List all configured cloud AI providers."""
+    stmt = select(SystemConfig).where(SystemConfig.key.like("ai_provider_%"))
+    configs = (await db.execute(stmt)).scalars().all()
+    providers = {}
+    for c in configs:
+        parts = c.key.split('_')
+        if len(parts) >= 4:
+            p_name = parts[2]
+            setting = "_".join(parts[3:])
+            if p_name not in providers: providers[p_name] = {"name": p_name}
+            providers[p_name][setting] = c.value
+    # Return list of cloud providers (excluding local ollama)
+    return [v for k, v in providers.items() if k != "ollama"]
+
+@router.delete("/config/ai-provider/{provider}")
+async def delete_ai_provider(provider: str, db: AsyncSession = Depends(get_db)):
+    """Delete a specific AI provider configuration."""
+    from sqlalchemy import delete
+    stmt = delete(SystemConfig).where(SystemConfig.key.like(f"ai_provider_{provider}_%"))
+    await db.execute(stmt)
+    await db.commit()
+    await gateway.reload_config()
+    return {"status": "success"}
+
+@router.post("/config/ai-provider-test")
+async def test_ai_provider_connection(
+    request: Request,
+    user_id: int = Depends(require_admin)
+):
+    """Test connection for a specific provider with provided credentials."""
+    data = await request.json()
+    provider = data.get("provider")
+    if not provider: raise HTTPException(400, "Provider required")
+    
+    result = await gateway.test_provider_connection(provider, data.get("host"), data.get("api_key"))
+    return result
 
 # ============ Helper Simulation ============
 

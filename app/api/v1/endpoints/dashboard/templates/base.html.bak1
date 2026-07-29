@@ -28,9 +28,6 @@
         #thought-log div { padding: 4px 0; border-bottom: 1px solid #1e293b; }
         #thought-log .thought-agent { color: #38bdf8; font-weight: bold; }
         #thought-log .thought-content { color: #f1f5f9; }
-        .message.user { border-left: 3px solid #38bdf8 !important; }
-        .message.ai { border-left: 3px solid #34d399 !important; }
-        .tab-pane { display: none; }
     </style>
 </head>
 <body>
@@ -88,62 +85,42 @@
         let isInitialLoad = true;
 
         // ============ TAB SWITCHING ============
-        function switchTab(tabId) {
-            if (currentTab !== tabId) {
-                performTabLoad(tabId);
-            } else {
-                refreshTabContent(tabId);
-            }
-        }
-
         async function performTabLoad(tabId) {
-            const container = document.getElementById('tab-content-container');
-            
-            // Hide all existing panes
-            document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
-            
-            let tabPane = document.getElementById(`tab-pane-${tabId}`);
-            
-            if (!tabPane) {
-                // Create a new persistent pane if it doesn't exist
-                tabPane = document.createElement('div');
-                tabPane.id = `tab-pane-${tabId}`;
-                tabPane.className = 'tab-pane';
-                tabPane.innerHTML = '<div style="text-align:center; padding:50px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-                container.appendChild(tabPane);
-
-                try {
-                    const res = await fetch(`/api/v1/admin/dashboard/tab/${tabId}`);
-                    if (res.ok) {
-                        tabPane.innerHTML = await res.text();
-                        refreshTabContent(tabId);
-                    } else {
-                        tabPane.innerHTML = '<div style="text-align:center; padding:50px; color:#f87171;">Error loading tab</div>';
-                    }
-                } catch (e) {
-                    tabPane.innerHTML = `<div style="text-align:center; padding:50px; color:#f87171;">Error: ${e.message}</div>`;
-                }
-            } else {
-                // Tab already loaded, just refresh dynamic metrics
+            // If we are already on this tab and it's not the first load, just refresh data
+            if (currentTab === tabId && !isInitialLoad) {
                 refreshTabContent(tabId);
+                return;
             }
-
+            
+            const container = document.getElementById('tab-content-container');
+            container.innerHTML = '<div style="text-align:center; padding:50px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
             try {
-                document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
-                const el = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
-                if (el) el.classList.add('active');
-                currentTab = tabId;
-                isInitialLoad = false;
-                tabPane.style.display = 'block';
-            } catch (e) { console.error('UI Sync error:', e); }
+                const res = await fetch(`/api/v1/admin/dashboard/tab/${tabId}`);
+                if (res.ok) {
+                    const html = await res.text();
+                    
+                    // Update active state in UI
+                    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+                    const el = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+                    if (el) el.classList.add('active');
+
+                    currentTab = tabId;
+                    isInitialLoad = false;
+                    container.innerHTML = html;
+                    refreshTabContent(tabId);
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:50px; color:#f87171;">Error loading tab</div>';
+                }
+            } catch (e) {
+                container.innerHTML = `<div style="text-align:center; padding:50px; color:#f87171;">Error: ${e.message}</div>`;
+            }
         }
 
         function refreshTabContent(tabId) {
+            // Trigger specific initialization/refresh based on the tab
             if (tabId === 'overview') fetchMetrics();
-            else if (tabId === 'models') {
-                fetchInstalledModels();
-                fetchPrimaryAIProvider();
-            }
+            else if (tabId === 'models') fetchInstalledModels();
             else if (tabId === 'logs') { if (!logSource) startLogStream(); }
             else if (tabId === 'packs') fetchPacks();
             else if (tabId === 'agents') fetchAgentStatus();
@@ -155,25 +132,13 @@
             else if (tabId === 'replay') resetReplayUI();
             else if (tabId === 'lattices') fetchMetrics();
             else if (tabId === 'learning') fetchLearningConfig();
-            else if (tabId === 'chat') { 
-                loadIntelligenceStatus(); 
-                fetchChatHistory(); 
-                fetchAIProvidersForChat();
-            }
+            else if (tabId === 'chat') loadIntelligenceStatus();
         }
-
-        function refreshAll() { switchTab(currentTab); }
 
         // ============ TOAST ============
         function showToast(msg, type) {
             type = type || 'info';
-            // Ensure toast-container exists
-            let container = document.getElementById('toast-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'toast-container';
-                document.body.appendChild(container);
-            }
+            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info');
@@ -238,6 +203,8 @@
             });
         }
 
+        function refreshAll() { switchTab(currentTab); }
+
         // ============ MODELS ============
         async function fetchInstalledModels() {
             const list = document.getElementById('models-list');
@@ -258,137 +225,6 @@
                     list.innerHTML = '<div class="metric-label">No models installed</div>';
                 }
             } catch (e) { list.innerHTML = '<div class="metric-label">Error loading models</div>'; }
-        }
-
-        async function fetchPrimaryAIProvider() {
-            try {
-                await fetchCloudConnections(); // Ensure options are populated first
-                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                const select = document.getElementById('primary-ai-provider-select');
-                const statusSpan = document.getElementById('primary-ai-provider-status');
-                if (select) select.value = data.primary_provider;
-                if (statusSpan) {
-                    statusSpan.textContent = data.primary_provider.toUpperCase();
-                    statusSpan.className = `tag tag-info`; // Reset class
-                }
-            } catch (e) {
-                console.error('Error fetching primary AI provider:', e);
-                const statusSpan = document.getElementById('primary-ai-provider-status');
-                if (statusSpan) {
-                    statusSpan.textContent = 'Error';
-                    statusSpan.className = `tag tag-danger`;
-                }
-            }
-        }
-
-        async function fetchCloudConnections() {
-            const list = document.getElementById('cloud-connections-list');
-            const select = document.getElementById('primary-ai-provider-select');
-            if (!list) return;
-            try {
-                const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
-                const data = await res.json();
-                
-                // Update List
-                if (data && data.length > 0) {
-                    list.innerHTML = data.map(p => `
-                        <div style="display:flex; justify-content:space-between; padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; align-items:center;">
-                            <div>
-                                <div style="font-weight:700;color:#f472b6;">${p.name}</div>
-                                <div style="font-size:11px;color:#64748b;">Host: ${p.host || 'Default'} | Model: ${p.model || 'Default'}</div>
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button class="refresh-btn" style="padding:4px 10px;font-size:11px;" onclick="fetchAIProviderSettings('${p.name}')">Edit</button>
-                                <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteCloudConfig('${p.name}')">Delete</button>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    list.innerHTML = '<div class="metric-label">No cloud connections configured.</div>';
-                }
-
-                // Update Dropdown
-                if (select) {
-                    const current = select.value;
-                    select.innerHTML = '<option value="ollama">Ollama (Local)</option>';
-                    data.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.name; opt.textContent = `${p.name} (Cloud)`;
-                        select.appendChild(opt);
-                    });
-                    select.value = current;
-                }
-            } catch (e) { console.error('Cloud fetch error:', e); }
-        }
-
-        async function updatePrimaryAIProvider(provider) {
-            await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({provider})
-            });
-            showToast(`Primary AI provider set to ${provider}`, 'success');
-            fetchPrimaryAIProvider();
-        }
-
-        async function fetchAIProviderSettings(provider) {
-            try {
-                const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider-settings/${provider}`);
-                const data = await res.json();
-                document.getElementById('cloud-api-name').value = provider;
-                document.getElementById('cloud-api-host').value = data.host || '';
-                document.getElementById('cloud-api-key').value = data.api_key || '';
-                document.getElementById('cloud-api-model').value = data.model || '';
-                document.getElementById('cloud-api-name').focus();
-            } catch (e) { console.error('Error fetching settings:', e); }
-        }
-
-        async function deleteCloudConfig(name) {
-            if (!confirm(`Delete connection "${name}"?`)) return;
-            try {
-                await fetch(`/api/v1/admin/dashboard/config/ai-provider/${name}`, { method: 'DELETE' });
-                showToast(`Deleted ${name}`, 'info');
-                fetchCloudConnections();
-            } catch (e) { console.error(e); }
-        }
-
-        async function testCloudConnection() {
-            const provider = document.getElementById('cloud-api-name').value;
-            const host = document.getElementById('cloud-api-host').value;
-            const api_key = document.getElementById('cloud-api-key').value;
-            
-            if (!provider) { showToast('Enter a name to test', 'error'); return; }
-
-            showToast(`Testing connection to ${provider}...`, 'info');
-            try {
-                const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-test', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ provider, host, api_key })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast(`✅ Success! AI Response: "${data.response}"`, 'success');
-                } else {
-                    showToast(`❌ Connection Failed: ${data.error}`, 'error');
-                }
-            } catch (e) { showToast(`⚠️ Error: ${e.message}`, 'error'); }
-        }
-
-        async function saveCloudConfig() {
-            const provider = document.getElementById('cloud-api-name').value;
-            const host = document.getElementById('cloud-api-host').value;
-            const api_key = document.getElementById('cloud-api-key').value;
-            const model = document.getElementById('cloud-api-model').value;
-
-            if (!provider) { showToast('Connection Name required', 'error'); return; }
-
-            await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ provider, host, api_key, model })
-            });
-            showToast(`Configuration for ${provider} saved`, 'success');
-            fetchCloudConnections();
-            ['cloud-api-name', 'cloud-api-host', 'cloud-api-key', 'cloud-api-model'].forEach(id => document.getElementById(id).value = '');
         }
 
         async function triggerModelPull() {
@@ -455,6 +291,7 @@
             try {
                 const res = await fetch('/api/v1/packs/');
                 const data = await res.json();
+                // Handle both {packs: []} and [] formats
                 const packs = Array.isArray(data) ? data : (data.packs || []);
                 
                 if (packs.length > 0) {
@@ -468,8 +305,7 @@
                             <div class="pack-stats" style="font-size:10px;color:#64748b;">${p.description ? p.description.slice(0,80)+'...' : ''}</div>
                         </div>
                     `).join('');
-                    const dc = document.getElementById('domain-count');
-                    if (dc) dc.textContent = packs.length;
+                    if (document.getElementById('domain-count')) document.getElementById('domain-count').textContent = packs.length;
                 } else {
                     grid.innerHTML = '<div class="metric-label">No packs installed</div>';
                 }
@@ -499,506 +335,6 @@
                 status.textContent = '❌ ' + e.message;
                 showToast('Install failed', 'error');
             }
-        }
-
-        // ============ AGENTS ============
-        async function fetchAgentStatus() {
-            try {
-                const [loadRes, empathyRes, bbRes, traceRes] = await Promise.all([
-                    fetch('/api/v1/admin/dashboard/cognitive-load'),
-                    fetch('/api/v1/admin/dashboard/empathy/status'),
-                    fetch('/api/v1/admin/dashboard/blackboard/snapshot'),
-                    fetch('/api/v1/admin/dashboard/swarm/negotiation-trace')
-                ]);
-                const load = await loadRes.json();
-                const empathy = await empathyRes.json();
-                const bb = await bbRes.json();
-                const trace = await traceRes.json();
-
-                const loadStats = document.getElementById('agent-load-stats');
-                if (loadStats) {
-                    let html = `<div class="stat-row"><span class="stat-label">Active Tasks</span><span class="stat-value">${load.active_tasks || 0}</span></div>`;
-                    Object.entries(load.agent_activity || {}).forEach(([name, status]) => {
-                        const isActive = status === 1 || status === 'active' || status === true;
-                        html += `<div class="stat-row"><span class="stat-label">${name}</span><span class="tag ${isActive ? 'tag-success' : ''}">${isActive ? 'ACTIVE' : 'IDLE'}</span></div>`;
-                    });
-                    loadStats.innerHTML = html;
-                }
-
-                const empStats = document.getElementById('empathy-stats');
-                if (empStats) {
-                    empStats.innerHTML = `
-                        <div class="stat-row"><span class="stat-label">Mood</span><span class="stat-value">${empathy.mood || 'Calm'}</span></div>
-                        <div class="stat-row"><span class="stat-label">Tone</span><span class="stat-value">${empathy.tone || 'Supportive'}</span></div>`;
-                }
-
-                const bbFeed = document.getElementById('blackboard-feed');
-                if (bbFeed) {
-                    const entries = Object.entries(bb.current_state || {});
-                    bbFeed.innerHTML = entries.length ? entries.map(([agent, entry]) => `
-                        <div style="padding:8px 0;border-bottom:1px solid #1e293b;">
-                            <div style="display:flex;justify-content:space-between;"><b style="color:#38bdf8;">${agent}</b></div>
-                            <div style="font-size:12px;color:#94a3b8;">${JSON.stringify(entry.data)}</div>
-                        </div>`).join('') : '<div class="metric-label">No active insights.</div>';
-                }
-
-                // HITL
-                const hitlContainer = document.getElementById('hitl-list');
-                if (hitlContainer) {
-                    try {
-                        const hitlRes = await fetch('/api/v1/admin/dashboard/hitl/pending');
-                        const hitl = await hitlRes.json();
-                        if (hitl && hitl.length > 0) {
-                            hitlContainer.innerHTML = hitl.map(h => `
-                                <div style="border:1px solid #334155; border-radius:8px; padding:10px; margin-bottom:8px;">
-                                    <div style="display:flex;justify-content:space-between;">
-                                        <b style="color:#38bdf8;">${h.agent_type}</b>
-                                        <small style="color:#64748b;">${new Date(h.timestamp).toLocaleTimeString()}</small>
-                                    </div>
-                                    <div style="font-size:13px; margin:5px 0;">${h.query}</div>
-                                    <div style="display:flex;gap:10px;">
-                                        <button class="btn" style="padding:2px 8px;font-size:11px;" onclick="approveAction('${h.id}')">Approve</button>
-                                        <button class="btn" style="padding:2px 8px;font-size:11px;background:#7f1d1d;" onclick="denyAction('${h.id}')">Deny</button>
-                                        <button class="btn" style="padding:2px 8px;font-size:11px;background:#334155;" onclick="showHitlDetails('${h.id}')">Details</button>
-                                    </div>
-                                </div>
-                            `).join('');
-                        } else {
-                            hitlContainer.innerHTML = '<div class="metric-label">No pending actions.</div>';
-                        }
-                    } catch (e) {
-                        hitlContainer.innerHTML = '<div class="metric-label">Error loading HITL items</div>';
-                    }
-                }
-
-                // CoT Graph
-                renderCoTGraph(trace);
-            } catch (e) { console.error('Agent refresh error:', e); }
-        }
-
-        function appendThought(agent, content) {
-            const log = document.getElementById('thought-log');
-            if (!log) return;
-            if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
-                log.innerHTML = '';
-            }
-            const div = document.createElement('div');
-            div.innerHTML = `<span class="thought-agent">[${agent}]</span> <span class="thought-content">${content}</span>`;
-            log.appendChild(div);
-            log.scrollTop = log.scrollHeight;
-        }
-
-        function appendThoughtNoReload(agent, content) {
-            const log = document.getElementById('thought-log');
-            if (!log) return;
-            if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
-                log.innerHTML = '';
-            }
-            const div = document.createElement('div');
-            div.style.padding = '4px 0';
-            div.style.borderBottom = '1px solid #1e293b';
-            div.style.animation = 'fadeIn 0.3s ease-out';
-            div.innerHTML = `<span style="color: #38bdf8; font-weight: bold;">[${agent}]</span> <span style="color: #f1f5f9;">${content}</span>`;
-            log.appendChild(div);
-            log.scrollTop = log.scrollHeight;
-            while (log.children.length > 50) {
-                log.removeChild(log.firstChild);
-            }
-        }
-
-        function renderCoTGraph(traceData) {
-            const container = document.getElementById('mermaid-graph-container');
-            if (!container) return;
-            
-            if (traceData && traceData.sequence && traceData.sequence.length > 0) {
-                try {
-                    let graphDef = 'graph LR\n';
-                    graphDef += 'classDef agentNode fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;\n';
-                    graphDef += 'classDef bbNode fill:#0f172a,stroke:#a855f7,stroke-width:2px,stroke-dasharray:5 5;\n';
-                    
-                    traceData.sequence.forEach(step => {
-                        const fromId = step.agent.replace(/[^a-zA-Z0-9]/g, '');
-                        const toId = step.to.replace(/[^a-zA-Z0-9]/g, '');
-                        graphDef += `${fromId}("${step.agent}") -- "${step.action}" --> ${toId}("${step.to}")\n`;
-                        graphDef += `class ${fromId} agentNode;\n`;
-                        if (toId === 'Blackboard') graphDef += `class ${toId} bbNode;\n`;
-                    });
-                    
-                    container.innerHTML = `<div class="mermaid">${graphDef}</div>`;
-                    if (typeof mermaid !== 'undefined') {
-                        if (mermaid.run) {
-                            mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
-                        } else if (mermaid.init) {
-                            mermaid.init(undefined, container.querySelectorAll('.mermaid'));
-                        }
-                    }
-                } catch(e) {
-                    console.log('Mermaid render error:', e);
-                    container.innerHTML = `<div style="color:#94a3b8;font-size:12px;text-align:center;padding:20px;">
-                        <div style="font-size:24px;margin-bottom:10px;">⚠️</div>
-                        <div>Graph rendering error. Check console for details.</div>
-                        <div style="font-size:10px;color:#64748b;margin-top:5px;">${e.message}</div>
-                    </div>`;
-                }
-            } else {
-                container.innerHTML = `
-                    <div style="text-align:center;color:#64748b;padding:20px;">
-                        <div style="font-size:48px;margin-bottom:10px;">🔄</div>
-                        <div>Awaiting negotiation signal...</div>
-                        <div style="font-size:11px;margin-top:5px;">Send a query to the swarm to see the CoT graph</div>
-                    </div>
-                `;
-            }
-        }
-
-        // ============ SWARM COMMAND CONSOLE ============
-        async function triggerSwarm() {
-            const input = document.getElementById('swarm-query-input');
-            if (!input) return;
-            const query = input.value.trim();
-            if (!query) {
-                showToast('Enter a query', 'error');
-                return;
-            }
-            input.disabled = true;
-            input.style.opacity = '0.5';
-            showToast('🔄 Sending to Intelligence Gateway...', 'info');
-            try {
-                const res = await fetch('/api/v1/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ query: query })
-                });
-                const data = await res.json();
-                if (res.ok && !data.error) {
-                    appendThoughtNoReload('User', query);
-                    appendThoughtNoReload('Intelligence Gateway', `Response from ${data.provider || 'AI'}: ${data.response || 'No response'}`);
-                    if (data.sources && data.sources.length > 0) {
-                        const sourceTypes = data.sources.map(s => s.type).join(', ');
-                        appendThoughtNoReload('Intelligence Gateway', `Sources: ${sourceTypes}`);
-                    }
-                    if (data.confidence) {
-                        appendThoughtNoReload('Intelligence Gateway', `Confidence: ${Math.round(data.confidence * 100)}%`);
-                    }
-                    showToast('✅ Response received!', 'success');
-                    input.value = '';
-                } else {
-                    appendThoughtNoReload('Intelligence Gateway', `Error: ${data.error || 'Unknown error'}`);
-                    showToast('❌ Error processing query', 'error');
-                }
-            } catch (e) {
-                appendThoughtNoReload('Intelligence Gateway', `Network Error: ${e.message}`);
-                showToast('❌ Network error: ' + e.message, 'error');
-            } finally {
-                input.disabled = false;
-                input.style.opacity = '1';
-                input.focus();
-                if (currentTab === 'agents') {
-                    fetchAgentStatus();
-                }
-            }
-        }
-
-        // ============ MCP ============
-        async function fetchMcpRegistry() {
-            try {
-                const serversRes = await fetch('/api/v1/admin/dashboard/mcp/registry');
-                const serversData = await serversRes.json();
-                const serversList = document.getElementById('mcp-servers-list');
-                if (serversList) {
-                    serversList.innerHTML = serversData.servers?.map(s => `
-                        <div class="stat-row">
-                            <span class="stat-label">${s.name}</span>
-                            <span class="tag tag-success">${s.status}</span>
-                        </div>
-                    `).join('') || 'None';
-                }
-
-                const toolsRes = await fetch('/api/v1/mcp/tools');
-                const toolsData = await toolsRes.json();
-                const toolsList = document.getElementById('mcp-tools-list');
-                if (toolsList) {
-                    if (toolsData.tools && toolsData.tools.length > 0) {
-                        toolsList.innerHTML = toolsData.tools.map(t => `
-                            <div style="padding:6px;background:#020617;border-radius:4px;margin-bottom:4px;">
-                                <b style="color:#38bdf8;">${t.name}</b><br>
-                                <span style="font-size:11px;color:#94a3b8;">${t.description || 'No description'}</span>
-                                ${t.parameters ? `<br><span style="font-size:10px;color:#64748b;">Params: ${Object.keys(t.parameters).join(', ')}</span>` : ''}
-                            </div>
-                        `).join('');
-                    } else {
-                        toolsList.innerHTML = '<div class="metric-label">No MCP tools registered.</div>';
-                    }
-                }
-                populateMcpToolTester(toolsData.tools);
-            } catch (e) { console.error('MCP error:', e); }
-        }
-
-        // Global function for MCP tool testing
-        window.executeMcpTest = async function() {
-            // ... (existing executeMcpTest logic)
-        };
-
-        function populateMcpToolTester(tools) {
-            const selectElement = document.getElementById('mcp-test-tool');
-            if (!selectElement) return;
-            selectElement.innerHTML = '';
-            if (tools && tools.length > 0) {
-                tools.forEach(tool => {
-                    const option = document.createElement('option');
-                    option.value = tool.name;
-                    option.textContent = tool.name;
-                    selectElement.appendChild(option);
-                });
-            } else {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'No tools available';
-                selectElement.appendChild(option);
-            }
-        }
-
-        async function executeMcpTest() {
-            const tool = document.getElementById('mcp-test-tool')?.value;
-            const argsStr = document.getElementById('mcp-test-args')?.value;
-            const output = document.getElementById('mcp-test-output');
-            if (!output || !tool) return;
-            output.style.display = 'block';
-            output.textContent = 'Running...';
-            try {
-                let args = {};
-                if (argsStr) {
-                    try { args = JSON.parse(argsStr); } catch (e) { output.textContent = '❌ Invalid JSON in arguments'; return; }
-                }
-                const res = await fetch(`/api/v1/mcp/call/${tool}`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(args)
-                });
-                const data = await res.json();
-                output.textContent = JSON.stringify(data, null, 2);
-                showToast('Tool executed', 'success');
-            } catch (e) {
-                output.textContent = 'Error: ' + e.message;
-                showToast('Execution failed', 'error');
-            }
-        }
-
-        // ============ CHAT ============
-        async function fetchChatHistory() {
-            const container = document.getElementById('chat-messages');
-            if (!container) return;
-            // Prevent duplicate loading if messages already exist
-            if (container.querySelectorAll('.message').length > 1) return;
-            
-            try {
-                const res = await fetch('/api/v1/admin/dashboard/chat/history');
-                const history = await res.json();
-                if (history.length > 0) {
-                    container.innerHTML = ''; // Clear initial welcome
-                    history.forEach(item => {
-                        const parts = item.content.split('\nAI: ');
-                        const userPart = parts[0].replace('User: ', '');
-                        const aiPart = parts[1] || '';
-                    window.addChatMessage('user', userPart);
-                    if (aiPart) window.addChatMessage('ai', aiPart);
-                    });
-                }
-            } catch (e) { console.error('History sync failed:', e); }
-        }
-
-        window.sendChatMessage = async function() {
-            const input = document.getElementById('chat-input');
-            const query = input?.value?.trim();
-            if (!query) return;
-
-            // Use the standard UI helper
-            window.addChatMessage('user', query);
-            input.value = '';
-            
-            const loadingId = window.addChatMessage('ai', '⏳ Thinking...', true);
-
-            try {
-                const res = await fetch('/api/v1/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query })
-                });
-                const data = await res.json();
-
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
-
-                if (res.ok && !data.error) {
-                    let response = data.response || 'No response';
-                    let sources = data.sources || [];
-                    let provider = data.provider || 'unknown';
-                    
-                    if (sources.length > 0) {
-                        const labels = sources.map(s => {
-                            const icon = s.type === 'file' ? '📄' : '🧠';
-                            return `${icon} ${s.title || 'unnamed'}`;
-                        });
-                        // Filter unique labels
-                        const uniqueLabels = [...new Set(labels)];
-                        response += `\n\n📚 Context: ${uniqueLabels.join(', ')}`;
-                    }
-                    if (data.confidence) {
-                        response += `\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
-                    }
-                    response += `\n⚡ Provider: ${provider}`;
-                    
-                    window.addChatMessage('ai', response);
-                } else {
-                    window.addChatMessage('ai', `❌ Error: ${data.error || 'Unknown error'}`);
-                }
-            } catch (e) {
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
-                window.addChatMessage('ai', `❌ Network error: ${e.message}`);
-            }
-        };
-
-        window.addChatMessage = function(type, content, isLoading = false) {
-            const container = document.getElementById('chat-messages');
-            if (!container) return;
-            
-            const div = document.createElement('div');
-            const id = isLoading ? 'loading-' + Date.now() : '';
-            if (id) div.id = id;
-            
-            div.className = `message ${type}`;
-            div.style.cssText = `padding: 12px; background: ${type === 'user' ? '#1e293b' : '#0f172a'}; border: 1px solid ${type === 'user' ? '#38bdf8' : '#334155'}; border-radius: 8px; margin-bottom: 10px; max-width: 85%; ${type === 'user' ? 'margin-left: auto;' : ''} white-space: pre-wrap; word-wrap: break-word;`;
-            
-            div.textContent = content;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-            
-            return id;
-        }
-
-        window.clearChat = function() {
-            const container = document.getElementById('chat-messages');
-            if (container) {
-                container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Chat cleared. Ask me anything!</div>`;
-            }
-        }
-
-        async function loadIntelligenceStatus() {
-            try {
-                const res = await fetch('/api/v1/intelligence/status');
-                const data = await res.json();
-                if (document.getElementById('status-provider')) document.getElementById('status-provider').textContent = data.providers?.join(', ') || 'None';
-                if (document.getElementById('status-files')) document.getElementById('status-files').textContent = data.files || 0;
-                if (document.getElementById('status-mode')) document.getElementById('status-mode').textContent = data.mode || 'hybrid';
-            } catch (e) { console.error('Status error:', e); }
-        }
-        
-        // New/Modified JS for provider selection in chat tab
-        window.fetchAIProvidersForChat = async function() {
-            try {
-                const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
-                const cloudProviders = await res.json();
-                const select = document.getElementById('primary-ai-provider-select-chat');
-                
-                // Clear existing options except Ollama
-                select.innerHTML = '<option value="ollama">Ollama (Local)</option>';
-
-                cloudProviders.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.name;
-                    opt.textContent = `${p.name} (Cloud)`;
-                    select.appendChild(opt);
-                });
-
-                // Fetch current primary provider and set it
-                const currentPrimaryRes = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
-                const currentPrimaryData = await currentPrimaryRes.json();
-                if (select) select.value = currentPrimaryData.primary_provider;
-                if (document.getElementById('primary-ai-provider-status-chat')) {
-                    document.getElementById('primary-ai-provider-status-chat').textContent = currentPrimaryData.primary_provider.toUpperCase();
-                }
-
-            } catch (e) {
-                console.error('Error fetching AI providers for chat:', e);
-                if (document.getElementById('primary-ai-provider-status-chat')) {
-                    document.getElementById('primary-ai-provider-status-chat').textContent = 'Error';
-                    document.getElementById('primary-ai-provider-status-chat').className = 'tag tag-danger';
-                }
-            }
-        }
-
-        window.updatePrimaryAIProviderChat = async function(provider) {
-            try {
-                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({provider})
-                });
-                if (res.ok) {
-                    showToast(`Primary AI provider set to ${provider}`, 'success');
-                    window.fetchAIProvidersForChat(); // Refresh status
-                    window.loadIntelligenceStatus(); // Refresh general status
-                } else {
-                    const errorData = await res.json();
-                    showToast(`Failed to set primary AI provider: ${errorData.detail || 'Unknown error'}`, 'error');
-                }
-            } catch (e) {
-                showToast(`Network error setting primary AI provider: ${e.message}`, 'error');
-            }
-        }
-
-        // ============ TIMELINE ============
-        async function listEvents() {
-            const list = document.getElementById('timeline-list');
-            if (!list) return;
-            list.innerHTML = '<div class="metric-label">Loading events...</div>';
-            try {
-                const res = await fetch('/api/v1/behaviour/events?limit=10');
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    list.innerHTML = data.map(e => `
-                        <div class="stat-row" style="cursor:pointer;" onclick="document.getElementById('timeline-event-id').value=${e.id};fetchTimeline();">
-                            <span>ID: ${e.id}</span>
-                            <span style="color:#94a3b8;">${e.event_type}</span>
-                            <span class="tag ${e.outcome === 'success' ? 'tag-success' : 'tag-danger'}">${e.decision}</span>
-                            <span style="color:#64748b;font-size:11px;">${new Date(e.timestamp).toLocaleTimeString()}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    list.innerHTML = '<div class="metric-label">No events found. Create some first.</div>';
-                }
-            } catch (e) { list.innerHTML = '<div class="metric-label">Error loading events</div>'; }
-        }
-
-        async function fetchTimeline() {
-            const id = document.getElementById('timeline-event-id')?.value;
-            const list = document.getElementById('timeline-list');
-            if (!id || !list) { showToast('Enter an Event ID', 'error'); return; }
-            list.innerHTML = '<div class="metric-label">Loading timeline...</div>';
-            try {
-                const res = await fetch(`/api/v1/timeline/${id}`);
-                if (res.status === 404) {
-                    list.innerHTML = '<div class="metric-label" style="color:#f87171;">Event not found</div>';
-                    return;
-                }
-                const data = await res.json();
-                if (data.timeline && data.timeline.length > 0) {
-                    list.innerHTML = `
-                        <div style="padding:10px;background:#020617;border-radius:8px;margin-bottom:15px;">
-                            <span style="color:#94a3b8;">Event: ${data.event_type}</span>
-                            <span class="tag tag-success" style="margin-left:10px;">${data.decision}</span>
-                        </div>
-                        ${data.timeline.map(step => `
-                            <div class="stat-row" style="border-left:3px solid ${step.type === 'audit' ? '#34d399' : step.type === 'ai_recommendation' ? '#fbbf24' : '#38bdf8'};padding-left:12px;">
-                                <span><span style="font-weight:700;color:${step.type === 'audit' ? '#34d399' : step.type === 'ai_recommendation' ? '#fbbf24' : '#38bdf8'};">${step.step}.</span> ${step.label}</span>
-                                <span style="font-size:12px;color:#94a3b8;">${step.description}</span>
-                            </div>
-                        `).join('')}
-                    `;
-                } else {
-                    list.innerHTML = '<div class="metric-label">No timeline data</div>';
-                }
-            } catch (e) { list.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading timeline</div>'; }
         }
 
         // ============ DECISION REPLAY ============
@@ -1117,6 +453,288 @@
                 </div>`).join('');
         }
 
+        // ============ AGENTS ============
+        async function fetchAgentStatus(isAutoRefresh = false) {
+            try {
+                const [loadRes, empathyRes, bbRes, traceRes] = await Promise.all([
+                    fetch('/api/v1/admin/dashboard/cognitive-load'),
+                    fetch('/api/v1/admin/dashboard/empathy/status'),
+                    fetch('/api/v1/admin/dashboard/blackboard/snapshot'),
+                    fetch('/api/v1/admin/dashboard/swarm/negotiation-trace')
+                ]);
+                const load = await loadRes.json();
+                const empathy = await empathyRes.json();
+                const bb = await bbRes.json();
+                const trace = await traceRes.json();
+
+                // Update Load
+                const loadStats = document.getElementById('agent-load-stats');
+                if (loadStats) {
+                    let html = `<div class="stat-row"><span class="stat-label">Active Tasks</span><span class="stat-value">${load.active_tasks || 0}</span></div>`;
+                    Object.entries(load.agent_activity || {}).forEach(([name, status]) => {
+                        const isActive = status === 1 || status === 'active' || status === true;
+                        html += `<div class="stat-row"><span class="stat-label">${name}</span><span class="tag ${isActive ? 'tag-success' : ''}">${isActive ? 'ACTIVE' : 'IDLE'}</span></div>`;
+                    });
+                    loadStats.innerHTML = html;
+                }
+
+                // Update Empathy
+                const empStats = document.getElementById('empathy-stats');
+                if (empStats) {
+                    empStats.innerHTML = `
+                        <div class="stat-row"><span class="stat-label">Mood</span><span class="stat-value">${empathy.mood || 'Calm'}</span></div>
+                        <div class="stat-row"><span class="stat-label">Tone</span><span class="stat-value">${empathy.tone || 'Supportive'}</span></div>`;
+                }
+
+                // Update Blackboard
+                const bbFeed = document.getElementById('blackboard-feed');
+                if (bbFeed) {
+                    const entries = Object.entries(bb.current_state || {});
+                    bbFeed.innerHTML = entries.length ? entries.map(([agent, entry]) => `
+                        <div style="padding:8px 0;border-bottom:1px solid #1e293b;">
+                            <div style="display:flex;justify-content:space-between;"><b style="color:#38bdf8;">${agent}</b></div>
+                            <div style="font-size:12px;color:#94a3b8;">${JSON.stringify(entry.data)}</div>
+                        </div>`).join('') : '<div class="metric-label">No active insights.</div>';
+                }
+
+                // Update Graph
+                renderCoTGraph(trace);
+            } catch (e) { console.error('Agent refresh error:', e); }
+        }
+
+        function appendThought(agent, content) {
+            const log = document.getElementById('thought-log');
+            if (!log) return;
+            // Remove placeholder if present
+            if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
+                log.innerHTML = '';
+            }
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="thought-agent">[${agent}]</span> <span class="thought-content">${content}</span>`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // ============ MCP ============
+        async function fetchMcpRegistry() {
+            try {
+                // Fetch servers from the admin dashboard endpoint
+                const serversRes = await fetch('/api/v1/admin/dashboard/mcp/registry');
+                const serversData = await serversRes.json();
+                const serversList = document.getElementById('mcp-servers-list');
+                if (serversList) {
+                    serversList.innerHTML = serversData.servers?.map(s => `
+                        <div class="stat-row">
+                            <span class="stat-label">${s.name}</span>
+                            <span class="tag tag-success">${s.status}</span>
+                        </div>
+                    `).join('') || 'None';
+                }
+
+                // Fetch tools from the NEW Unified Intelligence Gateway endpoint
+                const toolsRes = await fetch('/api/v1/mcp/tools');
+                const toolsData = await toolsRes.json();
+                const toolsList = document.getElementById('mcp-tools-list');
+                if (toolsList) {
+                    if (toolsData.tools && toolsData.tools.length > 0) {
+                        toolsList.innerHTML = toolsData.tools.map(t => `
+                            <div style="padding:6px;background:#020617;border-radius:4px;margin-bottom:4px;">
+                                <b style="color:#38bdf8;">${t.name}</b><br>
+                                <span style="font-size:11px;color:#94a3b8;">${t.description || 'No description'}</span>
+                                ${t.parameters ? `<br><span style="font-size:10px;color:#64748b;">Params: ${Object.keys(t.parameters).join(', ')}</span>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        toolsList.innerHTML = '<div class="metric-label">No MCP tools registered.</div>';
+                    }
+                }
+
+                // Populate the tool tester dropdown
+                populateMcpToolTester(toolsData.tools);
+            } catch (e) { console.error('MCP error:', e); }
+        }
+
+        function populateMcpToolTester(tools) {
+            const selectElement = document.getElementById('mcp-test-tool');
+            if (!selectElement) return;
+            selectElement.innerHTML = '';
+            if (tools && tools.length > 0) {
+                tools.forEach(tool => {
+                    const option = document.createElement('option');
+                    option.value = tool.name;
+                    option.textContent = tool.name;
+                    selectElement.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No tools available';
+                selectElement.appendChild(option);
+            }
+        }
+
+        async function executeMcpTest() {
+            const tool = document.getElementById('mcp-test-tool')?.value;
+            const argsStr = document.getElementById('mcp-test-args')?.value;
+            const output = document.getElementById('mcp-test-output');
+            if (!output || !tool) return;
+            output.style.display = 'block';
+            output.textContent = 'Running...';
+            try {
+                let args = {};
+                if (argsStr) {
+                    try { args = JSON.parse(argsStr); } catch (e) { output.textContent = '❌ Invalid JSON in arguments'; return; }
+                }
+                const res = await fetch(`/api/v1/mcp/call/${tool}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(args)
+                });
+                const data = await res.json();
+                output.textContent = JSON.stringify(data, null, 2);
+                showToast('Tool executed', 'success');
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+                showToast('Execution failed', 'error');
+            }
+        }
+
+        // ============ CHAT ============
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const query = input?.value?.trim();
+            if (!query) return;
+
+            addMessage('user', query);
+            input.value = '';
+            
+            const loadingId = addMessage('ai', '⏳ Thinking...', true);
+
+            try {
+                const res = await fetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await res.json();
+
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                if (res.ok && !data.error) {
+                    let response = data.response || 'No response';
+                    let sources = data.sources || [];
+                    let provider = data.provider || 'unknown';
+                    
+                    if (sources.length > 0) {
+                        const sourceTypes = sources.map(s => s.type).join(', ');
+                        response += `\n\n📚 Sources: ${sourceTypes}`;
+                    }
+                    if (data.confidence) {
+                        response += `\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
+                    }
+                    response += `\n⚡ Provider: ${provider}`;
+                    
+                    addMessage('ai', response);
+                } else {
+                    addMessage('ai', `❌ Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (e) {
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+                addMessage('ai', `❌ Network error: ${e.message}`);
+            }
+        }
+
+        function addMessage(type, content, isLoading = false) {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+            
+            const div = document.createElement('div');
+            const id = isLoading ? 'loading-' + Date.now() : '';
+            if (id) div.id = id;
+            
+            div.className = `message ${type}`;
+            div.style.cssText = `padding: 12px; background: ${type === 'user' ? '#1e293b' : '#0f172a'}; border: 1px solid ${type === 'user' ? '#38bdf8' : '#334155'}; border-radius: 8px; margin-bottom: 10px; max-width: 85%; ${type === 'user' ? 'margin-left: auto;' : ''} white-space: pre-wrap; word-wrap: break-word;`;
+            
+            div.textContent = content;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            
+            return id;
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chat-messages');
+            if (container) {
+                container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Chat cleared. Ask me anything!</div>`;
+            }
+        }
+
+        async function loadIntelligenceStatus() {
+            try {
+                const res = await fetch('/api/v1/intelligence/status');
+                const data = await res.json();
+                if (document.getElementById('status-provider')) document.getElementById('status-provider').textContent = data.providers?.join(', ') || 'None';
+                if (document.getElementById('status-files')) document.getElementById('status-files').textContent = data.files || 0;
+                if (document.getElementById('status-mode')) document.getElementById('status-mode').textContent = data.mode || 'hybrid';
+            } catch (e) { console.error('Status error:', e); }
+        }
+
+        // ============ TIMELINE ============
+        async function listEvents() {
+            const list = document.getElementById('timeline-list');
+            if (!list) return;
+            list.innerHTML = '<div class="metric-label">Loading events...</div>';
+            try {
+                const res = await fetch('/api/v1/behaviour/events?limit=10');
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    list.innerHTML = data.map(e => `
+                        <div class="stat-row" style="cursor:pointer;" onclick="document.getElementById('timeline-event-id').value=${e.id};fetchTimeline();">
+                            <span>ID: ${e.id}</span>
+                            <span style="color:#94a3b8;">${e.event_type}</span>
+                            <span class="tag ${e.outcome === 'success' ? 'tag-success' : 'tag-danger'}">${e.decision}</span>
+                            <span style="color:#64748b;font-size:11px;">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="metric-label">No events found. Create some first.</div>';
+                }
+            } catch (e) { list.innerHTML = '<div class="metric-label">Error loading events</div>'; }
+        }
+
+        async function fetchTimeline() {
+            const id = document.getElementById('timeline-event-id')?.value;
+            const list = document.getElementById('timeline-list');
+            if (!id || !list) { showToast('Enter an Event ID', 'error'); return; }
+            list.innerHTML = '<div class="metric-label">Loading timeline...</div>';
+            try {
+                const res = await fetch(`/api/v1/timeline/${id}`);
+                if (res.status === 404) {
+                    list.innerHTML = '<div class="metric-label" style="color:#f87171;">Event not found</div>';
+                    return;
+                }
+                const data = await res.json();
+                if (data.timeline && data.timeline.length > 0) {
+                    list.innerHTML = `
+                        <div style="padding:10px;background:#020617;border-radius:8px;margin-bottom:15px;">
+                            <span style="color:#94a3b8;">Event: ${data.event_type}</span>
+                            <span class="tag tag-success" style="margin-left:10px;">${data.decision}</span>
+                        </div>
+                        ${data.timeline.map(step => `
+                            <div class="stat-row" style="border-left:3px solid ${step.type === 'audit' ? '#34d399' : step.type === 'ai_recommendation' ? '#fbbf24' : '#38bdf8'};padding-left:12px;">
+                                <span><span style="font-weight:700;color:${step.type === 'audit' ? '#34d399' : step.type === 'ai_recommendation' ? '#fbbf24' : '#38bdf8'};">${step.step}.</span> ${step.label}</span>
+                                <span style="font-size:12px;color:#94a3b8;">${step.description}</span>
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    list.innerHTML = '<div class="metric-label">No timeline data</div>';
+                }
+            } catch (e) { list.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading timeline</div>'; }
+        }
+
+        // ============ REPLAY ============
         async function replayDecision() {
             const id = document.getElementById('replay-event-id')?.value;
             const resultDiv = document.getElementById('replay-result');
@@ -1215,12 +833,6 @@
                     <div class="stat-row"><span class="stat-label">Sovereign Mode</span><span style="color:#34d399;">✅ Local-First</span></div>
                     <div class="stat-row"><span class="stat-label">VeriLink</span><span style="color:${data.ai?.verilink_status === 'active' ? '#34d399' : '#fbbf24'};">${data.ai?.verilink_status || 'Not Installed'}</span></div>
                 `;
-                const verilinkSecurityStatus = document.getElementById('verilink-security-status');
-                if (verilinkSecurityStatus) {
-                    verilinkSecurityStatus.innerHTML = data.ai?.verilink_status === 'active' ? 
-                        '<span style="color:#34d399;">✅ VeriLink is active and configured.</span>' : 
-                        '<span style="color:#fbbf24;">⚠️ VeriLink is available but not configured. External governance and audit trails are currently inactive.</span>';
-                }
             } catch (e) { container.innerHTML = '<div class="metric-label">Error loading security status</div>'; }
         }
 
@@ -1316,76 +928,22 @@
 
         // ============ WEBSOCKET ============
         function connectWebSocket() {
-            if (ws) {
-                try { ws.close(); } catch(e) {}
-                ws = null;
-            }
-            
+            if (ws) ws.close();
             const clientId = 'admin_' + Math.random().toString(36).substring(7);
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${window.location.host}/ws/${clientId}`);
-            
-            ws.onopen = function() {
-                console.log('✅ WebSocket connected');
-            };
-            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; // Use wss for HTTPS, ws for HTTP
+            ws = new WebSocket(`${protocol}//${window.location.host}/api/v1/admin/dashboard/ws/${clientId}`);
+            ws.onopen = () => console.log('✅ WebSocket connected');
             ws.onmessage = function(e) {
                 try {
                     const data = JSON.parse(e.data);
                     if (data.type === 'thought_stream') {
-                        appendThoughtNoReload(data.agent, data.content);
-                        if (currentTab === 'agents') {
-                            fetchAgentStatus();
-                        }
-                    } else if (data.type === 'agent_status') {
-                        updateAgentStatusUI(data);
+                        appendThought(data.agent, data.content);
                     } else if (data.type === 'iot_update' || data.type === 'metrics_update') {
-                        fetchMetrics();
+                        switchTab(currentTab);
                     }
-                } catch (err) { console.log('WS message error:', err); }
+                } catch (err) { /* ignore */ }
             };
-            
-            ws.onclose = function() {
-                console.log('❌ WebSocket disconnected');
-                setTimeout(connectWebSocket, 5000);
-            };
-            
-            ws.onerror = function(err) {
-                console.log('⚠️ WebSocket error:', err);
-            };
-        }
-
-        function updateAgentStatusUI(data) {
-            if (!data) return;
-            const taskElements = document.querySelectorAll('.stat-row .stat-label');
-            taskElements.forEach(el => {
-                if (el.textContent.trim() === 'Active Tasks') {
-                    const row = el.closest('.stat-row');
-                    if (row) {
-                        const value = row.querySelector('.stat-value');
-                        if (value) value.textContent = data.active_tasks || 0;
-                    }
-                }
-            });
-            
-            if (data.agent_activity) {
-                document.querySelectorAll('.stat-row').forEach(row => {
-                    const label = row.querySelector('.stat-label');
-                    if (label) {
-                        const agentName = label.textContent.toLowerCase().trim();
-                        for (const [agent, status] of Object.entries(data.agent_activity)) {
-                            if (agentName.includes(agent) || agent.includes(agentName)) {
-                                const value = row.querySelector('.stat-value');
-                                if (value) {
-                                    const isActive = status === 1 || status === 'active' || status === true;
-                                    value.textContent = isActive ? 'ACTIVE' : 'IDLE';
-                                    value.className = isActive ? 'tag tag-success' : 'tag';
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+            ws.onclose = () => setTimeout(connectWebSocket, 5000);
         }
 
         // ============ LOGOUT ============
@@ -1396,16 +954,371 @@
 
         // ============ INIT ============
         document.addEventListener('DOMContentLoaded', function() {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                connectWebSocket();
-            }
             switchTab('overview');
-            setInterval(() => {
-                if (currentTab === 'overview' || currentTab === 'agents') {
-                    refreshTabContent(currentTab);
-                }
-            }, 30000);
+            connectWebSocket();
+            setInterval(() => { if (currentTab === 'overview' || currentTab === 'agents') switchTab(currentTab); }, 30000);
         });
     </script>
 </body>
 </html>
+<script>
+// Enhanced Agent Status Update with WebSocket integration
+function updateAgentStatusUI(data) {
+    if (!data) return;
+    
+    // Update Active Tasks
+    const taskElements = document.querySelectorAll('.stat-row .stat-label');
+    taskElements.forEach(el => {
+        if (el.textContent.trim() === 'Active Tasks') {
+            const row = el.closest('.stat-row');
+            if (row) {
+                const value = row.querySelector('.stat-value');
+                if (value) value.textContent = data.active_tasks || 0;
+            }
+        }
+    });
+    
+    // Update Agent Statuses
+    if (data.agent_activity) {
+        document.querySelectorAll('.stat-row').forEach(row => {
+            const label = row.querySelector('.stat-label');
+            if (label) {
+                const agentName = label.textContent.toLowerCase().trim();
+                for (const [agent, status] of Object.entries(data.agent_activity)) {
+                    if (agentName.includes(agent) || agent.includes(agentName)) {
+                        const value = row.querySelector('.stat-value');
+                        if (value) {
+                            const isActive = status === 1 || status === 'active' || status === true;
+                            value.textContent = isActive ? 'ACTIVE' : 'IDLE';
+                            value.className = isActive ? 'tag tag-success' : 'tag';
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Enhanced WebSocket handler for live updates
+function setupWebSocketHandlers() {
+    if (ws) {
+        const originalOnMessage = ws.onmessage;
+        ws.onmessage = function(e) {
+            try {
+                const data = JSON.parse(e.data);
+                console.log('📨 WS:', data.type, data);
+                
+                if (data.type === 'thought_stream') {
+                    appendThought(data.agent, data.content);
+                    // Also trigger agent status refresh
+                    fetchAgentStatus();
+                } else if (data.type === 'agent_status') {
+                    updateAgentStatusUI(data);
+                } else if (data.type === 'iot_update' || data.type === 'metrics_update') {
+                    switchTab(currentTab);
+                }
+                
+                // Call original if exists
+                if (originalOnMessage) originalOnMessage.call(ws, e);
+            } catch (err) { /* ignore */ }
+        };
+    }
+}
+
+// Override appendThought to update UI
+const originalAppendThought = appendThought;
+appendThought = function(agent, content) {
+    const log = document.getElementById('thought-log');
+    if (!log) return;
+    
+    // Remove placeholder if present
+    if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
+        log.innerHTML = '';
+    }
+    
+    const div = document.createElement('div');
+    div.style.padding = '4px 0';
+    div.style.borderBottom = '1px solid #1e293b';
+    div.style.animation = 'fadeIn 0.3s ease-out';
+    div.innerHTML = `<span style="color: #38bdf8; font-weight: bold;">[${agent}]</span> <span style="color: #f1f5f9;">${content}</span>`;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    
+    // Keep only last 50 entries
+    while (log.children.length > 50) {
+        log.removeChild(log.firstChild);
+    }
+};
+
+// Override fetchAgentStatus to use WebSocket data
+const originalFetchAgentStatus = fetchAgentStatus;
+fetchAgentStatus = async function() {
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/cognitive-load');
+        const data = await res.json();
+        updateAgentStatusUI(data);
+    } catch (e) { console.error('Agent status fetch error:', e); }
+};
+
+// Initialize WebSocket handlers on load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(setupWebSocketHandlers, 1000);
+});
+</script>
+<script>
+// ============ FIX: Prevent Page Reload on WebSocket Events ============
+// Override the WebSocket message handler to only update specific parts
+if (ws) {
+    const originalOnMessage = ws.onmessage;
+    ws.onmessage = function(e) {
+        try {
+            const data = JSON.parse(e.data);
+            console.log('📨 WS:', data.type, data);
+            
+            if (data.type === 'thought_stream') {
+                appendThought(data.agent, data.content);
+                // Only refresh agent status, not the whole page
+                if (currentTab === 'agents') {
+                    fetchAgentStatus();
+                }
+            } else if (data.type === 'agent_status') {
+                updateAgentStatusUI(data);
+            } else if (data.type === 'iot_update') {
+                // Only update metrics, not reload the whole tab
+                fetchMetrics();
+            }
+            // DO NOT call switchTab(currentTab) here - that causes the jump!
+        } catch (err) { console.log('WS error:', err); }
+    };
+}
+</script>
+<script>
+// ============ COMPLETE WEBSOCKET REWRITE - NO PAGE RELOADS ============
+// Override the entire WebSocket handling
+
+// Store original connect function
+const originalConnect = connectWebSocket;
+
+// Replace with new version that doesn't reload pages
+connectWebSocket = function() {
+    if (ws) {
+        try { ws.close(); } catch(e) {}
+        ws = null;
+    }
+    
+    const clientId = 'admin_' + Math.random().toString(36).substring(7);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${window.location.host}/ws/${clientId}`);
+    
+    ws.onopen = function() {
+        console.log('✅ WebSocket connected (no-reload mode)');
+    };
+    
+    ws.onmessage = function(e) {
+        try {
+            const data = JSON.parse(e.data);
+            
+            // Log but don't reload
+            if (data.type === 'thought_stream') {
+                // Only update the thought log, don't reload anything
+                appendThoughtNoReload(data.agent, data.content);
+            } else if (data.type === 'agent_status') {
+                // Update agent status without reload
+                updateAgentStatusUI(data);
+            } else if (data.type === 'iot_update') {
+                // Just update metrics, no reload
+                fetchMetrics();
+            } else if (data.type === 'metrics_update') {
+                fetchMetrics();
+            }
+            // NEVER call switchTab() here!
+        } catch (err) {
+            console.log('WS message error:', err);
+        }
+    };
+    
+    ws.onclose = function() {
+        console.log('❌ WebSocket disconnected');
+        setTimeout(connectWebSocket, 5000);
+    };
+    
+    ws.onerror = function(err) {
+        console.log('⚠️ WebSocket error:', err);
+    };
+};
+
+// New appendThought that doesn't trigger reloads
+function appendThoughtNoReload(agent, content) {
+    const log = document.getElementById('thought-log');
+    if (!log) return;
+    
+    // Remove placeholder if present
+    if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
+        log.innerHTML = '';
+    }
+    
+    const div = document.createElement('div');
+    div.style.padding = '4px 0';
+    div.style.borderBottom = '1px solid #1e293b';
+    div.style.animation = 'fadeIn 0.3s ease-out';
+    div.innerHTML = `<span style="color: #38bdf8; font-weight: bold;">[${agent}]</span> <span style="color: #f1f5f9;">${content}</span>`;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    
+    // Keep only last 50 entries
+    while (log.children.length > 50) {
+        log.removeChild(log.firstChild);
+    }
+}
+function refreshTabContent(tabId) {
+    // Only refresh specific parts, not the whole tab
+    if (tabId === 'overview') {
+        fetchMetrics();
+    } else if (tabId === 'agents') {
+        fetchAgentStatus();
+    } else if (tabId === 'packs') {
+        fetchPacks();
+    } else if (tabId === 'models') {
+        fetchInstalledModels();
+    } else if (tabId === 'logs') {
+        // Don't restart log stream if already running
+    } else if (tabId === 'timeline') {
+        listEvents();
+    } else if (tabId === 'trends') {
+        fetchTrends();
+    } else if (tabId === 'mcp') {
+        fetchMcpRegistry();
+    } else if (tabId === 'governance') {
+        fetchGovernanceLogs();
+    } else if (tabId === 'security') {
+        fetchSecurityStatus();
+    } else if (tabId === 'lattices') {
+        fetchMetrics();
+    } else if (tabId === 'learning') {
+        fetchLearningConfig();
+    } else if (tabId === 'chat') {
+        loadIntelligenceStatus();
+    }
+}
+function switchTab(tabId) {
+    if (currentTab !== tabId) {
+        performTabLoad(tabId);
+    } else {
+        refreshTabContent(tabId);
+    }
+}
+
+// Initialize with the fixed connect
+document.addEventListener('DOMContentLoaded', function() {
+    // Only connect if not already connected
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connectWebSocket();
+    }
+    // Load initial tab
+    switchTab('overview');
+});
+
+// Fix the interval to not reload the page
+setInterval(() => {
+    if (currentTab === 'overview' || currentTab === 'agents') {
+        refreshTabContent(currentTab);
+    }
+}, 30000);
+</script>
+<script>
+// ============ FIX COT GRAPH RENDERING ============
+function renderCoTGraph(traceData) {
+    const container = document.getElementById('mermaid-graph-container');
+    if (!container) return;
+    
+    if (traceData && traceData.sequence && traceData.sequence.length > 0) {
+        try {
+            let graphDef = 'graph LR\n';
+            graphDef += 'classDef agentNode fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;\n';
+            graphDef += 'classDef bbNode fill:#0f172a,stroke:#a855f7,stroke-width:2px,stroke-dasharray:5 5;\n';
+            
+            traceData.sequence.forEach(step => {
+                const fromId = step.agent.replace(/[^a-zA-Z0-9]/g, '');
+                const toId = step.to.replace(/[^a-zA-Z0-9]/g, '');
+                graphDef += `${fromId}("${step.agent}") -- "${step.action}" --> ${toId}("${step.to}")\n`;
+                graphDef += `class ${fromId} agentNode;\n`;
+                if (toId === 'Blackboard') graphDef += `class ${toId} bbNode;\n`;
+            });
+            
+            container.innerHTML = `<div class="mermaid">${graphDef}</div>`;
+            // Use mermaid.run instead of init for newer versions
+            if (typeof mermaid !== 'undefined') {
+                if (mermaid.run) {
+                    mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
+                } else if (mermaid.init) {
+                    mermaid.init(undefined, container.querySelectorAll('.mermaid'));
+                }
+            }
+        } catch(e) {
+            console.log('Mermaid render error:', e);
+            container.innerHTML = `<div style="color:#94a3b8;font-size:12px;text-align:center;padding:20px;">
+                <div style="font-size:24px;margin-bottom:10px;">⚠️</div>
+                <div>Graph rendering error. Check console for details.</div>
+                <div style="font-size:10px;color:#64748b;margin-top:5px;">${e.message}</div>
+            </div>`;
+        }
+    } else {
+        container.innerHTML = `
+            <div style="text-align:center;color:#64748b;padding:20px;">
+                <div style="font-size:48px;margin-bottom:10px;">🔄</div>
+                <div>Awaiting negotiation signal...</div>
+                <div style="font-size:11px;margin-top:5px;">Send a query to the swarm to see the CoT graph</div>
+            </div>
+        `;
+    }
+}
+</script>
+<script>
+// ============ FIX SWARM COMMAND CONSOLE - NO PAGE RELOAD ============
+async function triggerSwarm() {
+    const input = document.getElementById('swarm-query-input');
+    if (!input) return;
+    const query = input.value.trim();
+    if (!query) {
+        showToast('Enter a query', 'error');
+        return;
+    }
+    input.disabled = true;
+    input.style.opacity = '0.5';
+    showToast('🔄 Sending to Intelligence Gateway...', 'info');
+    try {
+        const res = await fetch('/api/v1/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ query: query })
+        });
+        const data = await res.json();
+        if (res.ok && !data.error) {
+            appendThoughtNoReload('User', query);
+            appendThoughtNoReload('Intelligence Gateway', `Response from ${data.provider || 'AI'}: ${data.response || 'No response'}`);
+            if (data.sources && data.sources.length > 0) {
+                const sourceTypes = data.sources.map(s => s.type).join(', ');
+                appendThoughtNoReload('Intelligence Gateway', `Sources: ${sourceTypes}`);
+            }
+            if (data.confidence) {
+                appendThoughtNoReload('Intelligence Gateway', `Confidence: ${Math.round(data.confidence * 100)}%`);
+            }
+            showToast('✅ Response received!', 'success');
+            input.value = '';
+        } else {
+            appendThoughtNoReload('Intelligence Gateway', `Error: ${data.error || 'Unknown error'}`);
+            showToast('❌ Error processing query', 'error');
+        }
+    } catch (e) {
+        appendThoughtNoReload('Intelligence Gateway', `Network Error: ${e.message}`);
+        showToast('❌ Network error: ' + e.message, 'error');
+    } finally {
+        input.disabled = false;
+        input.style.opacity = '1';
+        input.focus();
+        if (currentTab === 'agents') {
+            fetchAgentStatus();
+        }
+    }
+}
+</script>

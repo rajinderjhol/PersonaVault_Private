@@ -1,6 +1,40 @@
 <div id="models-tab">
     <h2 style="color: var(--accent);">📦 Model Management</h2>
     
+    <div class="card" style="margin-bottom:25px; border-top: 4px solid #34d399;">
+        <h3 style="margin-top:0; color:#34d399;">Primary AI Provider</h3>
+        <p style="color: #94a3b8; font-size: 13px;">Select the default AI provider for general queries and orchestration.</p>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <select id="primary-ai-provider-select" class="input-field" style="margin:0; flex:1;" onchange="updatePrimaryAIProvider(this.value)">
+                <option value="ollama">Ollama (Local)</option>
+            </select>
+            <span id="primary-ai-provider-status" class="tag tag-info">Loading...</span>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:25px; border-top: 4px solid #a855f7;">
+        <h3 style="margin-top:0; color:#a855f7;">Add Cloud AI Connection</h3>
+        <p style="color: #94a3b8; font-size: 13px;">Connect any OpenAI-compatible or cloud provider (Gemini, DeepSeek, etc.).</p>
+        
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <input type="text" id="cloud-api-name" placeholder="Connection Name (e.g. DeepSeek-Prod, MyLocalProxy)" class="input-field" style="margin:0;">
+            <input type="text" id="cloud-api-host" placeholder="API Host (e.g. https://api.openai.com/v1)" class="input-field" style="margin:0;">
+            <input type="password" id="cloud-api-key" placeholder="API Key" class="input-field" style="margin:0;">
+            <input type="text" id="cloud-api-model" placeholder="Model ID (e.g. deepseek-chat, gpt-4o)" class="input-field" style="margin:0;">
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="background:#6366f1; flex:1;" onclick="testCloudConnection()"><i class="fas fa-plug"></i> Test Connection</button>
+                <button class="btn" style="background:#a855f7; flex:1;" onclick="saveCloudConfig()"><i class="fas fa-save"></i> Save Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:25px; border-top: 4px solid #f472b6;">
+        <h3 style="margin-top:0; color:#f472b6;">Configured Cloud Connections</h3>
+        <div id="cloud-connections-list" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="metric-label">Loading connections...</div>
+        </div>
+    </div>
+
     <div class="card" style="margin-bottom:25px; border-top: 4px solid #38bdf8;">
         <h3 style="margin-top:0; color:#38bdf8;">Pull New Model</h3>
         <div style="display:flex; gap:10px;">
