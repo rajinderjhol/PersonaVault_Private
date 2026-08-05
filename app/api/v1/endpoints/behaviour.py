@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from app.db.session import get_db
 from app.core.dependencies import require_admin
 from app.models.learning.behaviour_event import BehaviourEvent
-from app.services.governance.audit_service import AuditService
+from app.services.governance.audit_service_async import AsyncAuditService
 
 router = APIRouter(prefix="/behaviour", tags=["behaviour"])
 
@@ -51,7 +51,7 @@ async def create_behaviour_event(
         await db.refresh(event)
         
         # Log audit
-        audit = AuditService(lambda: db)
+        audit = AsyncAuditService(db)
         audit_id = await audit.log_decision(event)
         
         return {

@@ -61,3 +61,4 @@ htmlcov/
 # Ollama
 ollama.log
 .env.production
+*.bak2
