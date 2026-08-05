@@ -126,7 +126,7 @@ class DatabaseTool:
         # Default SQLite connection
         self.connections["default"] = {
             "type": "sqlite",
-            "path": "storage/databases/pv.db"
+            "path": "instance/personavault.db"
         }
     
     def register_connection(self, name: str, config: Dict[str, Any]):
@@ -298,7 +298,7 @@ class FileTool:
                 results.append({
                     "path": path,
                     "content": data["content"][:500] + "...",
-                    "name": os.path.basename(file_path),
+                    "name": os.path.basename(path),
                     "score": self._calculate_score(query, data["content"]),
                     "modified": datetime.fromtimestamp(data["modified"]).isoformat()
                 })
@@ -418,14 +418,14 @@ class AITool:
                     else:
                         error_msg = f"Ollama error {response.status_code}"
                         return {"error": error_msg, "response": f"[{error_msg}]"}
-            except httpx.ReadTimeout:
-                error_detail = "The request timed out. Ollama is likely overloaded or your hardware is processing the request slowly."
-                logger.warning(f"Ollama Timeout: {error_detail}")
-                return {"error": "ReadTimeout", "response": f"[Ollama is busy/slow] (Error: ReadTimeout)"}
-            except httpx.ConnectError:
-                error_detail = "Could not connect to Ollama. Ensure 'ollama serve' is running."
-                return {"error": "ConnectionError", "response": f"[Ollama unavailable] (Error: ConnectionError)"}
             except Exception as e:
+                if HAS_HTTPX and isinstance(e, httpx.ReadTimeout):
+                    error_detail = "The request timed out. Ollama is likely overloaded or your hardware is processing the request slowly."
+                    logger.warning(f"Ollama Timeout: {error_detail}")
+                    return {"error": "ReadTimeout", "response": f"[Ollama is busy/slow] (Error: ReadTimeout)"}
+                if HAS_HTTPX and isinstance(e, httpx.ConnectError):
+                    error_detail = "Could not connect to Ollama. Ensure 'ollama serve' is running."
+                    return {"error": "ConnectionError", "response": f"[Ollama unavailable] (Error: ConnectionError)"}
                 error_detail = str(e) or e.__class__.__name__
                 return {"error": f"Ollama connection failed: {error_detail}", "response": f"[Ollama unavailable] (Error: {error_detail})"}
         
@@ -466,6 +466,44 @@ class AITool:
             except Exception as e:
                 return {"error": f"OpenAI error: {str(e)}", "response": f"[OpenAI error] {str(e)}"}
         
+        # GROQ (Cloud - High speed inference)
+        elif provider_key == "groq":
+            try:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(
+                    api_key=config.get("api_key"),
+                    base_url=config.get("host") or "https://api.groq.com/openai/v1"
+                )
+                response = await client.chat.completions.create(
+                    model=config.get("model") or "llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": f"{formatted_context}\n\nUSER_QUERY: {query}"}
+                    ]
+                )
+                return {"response": response.choices[0].message.content}
+            except Exception as e:
+                return {"error": f"Groq error: {str(e)}", "response": f"[Groq error] {str(e)}"}
+
+        # GROK (Cloud - xAI)
+        elif provider_key == "grok":
+            try:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(
+                    api_key=config.get("api_key"),
+                    base_url=config.get("host") or "https://api.x.ai/v1"
+                )
+                response = await client.chat.completions.create(
+                    model=config.get("model") or "grok-beta",
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": f"{formatted_context}\n\nUSER_QUERY: {query}"}
+                    ]
+                )
+                return {"response": response.choices[0].message.content}
+            except Exception as e:
+                return {"error": f"Grok error: {str(e)}", "response": f"[Grok error] {str(e)}"}
+
         # CLAUDE (Cloud - Requires API key)
         elif provider_key == "claude":
             try:
@@ -474,7 +512,10 @@ class AITool:
                 response = await client.messages.create(
                     model=config.get("model", "claude-3-5-sonnet-20241022"),
                     max_tokens=1024,
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": f"{formatted_context}\n\nUSER_QUERY: {query}"}
+                    ]
                 )
                 return {"response": response.content[0].text}
             except ImportError:
@@ -489,7 +530,10 @@ class AITool:
                 client = Mistral(api_key=config.get("api_key"))
                 response = await client.chat.complete_async(
                     model=config.get("model", "mistral-large-latest"),
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": f"{formatted_context}\n\nUSER_QUERY: {query}"}
+                    ]
                 )
                 return {"response": response.choices[0].message.content}
             except ImportError:
@@ -515,7 +559,7 @@ class AITool:
             except Exception as e:
                 return {"error": f"[{provider_key}] fallback error: {str(e)}", "response": f"[{provider_key} error] {str(e)}"}
 
-        return {"response": f"[Unsupported provider: {provider}] {prompt[:100]}..."}
+        return {"response": f"[Unsupported provider: {provider}] (Query: {query[:100]}...)"}
 
 
 # ============================================================================
@@ -689,7 +733,7 @@ class IntelligenceGateway:
                 
                 self.packs.append(pack_data)
     
-    async def test_provider_connection(self, provider: str, host: str = None, api_key: str = None) -> Dict[str, Any]:
+    async def test_provider_connection(self, provider: str, host: str = None, api_key: str = None, model: str = None) -> Dict[str, Any]:
         """Test connection to a specific AI provider without permanent registration."""
         provider_key = provider.lower()
         # Build temporary config for testing
@@ -698,7 +742,7 @@ class IntelligenceGateway:
             "host": host if host else existing.get("host"),
             "api_key": api_key if api_key else existing.get("api_key"),
             "enabled": True,
-            "model": existing.get("model")
+            "model": model if model else existing.get("model")
         }
         
         # Swap config temporarily
@@ -812,7 +856,7 @@ class IntelligenceGateway:
         
         # 3. Choose provider
         self._set_agent_active("router", True)
-        provider = self._choose_provider(masked_query, context)
+        provider = self._choose_provider(masked_query, context).lower()
         self._set_agent_active("router", False)
         
         # 4. Generate response
@@ -877,10 +921,38 @@ class IntelligenceGateway:
     def _set_agent_active(self, agent_name: str, active: bool):
         """Track individual agent activation state for the telemetry layer."""
         try:
-            if agent_name in AGENT_STATUS:
-                AGENT_STATUS[agent_name].set(1 if active else 0)
+            AGENT_STATUS.labels(agent_name=agent_name).set(1 if active else 0)
         except Exception:
             pass
+
+    # ============ DOCUMENT SEARCH ============
+    async def _search_documents(self, user_id: int, query: str, limit: int = 5) -> List[Dict]:
+        """Search uploaded documents."""
+        try:
+            from app.db.session import SessionLocal
+            from app.models import Memory
+            from sqlalchemy import select
+            
+            async with SessionLocal() as db:
+                stmt = select(Memory).where(
+                    Memory.user_id == user_id,
+                    Memory.modality == "document",
+                    Memory.content.ilike(f"%{query}%")
+                ).limit(limit)
+                result = await db.execute(stmt)
+                documents = result.scalars().all()
+                
+                return [{
+                    "id": d.id,
+                    "content": d.content,
+                    "title": d.title,
+                    "tags": d.tags,
+                    "score": 0.7,
+                    "modality": "document"
+                } for d in documents]
+        except Exception as e:
+            logger.error(f"Document search error: {e}")
+            return []
 
     async def _gather_context(self, user_id: int, query: str) -> Dict[str, Any]:
         """Gather context from ALL sources using MCP tools."""
@@ -906,10 +978,15 @@ class IntelligenceGateway:
             context["files"] = file_result["result"]
             context["sources"].extend([{"type": "file", "path": f.get("path"), "title": f.get("name")} for f in file_result["result"]])
         
-        # 3. Intelligent Context Assembly
+        # 3. Documents
+        doc_result = await self._search_documents(user_id, query, limit=3)
+        if doc_result:
+            context["documents"] = doc_result
+            context["sources"].extend([{"type": "document", "id": d.get("id"), "title": d.get("title")} for d in doc_result])
+        
+        # 4. Intelligent Context Assembly
         context_parts = []
         if context["memories"]:
-            # Separate factual data from temporal chat logs
             logs = [m for m in context["memories"] if m.get("tags") and "interaction_log" in m.get("tags")]
             facts = [m for m in context["memories"] if not m.get("tags") or "interaction_log" not in m.get("tags")]
             
@@ -921,8 +998,10 @@ class IntelligenceGateway:
         if context["files"]:
             context_parts.append("<FILES>\n" + "\n".join([f"- [{f.get('name')}]: {f.get('content', '')[:500]}" for f in context["files"]]) + "\n</FILES>")
 
-        # 4. Only inject capabilities if the query is about the system or help
-        # 6. ⚠️ CRITICAL FIX: Only inject capabilities if the user ASKS about them
+        if context.get("documents"):
+            context_parts.append("<DOCUMENTS>\n" + "\n".join([f"- [{d.get('title')}]: {d.get('content', '')[:500]}" for d in context["documents"]]) + "\n</DOCUMENTS>")
+
+        # 5. Only inject capabilities if the query is about the system
         active_packs = [p for p in self.packs if p.get("is_active")]
         system_keywords = ["help", "capabilities", "you do", "tools", "packs", "features", "can you", "what can you", "what do you", "how do you", "your abilities"]
         
@@ -936,7 +1015,7 @@ class IntelligenceGateway:
         else:
             logger.info(f"⏭️ Skipped capabilities injection for query: {query[:50]}...")
 
-        # 5. Learned Patterns (L3 Ice)
+        # 6. Learned Patterns
         pattern_result = await MCPRegistry.call("pattern_explore", user_id=user_id)
         if pattern_result.get("success") and pattern_result.get("result"):
             context["patterns"] = pattern_result["result"]
@@ -951,11 +1030,9 @@ class IntelligenceGateway:
     
     def _choose_provider(self, query: str, context: Dict) -> str:
         """Choose the best intelligence provider."""
-        # 0. Check for explicit primary provider override (from DB)
         db_primary = self.config.get("router", {}).get("primary_override", "ollama").lower().strip()
         
         if db_primary != "ollama":
-            # Verify provider is configured/enabled
             if self.ai_tool.providers.get(db_primary, {}).get("enabled"):
                 return db_primary
 
@@ -964,19 +1041,15 @@ class IntelligenceGateway:
         if strategy == "local":
             return "ollama"
         
-        # Simple query with good context → use local
         word_count = len(query.split())
         if context["memories"] and word_count < 10:
             return "ollama"
         
-        # Complex query → try cloud
         if strategy == "hybrid" and (word_count > 12 or any(word in query.lower() for word in ["analyze", "compare", "evaluate", "explain", "how to", "what is"])):
-            # Check for any enabled cloud provider
-            for p_name in ["groq", "gemini", "openai", "claude", "mistral"]:
+            for p_name in ["groq", "grok", "gemini", "openai", "claude", "mistral"]:
                 if self.ai_tool.providers.get(p_name, {}).get("enabled"):
                     return p_name
             
-            # Check generic custom providers
             for p_name, p_cfg in self.ai_tool.providers.items():
                 if p_name != "ollama" and p_cfg.get("enabled"):
                     return p_name
@@ -1013,7 +1086,6 @@ class IntelligenceGateway:
     
     async def _learn_from_interaction(self, user_id: int, query: str, response: str, context: Dict):
         """Learn from every interaction and persist to episodic memory logs."""
-        # Do not save system errors or unavailable provider messages to episodic memory
         if response.startswith("[Ollama") or response.startswith("Error:") or "unavailable" in response.lower():
             return
             
@@ -1041,14 +1113,12 @@ class IntelligenceGateway:
             from sqlalchemy import select
             
             async with SessionLocal() as db:
-                # Smarter Search: If query is about learning/history, retrieve the most recent episodic logs
                 if any(word in query.lower() for word in ["learnt", "learned", "interaction", "about me", "history", "recent"]):
                     stmt = select(Memory).where(
                         Memory.user_id == user_id,
                         Memory.tags == "interaction_log"
                     ).order_by(Memory.id.desc()).limit(limit)
                 else:
-                    # Standard keyword search
                     stmt = select(Memory).where(
                         Memory.user_id == user_id,
                         Memory.content.ilike(f"%{query}%")

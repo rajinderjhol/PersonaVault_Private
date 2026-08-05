@@ -57,6 +57,7 @@
             <div class="nav-group"><div class="nav-label">Behaviour Packs</div>
                 <div class="nav-item" data-tab="packs" onclick="switchTab('packs')">📦 Domain Intelligence</div>
                 <div class="nav-item" data-tab="mcp" onclick="switchTab('mcp')">🔌 MCP Registry</div>
+                <div class="nav-item" data-tab="documents" onclick="switchTab('documents')">📄 Documents</div>
             </div>
             <div class="nav-group"><div class="nav-label">Decision Intelligence</div>
                 <div class="nav-item" data-tab="timeline" onclick="switchTab('timeline')">⏱️ Decision Timeline</div>
@@ -148,6 +149,7 @@
             else if (tabId === 'packs') fetchPacks();
             else if (tabId === 'agents') fetchAgentStatus();
             else if (tabId === 'mcp') fetchMcpRegistry();
+            else if (tabId === 'documents') loadDocuments();
             else if (tabId === 'governance') fetchGovernanceLogs();
             else if (tabId === 'security') fetchSecurityStatus();
             else if (tabId === 'trends') fetchTrends();
@@ -356,6 +358,7 @@
             const provider = document.getElementById('cloud-api-name').value;
             const host = document.getElementById('cloud-api-host').value;
             const api_key = document.getElementById('cloud-api-key').value;
+            const model = document.getElementById('cloud-api-model').value;
             
             if (!provider) { showToast('Enter a name to test', 'error'); return; }
 
@@ -363,7 +366,7 @@
             try {
                 const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-test', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ provider, host, api_key })
+                    body: JSON.stringify({ provider, host, api_key, model })
                 });
                 const data = await res.json();
                 if (data.success) {

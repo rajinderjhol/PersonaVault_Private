@@ -1,0 +1,12 @@
+# Legal Playbook for Contract Review
+
+## Key Clauses to Review
+1. Liability Cap: Limited to contract value
+2. Indemnification: Mutual indemnification required
+3. Termination: 30-day notice period
+4. Confidentiality: Standard NDA terms
+
+## Risk Categories
+- High Risk: Unlimited liability
+- Medium Risk: Liability cap > 2x contract value
+- Low Risk: Standard terms

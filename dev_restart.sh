@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define paths
-DB_PATH="storage/databases/pv.db"
+DB_PATH="instance/personavault.db"
 LOG_PATH="storage/logs/uvicorn.log"
 VECTOR_METADATA="storage/vector_metadata.pkl"
 ENV_PATH=".env"
@@ -9,7 +9,6 @@ ENV_PATH=".env"
 # 1. Load environment variables from .env if it exists
 if [ -f "$ENV_PATH" ]; then
     echo "📜 Loading environment variables from $ENV_PATH..."
-    # Export variables, ignoring comments and empty lines
     export $(grep -v '^#' "$ENV_PATH" | xargs)
 fi
 
@@ -29,22 +28,65 @@ if [ "$SAFE_MODE" = true ]; then
     echo "🛡️  Safe Restart initiated. Preserving database and memory lattices..."
 else
     echo "🔥 Full Restart initiated. Purging all volatile state..."
-    # Remove database
     if [ -f "$DB_PATH" ]; then
         rm "$DB_PATH"
         echo "   - Deleted SQLite Database"
     fi
-    # Remove vector index metadata
     if [ -f "$VECTOR_METADATA" ]; then
         rm "$VECTOR_METADATA"
         echo "   - Deleted Vector Metadata"
     fi
-    # Clear logs
     > "$LOG_PATH" || true
 fi
 
+# 3. Ensure system_configs table exists (for AI provider settings)
+echo "🔧 Checking database tables..."
+python3 -c "
+import sqlite3
+import os
+
+DB_PATH = 'instance/personavault.db'
+
+# Ensure directory exists
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
+conn = sqlite3.connect(DB_PATH)
+cursor = conn.cursor()
+
+# Create system_configs table if it doesn't exist
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS system_configs (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
+# Check if we need to seed default configs
+cursor.execute('SELECT COUNT(*) FROM system_configs')
+count = cursor.fetchone()[0]
+
+if count == 0:
+    print('   - Seeding default configuration...')
+    # Check if GROQ_API_KEY is in environment
+    groq_key = os.environ.get('GROQ_API_KEY', '')
+    
+    cursor.execute('''
+    INSERT OR REPLACE INTO system_configs (key, value) VALUES 
+        ('primary_ai_provider', 'groq'),
+        ('ai_provider_groq_enabled', 'true'),
+        ('ai_provider_groq_host', 'https://api.groq.com/openai/v1'),
+        ('ai_provider_groq_model', 'llama-3.3-70b-versatile'),
+        ('ai_provider_groq_api_key', ?)
+    ''', (groq_key,))
+    conn.commit()
+    print('   - Default configuration seeded.')
+
+conn.close()
+print('✅ Database tables verified.')
+"
+
 echo "🚀 Igniting Intelligence Gateway..."
-# Start uvicorn in the background
 nohup python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > storage/logs/uvicorn.log 2>&1 &
 
 echo "✅ Restart complete. Mode: $( [ "$SAFE_MODE" = true ] && echo "Safe (Data Preserved)" || echo "Full Wipe" )"

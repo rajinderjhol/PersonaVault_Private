@@ -34,6 +34,7 @@ from app.api.v1.endpoints.packs import router as packs_router
 from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
+from app.api.v1.endpoints.documents import router as documents_router
 from app.api.v1.endpoints.dashboard.dashboard_router import router as dashboard_router
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
@@ -315,6 +316,7 @@ app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
+app.include_router(documents_router, prefix="/api/v1", tags=["documents"])
 app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 
 # Dashboard UI Redirect
