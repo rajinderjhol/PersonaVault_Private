@@ -1,68 +1,27 @@
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy import select, delete
-from app.models import SemanticPattern as SemanticPatternModel
-from app.models import SemanticPattern
-from typing import List, Union, Optional
+from typing import List, Any, Optional
+from app.repositories.interfaces import ISemanticPatternRepository
 
 class SemanticMemory:
-    """Long-term knowledge from learned patterns."""
+    """Long-term knowledge from learned patterns. Orchestrates pattern management."""
     
-    def __init__(self, db: Union[AsyncSession, async_sessionmaker[AsyncSession]]):
-        self.db = db
+    def __init__(self, repository: ISemanticPatternRepository):
+        self.repository = repository
     
-    async def _get_session(self):
-        """Internal helper to get a session if a factory was provided."""
-        if callable(self.db):
-            return self.db()
-        return self.db
+    async def get_patterns(self) -> List[Any]:
+        """Get all learned patterns via the repository."""
+        return await self.repository.get_all()
 
-    async def get_patterns(self) -> List[SemanticPattern]:
-        """Get all learned patterns."""
-        session = await self._get_session()
-        try:
-            stmt = select(SemanticPatternModel)
-            result = await session.execute(stmt)
-            patterns = result.scalars().all()
-            return [SemanticPattern(
-                pattern_type=p.pattern_type,
-                trigger=p.trigger,
-                correction=p.correction,
-                occurrence_count=p.occurrence_count
-            ) for p in patterns]
-        finally:
-            if callable(self.db):
-                await session.close()
-
-    async def get_patterns_by_similarity(self, query_embedding: List[float], threshold: float = 0.7) -> List[SemanticPattern]:
+    async def get_patterns_by_similarity(self, query_embedding: List[float], threshold: float = 0.7) -> List[Any]:
         """
         Fetch patterns based on semantic similarity of triggers (Phase 4 readiness).
-        Currently falls back to retrieving all patterns for the Planner to evaluate.
+        Currently falls back to retrieving all patterns.
         """
-        return await self.get_patterns()
+        return await self.repository.get_all()
 
     async def remove_pattern(self, trigger: str):
-        """Remove a semantic pattern by its trigger string."""
-        session = await self._get_session()
-        try:
-            stmt = delete(SemanticPatternModel).where(SemanticPatternModel.trigger == trigger)
-            await session.execute(stmt)
-            await session.commit()
-        finally:
-            if callable(self.db):
-                await session.close()
+        """Remove a semantic pattern by its trigger string via the repository."""
+        return await self.repository.remove(trigger)
 
-    async def add_pattern(self, pattern: SemanticPattern):
-        """Add a new semantic pattern."""
-        session = await self._get_session()
-        try:
-            db_pattern = SemanticPatternModel(
-                pattern_type=pattern.pattern_type,
-                trigger=pattern.trigger,
-                correction=pattern.correction,
-                occurrence_count=pattern.occurrence_count
-            )
-            session.add(db_pattern)
-            await session.commit()
-        finally:
-            if callable(self.db):
-                await session.close()
+    async def add_pattern(self, pattern: Any):
+        """Add a new semantic pattern via the repository."""
+        return await self.repository.add(pattern)

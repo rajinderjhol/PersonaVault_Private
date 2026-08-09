@@ -1,38 +1,85 @@
 import logging
-from typing import List, Dict, Any, Union
-from app.core.base_memory import AbstractMemoryRepository
+from typing import List, Dict, Any, Union, Optional
+from app.repositories.interfaces import IMemoryRepository, IVectorRepository, IGraphRepository
 
 logger = logging.getLogger(__name__)
 
 class MemoryService:
     """
     High-level business logic for memory operations.
-    Now decoupled from data access via the Repository Pattern.
+    Orchestrates between L2 (Episodic/SQL), L3 (Semantic/Vector), and Graph repositories.
     """
-    def __init__(self, repository: AbstractMemoryRepository):
-        self.repository = repository
-        # Backwards compatibility for callers needing direct access to DB factory
-        self.db = getattr(repository, 'db', None) 
+    def __init__(
+        self, 
+        memory_repo: IMemoryRepository,
+        vector_repo: Optional[IVectorRepository] = None,
+        graph_repo: Optional[IGraphRepository] = None
+    ):
+        self.memory_repo = memory_repo
+        self.vector_repo = vector_repo
+        self.graph_repo = graph_repo
 
-    async def search_memories(self, user_id: int, query: str) -> List[Dict[str, Any]]:
+    async def search_memories(self, user_id: int, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """
         Hybrid search: Semantic (Vector) + Relational (Graph) + Keyword (SQL).
         """
+        results = []
+        seen_ids = set()
+
         try:
-            return await self.repository.search(user_id, query)
+            # 1. Semantic search (Vector)
+            if self.vector_repo:
+                vector_results = await self.vector_repo.search(query, user_id, limit=limit)
+                for res in vector_results:
+                    if res["id"] not in seen_ids:
+                        results.append(res)
+                        seen_ids.add(res["id"])
+
+            # 2. Keyword search (SQL) - Fallback or supplementary
+            sql_results = await self.memory_repo.search(user_id, query, limit=limit)
+            for m in sql_results:
+                if m.id not in seen_ids:
+                    results.append({
+                        "id": m.id,
+                        "content": m.content,
+                        "score": 0.5,  # Default score for keyword match
+                        "metadata": {"tags": m.tags, "title": m.title}
+                    })
+                    seen_ids.add(m.id)
+            
+            return results
         except Exception as e:
             logger.error(f"MemoryService: Search error: {e}")
             return []
 
-    async def save_memory(self, user_id: int, memory_type: str, content: str, tags: Union[str, List[str]]) -> Any:
-        """Save a memory and trigger multi-modal indexing."""
+    async def save_memory(self, user_id: int, memory_type: str, content: str, tags: Union[str, List[str]], title: Optional[str] = None) -> Any:
+        """Save a memory and trigger multi-modal indexing across repositories."""
         tags_str = ",".join(tags) if isinstance(tags, list) else tags
-        return await self.repository.add(user_id, content, memory_type, tags_str)
-    
-    async def create_memory_entry(self, user_id: int, title: str, content: str, tags: str, memory_id: int):
-        """Legacy trigger for manual indexing. Deprecated."""
-        pass
+        if not title:
+            title = content[:50] + ("..." if len(content) > 50 else "")
+        
+        # 1. Save to L2 (SQL)
+        new_memory = await self.memory_repo.add(user_id, title, content, memory_type, tags_str)
+        
+        # 2. Trigger side-effects (L3 Vector / Graph)
+        if new_memory:
+            if self.vector_repo:
+                await self.vector_repo.add(new_memory.id, content, user_id)
+            if self.graph_repo:
+                await self.graph_repo.add_node(new_memory.id, new_memory.title, "Memory", user_id)
+        
+        return new_memory
 
-    async def delete_expired_memories(self):
+    async def delete_expired_memories(self) -> int:
         """Logic for the 'Living Memory' concept."""
-        return await self.repository.delete_expired()
+        return await self.memory_repo.delete_expired()
+
+    async def delete_memory(self, memory_id: int) -> bool:
+        """Remove memory from all layers."""
+        success = await self.memory_repo.delete(memory_id)
+        if success:
+            if self.vector_repo:
+                await self.vector_repo.delete(memory_id)
+            # Graph deletion could also be added here
+        return success
+

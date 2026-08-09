@@ -20,11 +20,16 @@ storage/memory_db/
 storage/uploads/
 storage/logs/*.log
 
-# Environment
+# Environment — NEVER commit actual .env files
+# Only .env.example should be tracked
 .env
 .env.local
 .env.*.local
-.env.example
+.env.production
+.env.staging
+# NOTE: .env.example IS intentionally tracked (it has no real secrets)
+# Uncomment the next line to also exclude it if needed:
+# .env.example
 
 # IDE
 .vscode/
@@ -53,12 +58,13 @@ htmlcov/
 .cache/
 .npm/
 
-# Backup files
-*.bak
-*.backup
-*.broken
-
 # Ollama
 ollama.log
 .env.production
 *.bak2
+*.bak3
+*.old
+*.patch
+*.bak
+*.backup
+*.broken

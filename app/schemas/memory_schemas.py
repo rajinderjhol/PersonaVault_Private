@@ -87,3 +87,5 @@ class SemanticPattern(BaseModel):
     trigger: str       # keyword or query pattern
     correction: str    # the learned fix
     occurrence_count: int = 1
+    weight: float = 0.7
+    is_active: bool = True

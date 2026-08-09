@@ -3,14 +3,17 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List
+import logging
 from app.db.session import get_db
 from app.models import Memory, PersonalContext, IoTData
 from .auth import get_current_user_id
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 class MemoryCreate(BaseModel):
-    title: str
+    title: Optional[str] = None
     content: str
     tags: Optional[str] = ""
     expiry_days: Optional[int] = 0
@@ -53,7 +56,8 @@ async def create_memory(
             user_id=user_id,
             memory_type="text",
             content=memory.content,
-            tags=memory.tags or ""
+            tags=memory.tags or "",
+            title=memory.title
         )
         
         return {

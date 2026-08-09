@@ -57,8 +57,12 @@ from app.services.blackboard import CognitiveBlackboard
 from app.services.episodic_memory import EpisodicMemory
 from app.services.semantic_memory import SemanticMemory
 from app.services.approval import ApprovalService
-from app.db.memory_repository import SQLMemoryRepository
 from app.services.memory_service import MemoryService
+from app.repositories.sqlalchemy.memory import SQLMemoryRepository
+from app.repositories.sqlalchemy.episodic import SQLEpisodicTaskRepository
+from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+from app.repositories.faiss.vector import FAISSSemanticRepository
+from app.repositories.neo4j.graph import Neo4jGraphRepository
 from app.services.intelligence_gateway import gateway, MCPRegistry
 from app.services.consolidation_service import ConsolidationTask
 import scripts.seed_demo_data
@@ -87,12 +91,12 @@ os.makedirs("storage/logs", exist_ok=True)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize scheduler for background tasks
-init_scheduler()
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown events, including database seeding."""
+    # Initialize scheduler for background tasks
+    init_scheduler()
+    
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None) # Naive UTC for DB consistency
     # Initialize shared HTTP client
     app.state.ai_client = httpx.AsyncClient(
@@ -103,17 +107,29 @@ async def lifespan(app: FastAPI):
     # Inject shared client into global services
     vector_service._client = app.state.ai_client
 
+    # --- Initialize Repositories ---
+    logger.info("Lifespan: Initializing Repositories...")
+    app.state.repos = {
+        "memory": SQLMemoryRepository(db=SessionLocal),
+        "vector": FAISSSemanticRepository(client=app.state.ai_client),
+        "graph": Neo4jGraphRepository(),
+        "episodic_task": SQLEpisodicTaskRepository(db=SessionLocal),
+        "semantic_pattern": SQLSemanticPatternRepository(db=SessionLocal)
+    }
+
     # Initialize the Cognitive Swarm
     logger.info("Lifespan: Igniting Cognitive Swarm...")
     app.state.blackboard = CognitiveBlackboard()
     app.state.ai_router = AIRouter(engine_mode="Local-First (Ollama)")
-    app.state.semantic_memory = SemanticMemory(SessionLocal)
-    app.state.episodic_memory = EpisodicMemory(SessionLocal)
+    
+    # Inject repositories into specialized memory services
+    app.state.semantic_memory = SemanticMemory(repository=app.state.repos["semantic_pattern"])
+    app.state.episodic_memory = EpisodicMemory(repository=app.state.repos["episodic_task"])
     
     app.state.planning_agent = PlannerAgent(semantic_memory=app.state.semantic_memory)
     app.state.retrieval_agent = RetrievalAgent(
-        vector_store=vector_service,
-        graph_service=graph_service
+        vector_repo=app.state.repos["vector"],
+        graph_repo=app.state.repos["graph"]
     )
     app.state.generator_agent = GeneratorAgent(client=app.state.ai_client)
     app.state.judge_agent = JudgeAgent(ollama_url=Config.OLLAMA_BASE_URL, client=app.state.ai_client)
@@ -185,16 +201,14 @@ async def lifespan(app: FastAPI):
             
     # Initialize Cognitive Lattices (Load FAISS and Simulated Graph)
     logger.info("Lifespan: Initializing memory lattices...")
-    vector_service._load_or_create_index()
-    # Graph service simulation is SQL-backed and ready after metadata creation
+    app.state.repos["vector"]._load_or_create_index()
             
-    # Initialize Repository and MemoryService
-    app.state.memory_repository = SQLMemoryRepository(
-        db=SessionLocal,
-        vector_service=vector_service,
-        graph_service=graph_service
+    # Initialize MemoryService with the new repository architecture
+    app.state.memory_service = MemoryService(
+        memory_repo=app.state.repos["memory"],
+        vector_repo=app.state.repos["vector"],
+        graph_repo=app.state.repos["graph"]
     )
-    app.state.memory_service = MemoryService(repository=app.state.memory_repository)
 
     # Ignite background Crystallization Task
     app.state.consolidation_task = ConsolidationTask(
@@ -240,14 +254,51 @@ app.state.graph_service = graph_service
 app.state.iot_service = IoTService
 app.state.is_pulling_models = False
 
-# Add /metrics endpoint for Prometheus scraping
-metrics_app = make_asgi_app()
-app.mount("/metrics", metrics_app)  # Note: In production, protect this with IP whitelisting
+# --- /metrics endpoint — protected via IP allowlist + optional bearer token ---
+# Only Prometheus servers (or localhost) and callers with the correct METRICS_TOKEN
+# may scrape this endpoint. Unrecognised callers receive a 403.
+_raw_metrics_app = make_asgi_app()
 
-# CORS middleware
+async def _protected_metrics_app(scope, receive, send):
+    """ASGI wrapper that guards the Prometheus /metrics endpoint."""
+    if scope["type"] == "http":
+        # Extract client IP (handle X-Forwarded-For for reverse-proxied setups)
+        headers = dict(scope.get("headers", []))
+        forwarded_for = headers.get(b"x-forwarded-for", b"").decode()
+        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (
+            scope.get("client", ("unknown", 0))[0]
+        )
+
+        ip_allowed = client_ip in Config.METRICS_ALLOWED_IPS
+
+        # Check bearer token if configured
+        token_valid = False
+        if Config.METRICS_TOKEN:
+            auth_header = headers.get(b"authorization", b"").decode()
+            if auth_header.startswith("Bearer "):
+                token_valid = auth_header[7:] == Config.METRICS_TOKEN
+        else:
+            # No token configured — rely on IP allowlist only
+            token_valid = True
+
+        if not (ip_allowed or token_valid):
+            response = JSONResponse(
+                status_code=403,
+                content={"detail": "Forbidden: metrics endpoint is restricted"}
+            )
+            await response(scope, receive, send)
+            return
+
+    await _raw_metrics_app(scope, receive, send)
+
+app.mount("/metrics", _protected_metrics_app)
+
+# CORS middleware — origins are driven by ALLOWED_ORIGINS env var
+# In development (CORS_ALLOW_ALL=true + APP_ENV=development): wildcard is permitted
+# In all other cases: only listed origins are allowed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"] if Config.CORS_ALLOW_ALL else Config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -339,15 +390,39 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     # Complete the handshake first to avoid proxy timeout/errors
     await websocket.accept()
-    
-    # SECURITY HANDSHAKE: Validate session
+
+    # SECURITY HANDSHAKE: Validate session token against the database
     session_id = websocket.cookies.get("session_id")
     if not session_id:
-        logger.warning(f"WebSocket auth failed for {client_id}: No session_id cookie found.")
+        logger.warning(f"WebSocket auth failed for {client_id}: No session_id cookie.")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await manager.connect(client_id, websocket) # manager.connect should NO LONGER call accept()
+    # Verify the session exists, is active, and has not expired
+    try:
+        async with SessionLocal() as _ws_db:
+            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            session_stmt = select(UserSession).where(
+                UserSession.session_token == session_id,
+                UserSession.is_active == True,
+                UserSession.expires_at > now_utc,
+            )
+            result = await _ws_db.execute(session_stmt)
+            db_session = result.scalars().first()
+
+        if not db_session:
+            logger.warning(
+                f"WebSocket auth failed for {client_id}: "
+                f"session '{session_id[:8]}…' not found, expired, or inactive."
+            )
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    except Exception as ws_auth_err:
+        logger.error(f"WebSocket session lookup error for {client_id}: {ws_auth_err}")
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+        return
+
+    await manager.connect(client_id, websocket)  # manager.connect must NOT call accept() again
     try:
         while True:
             data = await websocket.receive_text()

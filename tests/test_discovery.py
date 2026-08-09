@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from EuPs import _Filter, PackageFinder
+from setuptools.discovery import _Filter, PackageFinder
 
 def test_filter_matching():
     """Test that the glob filtering logic works correctly."""

@@ -33,6 +33,20 @@ class WorkingMemory:
         self._data.pop(key, None)
         self._expiry.pop(key, None)
 
+    @property
+    def session_data(self) -> Dict[str, Any]:
+        return self._data
+
+    def update(self, key: str, value: Any):
+        self.set(key, value)
+
+    def clear(self):
+        self._data.clear()
+        self._expiry.clear()
+
+    def get_all(self) -> Dict[str, Any]:
+        return dict(self._data)
+
     def _evict_oldest(self):
         """Removes the oldest entry based on expiry time."""
         if not self._expiry:

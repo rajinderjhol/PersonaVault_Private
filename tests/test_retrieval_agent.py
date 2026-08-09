@@ -3,7 +3,7 @@ Tests for RetrievalAgent - fixed async mock issues.
 """
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
-from app.services.retrieval_agent import RetrievalAgent
+from app.swarm.core.retriever import RetrievalAgent
 from app.schemas.memory_schemas import RetrievalPlan, MemoryResult
 
 @pytest.fixture

@@ -12,8 +12,12 @@ class PlannerAgent:
     def __init__(self, semantic_memory: SemanticMemory):
         self.semantic_memory = semantic_memory
         self.pattern_threshold = 0.5  # Minimum weight to apply a pattern
+
+    async def plan(self, query: str, context: Dict[str, Any] = None) -> RetrievalPlan:
+        return await self.create_plan(query, context)
     
     async def create_plan(self, query: str, context: Dict[str, Any] = None) -> RetrievalPlan:
+
         """Creates a structured retrieval plan with applied patterns."""
         intent = self._analyze_intent(query)
         learned_patterns = await self.semantic_memory.get_patterns()
@@ -96,3 +100,5 @@ class PlannerAgent:
         """Generate human-readable explanation of the plan."""
         patterns_str = f" (applied {len(applied_patterns)} patterns)" if applied_patterns else ""
         return f"Query classified as {intent['type']}{patterns_str}."
+
+PlanningAgent = PlannerAgent

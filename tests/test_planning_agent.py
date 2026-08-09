@@ -4,9 +4,7 @@ Tests for PlanningAgent - fixed semantic patterns issue.
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 import sys
-sys.path.insert(0, '/home/rajinderj8888/personavault/backend')
-
-from app.services.planning_agent import PlanningAgent
+from app.swarm.core.planner import PlanningAgent
 from app.services.semantic_memory import SemanticMemory
 from app.schemas.memory_schemas import RetrievalPlan, SemanticPattern
 

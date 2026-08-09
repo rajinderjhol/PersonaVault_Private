@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 from dotenv import load_dotenv, find_dotenv
+from typing import List
 
 # Automatically find and load the .env file, searching upwards to the project root
 load_dotenv(find_dotenv())
@@ -15,6 +16,29 @@ class Config:
     INFRA_MODE = InfrastructureMode(os.getenv("INFRA_MODE", "converged"))
     CONNECTIVITY_MODE = os.getenv("CONNECTIVITY_MODE", "LOCAL")
     IS_AIR_GAPPED = os.getenv("IS_AIR_GAPPED", "false").lower() == "true"
+
+    # --- CORS ---
+    # In production, set ALLOWED_ORIGINS to a comma-separated list of allowed origins.
+    # Example: ALLOWED_ORIGINS=https://app.personavault.com,https://admin.personavault.com
+    _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+    ALLOWED_ORIGINS: List[str] = (
+        [o.strip() for o in _raw_origins.split(",") if o.strip()]
+        if _raw_origins
+        else ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
+    )
+    # Allow wildcard only in explicit dev mode — never in production
+    CORS_ALLOW_ALL: bool = (APP_ENV == "development") and (os.getenv("CORS_ALLOW_ALL", "false").lower() == "true")
+
+    # --- Metrics Endpoint Protection ---
+    # Set a strong random token: python -c 'import secrets; print(secrets.token_hex(32))'
+    METRICS_TOKEN: str = os.getenv("METRICS_TOKEN", "")
+    # Comma-separated IPs allowed to scrape /metrics without token (e.g. your Prometheus server)
+    _raw_metrics_ips = os.getenv("METRICS_ALLOWED_IPS", "127.0.0.1,::1")
+    METRICS_ALLOWED_IPS: List[str] = [ip.strip() for ip in _raw_metrics_ips.split(",") if ip.strip()]
+
+    # --- Rate Limiting ---
+    RATE_LIMIT_WINDOW: int = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+    MAX_REQUESTS_PER_WINDOW: int = int(os.getenv("MAX_REQUESTS_PER_WINDOW", "100"))
 
     # --- Cryptography ---
     SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_change_me")
