@@ -37,6 +37,18 @@ async def get_models(request: Request, current_user: int = Depends(get_current_u
 
 @router.post('/chat')
 async def chat_completion(chat_req: ChatRequest, request: Request, current_user: int = Depends(get_current_user)):
+    # Inject USB Clinical Context
+    clinical_context = """[CLINICAL CONTEXT: Patient USB-9923, 67yo Female, L-Lobe Mass detected (2.1cm), T2N0M0, Dr. Sarah Chen Attending. You are a clinical AI assistant for USB.]"""
+    
+    # Prepend context to the conversation
+    if not any(msg.get('role') == 'system' for msg in chat_req.messages):
+        chat_req.messages.insert(0, {"role": "system", "content": clinical_context})
+    else:
+        # Update existing system message
+        for msg in chat_req.messages:
+            if msg.get('role') == 'system':
+                msg['content'] = clinical_context + "\n" + msg.get('content', '')
+
     async def stream_generator():
         client = request.app.state.ai_client
         async with client.stream(

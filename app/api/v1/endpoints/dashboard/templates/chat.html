@@ -1,4 +1,4 @@
-<div id="chat-tab">
+<div id="chat-tab" style="padding: 20px;">
     <h2 style="color: var(--accent);">💬 PersonaVault Chat</h2>
     <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">
         Ask questions and get answers from your connected intelligence sources.
@@ -29,22 +29,13 @@ What would you like to know?</div>
             <button class="btn" style="background: #7f1d1d; padding: 5px 10px; font-size: 12px;" onclick="clearChat()">Clear Chat</button>
         </div>
 
-        <!-- New AI Provider Selector -->
+        <!-- AI Provider Selector -->
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border);">
             <label for="primary-ai-provider-select-chat" style="color: #94a3b8; font-size: 12px;">Primary AI Provider:</label>
             <select id="primary-ai-provider-select-chat" class="input-field" style="flex: 1; margin: 0;" onchange="updatePrimaryAIProviderChat(this.value)">
                 <option value="ollama">Ollama (Local)</option>
-                <!-- Options will be dynamically loaded by JS -->
             </select>
             <span id="primary-ai-provider-status-chat" class="tag tag-info">Loading...</span>
         </div>
     </div>
 </div>
-
-<script>
-    // This script block will be loaded with the chat.html fragment.
-    // The functions fetchAIProvidersForChat and updatePrimaryAIProviderChat need to be defined globally
-    // or within the scope of the dashboard's main script.
-    // Since base.html already has a script block, I'll define them there.
-    // The calls to these functions will be in base.html's refreshTabContent.
-</script>

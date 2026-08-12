@@ -1,0 +1,48 @@
+<div id="settings-tab" style="padding: 20px;">
+    <h2 style="color: var(--accent);">⚙️ Settings & Integrations</h2>
+    <p style="color: var(--text-secondary);">Manage your connected MCP tools and platform configuration.</p>
+    
+    <div class="grid" id="plugins-list">
+        <!-- Plugin cards will be dynamically injected here -->
+        <div class="card">
+            <div class="card-title">Loading plugins...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadPlugins() {
+        const container = document.getElementById('plugins-list');
+        try {
+            const res = await fetch('/api/v1/settings/tools');
+            const data = await res.json();
+            container.innerHTML = '';
+            
+            data.tools.forEach(plugin => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-title">${plugin.name}</div>
+                    <p>${plugin.description}</p>
+                    <button class="btn" onclick="togglePlugin('${plugin.name}', ${!plugin.enabled})">
+                        ${plugin.enabled ? 'Disable' : 'Enable'}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        } catch (e) {
+            container.innerHTML = `<div class="card"><div class="card-title">Error loading plugins</div></div>`;
+        }
+    }
+
+    async function togglePlugin(name, enabled) {
+        await fetch(`/api/v1/settings/tools/${name}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ enabled })
+        });
+        loadPlugins();
+    }
+
+    loadPlugins();
+</script>

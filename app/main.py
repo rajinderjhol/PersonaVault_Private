@@ -25,7 +25,7 @@ from passlib.context import CryptContext
 # Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, mcp
+    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization
 )
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
@@ -35,6 +35,7 @@ from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
 from app.api.v1.endpoints.documents import router as documents_router
+from app.api.v1.endpoints.clinical import router as clinical_router
 from app.api.v1.endpoints.dashboard.dashboard_router import router as dashboard_router
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
@@ -100,12 +101,18 @@ async def lifespan(app: FastAPI):
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None) # Naive UTC for DB consistency
     # Initialize shared HTTP client
     app.state.ai_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(60.0),
+        timeout=httpx.Timeout(300.0),
         limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
     )
     
     # Inject shared client into global services
     vector_service._client = app.state.ai_client
+
+    # Initialize Gateway configuration from DB
+    async with SessionLocal() as db:
+        await gateway._apply_config_async(db)
+        gateway._initialized_from_db = True
+        logger.info("✅ Intelligence Gateway initialized from database on startup")
 
     # --- Initialize Repositories ---
     logger.info("Lifespan: Initializing Repositories...")
@@ -192,8 +199,8 @@ async def lifespan(app: FastAPI):
                 db.add(admin_user)
                 await db.commit()
 
-            # Seed demo data if no memories exist
-            await scripts.seed_demo_data.seed()
+            # await scripts.seed_demo_data.seed()
+            pass
 
         except Exception as e:
             logger.warning(f"Lifespan seeding issue: {e}")
@@ -265,8 +272,10 @@ async def _protected_metrics_app(scope, receive, send):
         # Extract client IP (handle X-Forwarded-For for reverse-proxied setups)
         headers = dict(scope.get("headers", []))
         forwarded_for = headers.get(b"x-forwarded-for", b"").decode()
+        
+        client_info = scope.get("client")
         client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (
-            scope.get("client", ("unknown", 0))[0]
+            client_info[0] if client_info else "unknown"
         )
 
         ip_allowed = client_ip in Config.METRICS_ALLOWED_IPS
@@ -340,6 +349,9 @@ async def db_session_middleware(request: Request, call_next):
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(user_profile.router, prefix="/api/v1", tags=["user-profile"])
+app.include_router(organization.router, prefix="/api/v1", tags=["organizations"])
+app.include_router(settings.router, prefix="/api/v1", tags=["settings"])
 app.include_router(memory.router, prefix="/api/v1/memory", tags=["memory"])
 app.include_router(ollama.router, prefix="/api/v1/ollama", tags=["ollama"])
 app.include_router(iot.router, prefix="/api/v1/iot", tags=["iot"])
@@ -367,8 +379,10 @@ app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
-app.include_router(documents_router, prefix="/api/v1", tags=["documents"])
+app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
+app.include_router(clinical_router, tags=["clinical"])
+
 
 # Dashboard UI Redirect
 @app.get("/admin/dashboard", response_class=HTMLResponse)
@@ -567,9 +581,10 @@ async def chat_endpoint(request: Request, current_user: User = Depends(get_curre
     try:
         data = await request.json()
         query = data.get("query", "")
+        patient_id = data.get("patient_id") # Optional patient context
         if not query:
             return {"error": "Query is required"}
-        result = await gateway.chat(current_user.id, query, request.app.state)
+        result = await gateway.chat(current_user.id, query, request.app.state, patient_id=patient_id)
         return result
     except Exception as e:
         logger.error(f"Chat endpoint error: {e}")

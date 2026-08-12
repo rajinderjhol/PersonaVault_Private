@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PersonaVault Plugin Manifest",
+  "type": "object",
+  "required": ["name", "description", "handler_module", "handler_function"],
+  "properties": {
+    "name": { "type": "string", "description": "Unique identifier for the plugin" },
+    "description": { "type": "string", "description": "Human-readable description" },
+    "handler_module": { "type": "string", "description": "Python module path (e.g., app.plugins.my_tool.handler)" },
+    "handler_function": { "type": "string", "description": "Function name within the module to call" },
+    "parameters": { "type": "object", "description": "JSON schema for tool parameters" },
+    "enabled": { "type": "boolean", "default": true }
+  }
+}

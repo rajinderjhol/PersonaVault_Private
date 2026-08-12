@@ -73,7 +73,7 @@ async def dashboard_ui(request: Request):
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
 
-@router.get("/static/dashboard.css", response_class=HTMLResponse)
+@router.get("/static/dashboard.css")
 async def dashboard_css():
     """Serve the dashboard CSS."""
     css_path = Path(__file__).parent / "static" / "dashboard.css"
@@ -81,6 +81,24 @@ async def dashboard_css():
         with open(css_path, "r") as f:
             return HTMLResponse(f.read(), media_type="text/css")
     return HTMLResponse("/* CSS not found */", status_code=404)
+
+@router.get("/static/glassmorphism.css")
+async def glassmorphism_css():
+    """Serve the glassmorphism CSS."""
+    css_path = Path(__file__).parent / "static" / "glassmorphism.css"
+    if css_path.exists():
+        with open(css_path, "r") as f:
+            return HTMLResponse(f.read(), media_type="text/css")
+    return HTMLResponse("/* CSS not found */", status_code=404)
+
+@router.get("/static/js/clinical.js")
+async def clinical_js():
+    """Serve the clinical logic JS."""
+    js_path = Path(__file__).parent / "static" / "js" / "clinical.js"
+    if js_path.exists():
+        with open(js_path, "r") as f:
+            return HTMLResponse(f.read(), media_type="application/javascript")
+    return HTMLResponse("// JS not found", status_code=404)
 
 @router.get("/tab/{tab_id}", response_class=HTMLResponse)
 async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
@@ -636,12 +654,3 @@ async def _run_iot_simulation():
             await asyncio.sleep(5)
     except asyncio.CancelledError:
         pass
-
-@router.get("/static/dashboard.css", response_class=HTMLResponse)
-async def dashboard_css():
-    """Serve the dashboard CSS."""
-    css_path = Path(__file__).parent / "static" / "dashboard.css"
-    if css_path.exists():
-        with open(css_path, "r") as f:
-            return HTMLResponse(f.read(), media_type="text/css")
-    return HTMLResponse("/* CSS not found */", status_code=404)

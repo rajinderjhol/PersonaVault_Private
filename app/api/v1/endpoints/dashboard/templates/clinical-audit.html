@@ -1,0 +1,35 @@
+<div id="clinical-audit-tab">
+    <h2 style="color: var(--accent);">📋 Clinical Audit Trail</h2>
+    
+    <!-- Search & Filter -->
+    <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="clinical-audit-search" placeholder="Search by patient ID, decision, or receipt..." class="input-field" style="flex:2;">
+            <select id="clinical-audit-type" class="input-field" style="flex:1;">
+                <option value="all">All Decision Types</option>
+                <option value="radiology">Radiology</option>
+                <option value="pathology">Pathology</option>
+                <option value="clinical">Clinical Decision Support</option>
+                <option value="documentation">Clinical Documentation</option>
+            </select>
+            <button class="btn" onclick="searchClinicalAudit()"><i class="fas fa-search"></i> Search</button>
+            <button class="btn" style="background:#334155;" onclick="exportClinicalAudit()"><i class="fas fa-file-export"></i> Export</button>
+        </div>
+    </div>
+
+    <!-- Audit Results -->
+    <div class="card">
+        <h3 class="card-title">🔍 Verifiable Audit Trail</h3>
+        <div id="clinical-audit-results">
+            <div class="metric-label">Enter search criteria to view clinical audit trail.</div>
+        </div>
+    </div>
+
+    <!-- Cryptographic Evidence -->
+    <div class="card" style="border-top: 4px solid #a855f7; margin-top:20px;">
+        <h3 class="card-title">🔐 Cryptographic Evidence</h3>
+        <div id="crypto-evidence" style="font-family:monospace; font-size:11px; color:#94a3b8;">
+            <div class="metric-label">VAP receipts provide tamper-evident proof of clinical AI decisions.</div>
+        </div>
+    </div>
+</div>

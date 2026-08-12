@@ -105,6 +105,11 @@ async def list_tools(request: Request):
                     },
                     "required": ["insight"]
                 }
+            },
+            {
+                "name": "get_swarm_status",
+                "description": "Get the current status of all agents and active tasks in the swarm.",
+                "inputSchema": {"type": "object", "properties": {}}
             }
         ]
     }
@@ -139,6 +144,11 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any], request: Request,
     if tool_name == "get_empathy_context":
         agent = request.app.state.empathy_agent
         return {"content": [{"type": "text", "text": f"Current Mood: {agent.last_mood}, Tone: {agent.last_tone}"}]}
+
+    if tool_name == "get_swarm_status":
+        orchestrator = request.app.state.orchestrator
+        status_text = f"Active tasks: {orchestrator.active_tasks}. Agent activity: {json.dumps(orchestrator.agent_activity)}"
+        return {"content": [{"type": "text", "text": status_text}]}
 
     return {"error": "Tool not found", "isError": True}
 

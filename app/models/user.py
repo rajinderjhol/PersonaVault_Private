@@ -1,0 +1,24 @@
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from datetime import datetime
+from app.db.session import Base
+from sqlalchemy.orm import relationship
+
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String)
+    role = Column(String, default="user")
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+
+    # relationships
+    organization = relationship("Organization", back_populates="users")
+    sessions = relationship("UserSession", back_populates="user")
+    profile = relationship("UserProfile", back_populates="user", uselist=False)

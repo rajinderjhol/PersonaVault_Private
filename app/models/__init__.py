@@ -25,21 +25,12 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_login = Column(DateTime, nullable=True)
-    # relationship
-    sessions = relationship("UserSession", back_populates="user")
+from app.models.organization import Organization
+from app.models.user import User
+from app.models.user_profile import UserProfile
+from app.models.system_config import SystemConfig
 
-class Organization(Base):
-    __tablename__ = "organizations"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    slug = Column(String, unique=True, index=True, nullable=False)
-    description = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_active = Column(Boolean, default=True)
-    settings = Column(JSON, default={})
-
+# Role model is still here, keeping it.
 class Role(Base):
     __tablename__ = "roles"
     id = Column(Integer, primary_key=True, index=True)
@@ -99,12 +90,6 @@ class UserSession(Base):
     is_active = Column(Boolean, default=True)
     # relationship
     user = relationship("User", back_populates="sessions")
-
-class SystemConfig(Base):
-    __tablename__ = "system_configs"
-    key = Column(String, primary_key=True, index=True)
-    value = Column(String, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class EpisodicEntry(Base):
     __tablename__ = "episodic_entries"

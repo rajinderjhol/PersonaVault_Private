@@ -6,7 +6,7 @@ import uuid
 @pytest.mark.asyncio
 async def test_get_current_settings(client, db_session):
     """Test getting current Ollama settings."""
-    user = User(username="test_user", email="test@test.com", is_active=True)
+    user = User(username="test_user", email="test@test.com", hashed_password="dummy_password", is_active=True)
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
