@@ -6,15 +6,15 @@ This documentation outlines how the VeriLinkOS + PersonaVault fusion platform ac
 
 ## II. Why This Architecture Matters for USB
 
-| USB Need | How Fusion Delivers |
+| USB Need | Fusion Platform Delivery |
 |----------|---------------------|
-| **Data Sovereignty** | You control your data, whether stored in openEHR or Epic |
-| **Sovereign AI Control** | You own your AI models, reinforcement patterns, and governance constitution |
-| **Vendor-Neutral Future** | Change your KIS without rebuilding governance |
+| **Data Sovereignty** | USB retains control of data, whether stored in openEHR or Epic |
+| **Sovereign AI Control** | USB retains ownership of AI models, reinforcement patterns, and governance constitution |
+| **Vendor-Neutral Future** | Change KIS without rebuilding governance |
 | **Crypto-Proof Compliance** | Every AI decision is independently verifiable |
-| **Safe Autonomy** | AI agents can operate with trust, not fear |
+| **Safe Autonomy** | AI agents operate with trust and verification |
 
-*Note: Fusion directly addresses the pervasive "Shadow AI" problem—where clinical staff use unapproved AI tools—by bringing all AI interactions into a governed, safe, and auditable environment.*
+*Note: The platform directly addresses the pervasive "Shadow AI" problem—where clinical staff use unapproved AI tools—by bringing all AI interactions into a governed, safe, and auditable environment.*
 
 ...
 
@@ -112,7 +112,7 @@ Our architecture is designed to be successful regardless of whether USB proceeds
 ### Scenario B: Proprietary KIS (e.g., Epic) Deployment
 **The Pitch:** Fusion is the **essential safeguard and integration layer** for the Epic deployment. It mitigates vendor lock-in by enforcing governance, ensuring cryptographic proof of AI decisions, and managing interoperability within the regional health network, acting as the "sovereign buffer" that ensures USB remains in control.
 
-## VII. How Your Fusion Connects to Each Layer
+## VII. How the Fusion Platform Connects to Each Layer
 
 - **Data Platform (openEHR):** VeriLinkOS acts as an **MCP Client** to query clinical audit trails and provenance data via SQL, while PersonaVault provides semantic context.
 - **Trust Infrastructure (Stargate):** Native integration. VeriLinkOS utilizes Ed25519 signatures (compatible with KERI/DKMS) and ACDC-compatible VAP Receipts.
@@ -158,14 +158,14 @@ In the hybrid scenario, openEHR acts as the critical "data buffer" preventing ve
 
 ## X. Sovereign & Vendor-Neutral by Design
 
-| Design Principle | How Fusion Delivers |
+| Design Principle | Fusion Platform Delivery |
 |------------------|---------------------|
-| **USB Owns Intelligence** | You manage your own Local Guardian Constitution, learned patterns, and audit trails. The platform is a tool; the intelligence belongs to USB. |
-| **Sovereign AI Control** | You own your AI models, reinforcement patterns, and governance constitution. **USB retains full authority over AI behavior, policy evolution, and decision intelligence—Fusion is the infrastructure, not the authority.** |
-| **Model Agnostic** | Use any model—local models via Ollama, frontier models (GPT-4/Claude) via secure routing, or custom clinical models via MCP. |
+| **USB Owns Intelligence** | USB manages its own Local Guardian Constitution, learned patterns, and audit trails. The platform is infrastructure; the intelligence belongs to USB. |
+| **Sovereign AI Control** | USB retains full authority over AI behavior, policy evolution, and decision intelligence. |
+| **Model Agnostic** | Supports local models (Ollama), secure routing to frontier models (GPT-4/Claude), or custom clinical models via MCP. |
 | **MCP Connectivity** | Connects to any system (openEHR, Epic, Meona, Stargate). |
-| **Sovereign Data** | You control your keys, data, and infrastructure. |
-| **No Lock-in** | If we disappear, your receipts remain verifiable. |
+| **Sovereign Data** | USB controls keys, data, and infrastructure. |
+| **No Lock-in** | AI receipts remain independently verifiable, regardless of infrastructure changes. |
 
 ## XI. openEHR Data Platform + Fusion Integration
 
