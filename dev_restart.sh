@@ -29,7 +29,10 @@ for arg in "$@"; do
 done
 
 echo "🛑 Stopping PersonaVault processes..."
-pkill -f "uvicorn app.main:app" || true
+# Ensure we kill uvicorn properly
+pkill -f "uvicorn" || true
+# Wait a bit longer to ensure processes have fully released ports
+sleep 2 
 pkill ollama 2>/dev/null || true
 sleep 1
 
