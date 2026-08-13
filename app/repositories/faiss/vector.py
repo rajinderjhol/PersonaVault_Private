@@ -26,15 +26,15 @@ class FAISSSemanticRepository(IVectorRepository):
         self._load_or_create_index()
 
     def _load_or_create_index(self):
-        if os.path.exists(self.index_path) and os.path.exists(self.metadata_path):
-            try:
+        try:
+            if os.path.exists(self.index_path) and os.path.exists(self.metadata_path):
                 self.index = faiss.read_index(self.index_path)
                 with open(self.metadata_path, 'rb') as f:
                     self.metadata = pickle.load(f)
-            except Exception as e:
-                logger.error(f"Failed to load vector index: {e}")
-                self._create_new_index()
-        else:
+            else:
+                raise FileNotFoundError("Index or metadata files missing.")
+        except Exception as e:
+            logger.error(f"Failed to load vector index: {e}. Creating a new index.")
             self._create_new_index()
 
     def _create_new_index(self):

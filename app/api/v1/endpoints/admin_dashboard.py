@@ -185,13 +185,22 @@ async def get_system_metrics(
 # ============ Management Endpoints ============
 
 @router.get("/models")
-async def list_installed_models(request: Request, user_id: int = Depends(require_admin)):
+async def list_installed_models(request: Request, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """List models installed in Ollama."""
     try:
         client = request.app.state.ai_client
         response = await client.get(f"{Config.OLLAMA_BASE_URL}/api/tags", timeout=2.0)
-        return response.json() if response.status_code == 200 else {"models": []}
-    except Exception: return {"models": []}
+        
+        # Get active model
+        stmt = select(SystemConfig).where(SystemConfig.key == "ai_provider_ollama_model")
+        result = await db.execute(stmt)
+        active_config = result.scalars().first()
+        active_model = active_config.value if active_config else None
+        
+        data = response.json() if response.status_code == 200 else {"models": []}
+        data["active_model"] = active_model
+        return data
+    except Exception: return {"models": [], "active_model": None}
 
 @router.post("/models/pull")
 async def pull_ollama_model(request: Request, body: dict, user_id: int = Depends(require_admin)):

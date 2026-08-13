@@ -28,7 +28,7 @@ PUBLIC_PATHS = {
 }
 
 # Prefixes for routes requiring administrative privileges
-ADMIN_PREFIXES = ["/api/v1/admin", "/admin"]
+ADMIN_PREFIXES = ["/api/v1/admin", "/api/v1/admin/dashboard", "/admin"]
 
 async def rbac_middleware(request: Request, call_next):
     """

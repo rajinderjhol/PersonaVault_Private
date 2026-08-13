@@ -72,7 +72,7 @@ async def get_current_settings(
 ):
     """Get current active settings for user"""
     stmt = select(AISetting).where(
-        AISetting.user_id == current_user,
+        AISetting.user_id == current_user.id,
         AISetting.is_active == True
     ).order_by(AISetting.created_at.desc())
     
@@ -99,7 +99,7 @@ async def get_past_settings(
 ):
     """Get historical settings for user"""
     stmt = select(AISetting).where(
-        AISetting.user_id == current_user
+        AISetting.user_id == current_user.id
     ).order_by(AISetting.created_at.desc())
     
     result = await db.execute(stmt)

@@ -27,10 +27,11 @@ class MultiAgentOrchestrator:
     Layer 2 (Episodic): Task history and short-term interactions.
     Layer 3 (Semantic): Long-term learned patterns and constraints.
     """
-    def __init__(self, db_session, agents: Dict[str, Any] = None):
+    def __init__(self, db_session, blackboard, agents: Dict[str, Any] = None):
         self.db = db_session
+        self.blackboard = blackboard
         self.working_memory = WorkingMemory()
-        self.episodic_memory = EpisodicMemory(db_session)
+        # self.episodic_memory initialized below
         self.semantic_memory = SemanticMemory(db_session)
         
         # Agent status tracking
@@ -60,9 +61,21 @@ class MultiAgentOrchestrator:
         self.validator = self.agents.get("validator")
         self.hitl = self.agents.get("hitl")
         self.empathy = self.agents.get("empathy")
+        
+        # Correctly initialize EpisodicMemory with the repository from agents/DI
+        self.episodic_memory = self.agents.get("episodic") or EpisodicMemory(SQLEpisodicTaskRepository(db_session))
 
         self.awareness = AwarenessService()
         self.persona_profiler = PersonaProfiler(db_session)
+    
+    async def log_step(self, agent: str, action: str, to: str, data: Dict[str, Any]):
+        """Persist a cognitive cycle step to the blackboard."""
+        logger.info(f"LOGGING_STEP: {agent} -> {to} | Action: {action}")
+        await self.blackboard.post_insight(
+            agent_name=agent,
+            insight={"event": action, "to": to, "data": data},
+            importance=0.8
+        )
     
     async def _broadcast_agent_status(self):
         """Broadcast current agent status to all WebSocket clients."""
@@ -126,6 +139,7 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             await self._broadcast_thought("Planner", "📝 Creating retrieval plan...")
             plan = await self.planning.create_plan(query, context=context)
+            await self.log_step("Planner", "Created retrieval plan", "Retriever", {"plan": plan})
             self.agent_activity["planner"] = "idle"
             await self._broadcast_agent_status()
             
@@ -134,6 +148,7 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             await self._broadcast_thought("Retriever", "🔍 Searching memories...")
             results = await self.retrieval.hybrid_search(plan, user_id)
+            await self.log_step("Retriever", "Executed hybrid search", "Generator", {"results_count": len(results)})
             self.agent_activity["retriever"] = "idle"
             await self._broadcast_agent_status()
             await self._broadcast_thought("Retriever", f"📊 Found {len(results)} results")
@@ -145,6 +160,7 @@ class MultiAgentOrchestrator:
             async with self.db() as session:
                 situational_context = await self.awareness.get_contextual_awareness(user_id, session)
                 user_persona = await self.persona_profiler.get_or_create_profile(user_id, session=session)
+            await self.log_step("Empathy", "Analyzed situational context", "Generator", {"context_keys": list(situational_context.keys())})
             self.agent_activity["empathy"] = "idle"
             await self._broadcast_agent_status()
 
@@ -153,6 +169,7 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             await self._broadcast_thought("Router", "🔄 Routing to AI provider...")
             route = await self.ai_router.get_route(query)
+            await self.log_step("Router", "Determined processing path", "Generator", {"route": route})
             self.agent_activity["router"] = "idle"
             await self._broadcast_agent_status()
             
@@ -168,6 +185,7 @@ class MultiAgentOrchestrator:
                 route=route
             )
             response_text = generation.get("answer", "")
+            await self.log_step("Generator", "Generated response", "Judge", {"answer_preview": response_text[:50]})
             self.agent_activity["generator"] = "idle"
             await self._broadcast_agent_status()
             
@@ -176,6 +194,7 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             await self._broadcast_thought("Judge", "⚖️ Evaluating response quality...")
             evaluation = await self.judge.evaluate(query, response_text, results)
+            await self.log_step("Judge", "Evaluated response quality", "Orchestrator", {"passed": evaluation.passed})
             self.agent_activity["judge"] = "idle"
             await self._broadcast_agent_status()
             
@@ -196,6 +215,7 @@ class MultiAgentOrchestrator:
                     route=route
                 )
                 response_text = generation.get("answer", "")
+                await self.log_step("Generator", "Regenerated response", "Orchestrator", {"answer_preview": response_text[:50]})
                 self.agent_activity["generator"] = "idle"
                 await self._broadcast_agent_status()
                 

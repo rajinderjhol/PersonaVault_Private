@@ -3,14 +3,15 @@
    ============================================ */
 
 :root {
-    --accent: #38bdf8;
-    --bg: #0f172a;
-    --card-bg: #1e293b;
-    --sidebar: #111827;
+    --accent: #64748b;
+    --bg: #0b1424;
+    --card-bg: #182438;
+    --sidebar: #101a2b;
     --border: #334155;
-    --success: #34d399;
-    --warning: #fbbf24;
-    --danger: #f87171;
+    --success: #10b981;
+    --warning: #d97706;
+    --danger: #ef4444;
+    --neutral-btn: #1e293b;
 }
 
 * { box-sizing: border-box; }
@@ -18,7 +19,7 @@
 body {
     font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
-    color: #f1f5f9;
+    color: #e2e8f0;
     margin: 0;
     padding: 0;
     display: flex;
@@ -29,7 +30,7 @@ body {
 
 /* ========== HEADER ========== */
 header {
-    background: var(--card-bg);
+    background: var(--sidebar);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -38,7 +39,7 @@ header {
     z-index: 10;
     flex-shrink: 0;
 }
-header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; }
+header h1 { color: var(--accent); margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; }
 
 /* ========== LAYOUT ========== */
 .layout { display: flex; flex: 1; overflow: hidden; }
@@ -59,7 +60,7 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
     padding: 0 30px;
     font-size: 11px;
     font-weight: 700;
-    color: #64748b;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-bottom: 10px;
@@ -67,7 +68,7 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
 .nav-item {
     padding: 12px 30px;
     cursor: pointer;
-    color: #94a3b8;
+    color: #64748b;
     font-size: 14px;
     transition: all 0.2s;
     border-left: 3px solid transparent;
@@ -75,9 +76,9 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
     align-items: center;
     gap: 10px;
 }
-.nav-item:hover { background: rgba(56, 189, 248, 0.05); color: #f1f5f9; }
+.nav-item:hover { background: rgba(255, 255, 255, 0.03); color: #e2e8f0; }
 .nav-item.active {
-    background: rgba(56, 189, 248, 0.1);
+    background: rgba(100, 116, 139, 0.08);
     color: var(--accent);
     border-left-color: var(--accent);
     font-weight: 600;
@@ -110,7 +111,7 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
 .metric-value {
     font-size: 36px;
     font-weight: 800;
-    color: #fbbf24;
+    color: #e2e8f0;
     margin: 10px 0;
 }
 .metric-label {
@@ -129,11 +130,11 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
     font-size: 10px;
     font-weight: 700;
     background: var(--border);
-    color: #f1f5f9;
+    color: #cbd5e1;
 }
-.tag-success { background: #065f46; color: #34d399; }
-.tag-warning { background: #78350f; color: #fbbf24; }
-.tag-danger { background: #7f1d1d; color: #f87171; }
+.tag-success { background: rgba(52, 211, 153, 0.1); color: var(--success); }
+.tag-warning { background: rgba(251, 191, 36, 0.1); color: var(--warning); }
+.tag-danger { background: rgba(248, 113, 113, 0.1); color: var(--danger); }
 
 /* ========== BUTTONS ========== */
 .btn {
@@ -141,7 +142,7 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
     align-items: center;
     gap: 8px;
     background: var(--accent);
-    color: #0f172a;
+    color: #0b1424;
     padding: 10px 20px;
     border-radius: 6px;
     text-decoration: none;
@@ -155,15 +156,15 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
 .btn-danger:hover { background: #ef4444; }
 .refresh-btn {
     cursor: pointer;
-    color: var(--accent);
-    background: transparent;
-    border: 1px solid var(--accent);
+    color: #94a3b8;
+    background: var(--neutral-btn);
+    border: 1px solid var(--border);
     padding: 8px 16px;
     border-radius: 6px;
     font-weight: 600;
     transition: all 0.2s;
 }
-.refresh-btn:hover { background: rgba(56, 189, 248, 0.1); }
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ========== INPUTS ========== */
 .input-field {
@@ -171,15 +172,15 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
     padding: 10px;
     margin: 10px 0;
     border-radius: 4px;
-    border: 1px solid #334155;
-    background: #020617;
+    border: 1px solid var(--border);
+    background: #050b18;
     color: white;
     box-sizing: border-box;
 }
 
 /* ========== LOGS ========== */
 .log-container {
-    background: #020617;
+    background: #050b18;
     flex-grow: 1;
     overflow-y: auto;
     padding: 15px;
@@ -191,9 +192,9 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
     line-height: 1.4;
     max-height: 500px;
 }
-.log-line-error { color: #f87171; }
-.log-line-warning { color: #fbbf24; }
-.log-line-info { color: #38bdf8; }
+.log-line-error { color: var(--danger); }
+.log-line-warning { color: var(--warning); }
+.log-line-info { color: var(--accent); }
 
 /* ========== STAT ROWS ========== */
 .stat-row {
@@ -205,24 +206,47 @@ header h1 { color: #38bdf8; margin: 0; font-size: 22px; font-weight: 800; letter
 }
 .stat-row:last-child { border-bottom: none; }
 .stat-label { color: #94a3b8; }
-.stat-value { color: #f1f5f9; font-weight: 600; font-family: monospace; }
+.stat-value { color: #e2e8f0; font-weight: 600; font-family: monospace; }
 
 /* ========== FLEX ========== */
-.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.agents-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+.cot-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    align-items: stretch;
+}
+.full-graph-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+}
+.full-graph-wrapper > #full-graph-container, 
+.full-graph-wrapper > #full-thought-log {
+    flex: 1;
+    overflow: auto;
+}
 
 /* ========== MEMORY LATTICE ========== */
 .mem-viz-container {
     margin-top: 15px;
-    background: #020617;
+    background: #050b18;
     border-radius: 6px;
     height: 14px;
     display: flex;
     overflow: hidden;
     border: 1px solid var(--border);
 }
-.viz-l1 { background: #fbbf24; height: 100%; transition: width 0.6s ease-in-out; }
-.viz-l2 { background: #38bdf8; height: 100%; transition: width 0.6s ease-in-out; }
-.viz-l3 { background: #a855f7; height: 100%; transition: width 0.6s ease-in-out; }
+.viz-l1 { background: #475569; height: 100%; transition: width 0.6s ease-in-out; }
+.viz-l2 { background: var(--accent); height: 100%; transition: width 0.6s ease-in-out; }
+.viz-l3 { background: #7dd3fc; height: 100%; transition: width 0.6s ease-in-out; }
 .viz-legend {
     display: flex;
     gap: 20px;

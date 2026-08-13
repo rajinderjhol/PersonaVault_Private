@@ -224,8 +224,24 @@ async def get_health_telemetry(request: Request, user = Depends(require_admin)):
     """Exposes current biometric data to the dashboard."""
     return getattr(request.app.state, "medical_adapter", None).last_reading if hasattr(request.app.state, "medical_adapter") else {}
 
-@router.get("/mcp/tools")
-async def list_mcp_tools(request: Request, user = Depends(require_admin)):
-    """Exposes registered MCP tools."""
-    server = getattr(request.app.state, "mcp_server", None)
-    return await server.list_tools() if server else []
+from app.services.intelligence_gateway import gateway
+...
+@router.post("/models/set-active")
+async def set_active_ollama_model(body: dict, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Set the active Ollama model."""
+    model_name = body.get("model")
+    if not model_name: raise HTTPException(status_code=400, detail="Model name required")
+    
+    stmt = select(SystemConfig).where(SystemConfig.key == "ai_provider_ollama_model")
+    result = await db.execute(stmt)
+    config = result.scalars().first()
+    
+    if not config:
+        db.add(SystemConfig(key="ai_provider_ollama_model", value=model_name))
+    else:
+        config.value = model_name
+        
+    await db.commit()
+    await gateway.reload_config()
+    return {"status": "success"}
+

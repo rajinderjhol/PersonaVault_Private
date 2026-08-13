@@ -70,3 +70,6 @@ ollama.log
 *.broken
 cookies.txt
 cookies.txt
+backend-cert.pem
+backend-key.pem
+full_db_dump.sql

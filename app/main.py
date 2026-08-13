@@ -98,7 +98,8 @@ async def lifespan(app: FastAPI):
     # Initialize scheduler for background tasks
     init_scheduler()
     
-    now_utc = datetime.now(timezone.utc).replace(tzinfo=None) # Naive UTC for DB consistency
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    
     # Initialize shared HTTP client
     app.state.ai_client = httpx.AsyncClient(
         timeout=httpx.Timeout(300.0),
@@ -107,12 +108,6 @@ async def lifespan(app: FastAPI):
     
     # Inject shared client into global services
     vector_service._client = app.state.ai_client
-
-    # Initialize Gateway configuration from DB
-    async with SessionLocal() as db:
-        await gateway._apply_config_async(db)
-        gateway._initialized_from_db = True
-        logger.info("✅ Intelligence Gateway initialized from database on startup")
 
     # --- Initialize Repositories ---
     logger.info("Lifespan: Initializing Repositories...")
@@ -129,7 +124,6 @@ async def lifespan(app: FastAPI):
     app.state.blackboard = CognitiveBlackboard()
     app.state.ai_router = AIRouter(engine_mode="Local-First (Ollama)")
     
-    # Inject repositories into specialized memory services
     app.state.semantic_memory = SemanticMemory(repository=app.state.repos["semantic_pattern"])
     app.state.episodic_memory = EpisodicMemory(repository=app.state.repos["episodic_task"])
     
@@ -150,7 +144,7 @@ async def lifespan(app: FastAPI):
     app.state.hitl_service = HITLService(SessionLocal)
     app.state.approval_service = ApprovalService(SessionLocal)
 
-    app.state.orchestrator = MultiAgentOrchestrator(db_session=SessionLocal, agents={
+    app.state.orchestrator = MultiAgentOrchestrator(db_session=SessionLocal, blackboard=app.state.blackboard, agents={
         "planner": app.state.planning_agent,
         "retriever": app.state.retrieval_agent,
         "reasoner": app.state.reasoner_agent,
@@ -169,10 +163,10 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Seed default data
+    # --- ✅ SEED DATABASE FIRST ---
     async with SessionLocal() as db:
         try:
-            # Ensure default organization exists (Foreign Key requirement)
+            # Ensure default organization exists
             org_stmt = select(Organization).where(Organization.slug == "default")
             org_result = await db.execute(org_stmt)
             org = org_result.scalars().first()
@@ -190,7 +184,7 @@ async def lifespan(app: FastAPI):
                 admin_user = User(
                     username="admin",
                     email="admin@personavault.local",
-                    hashed_password=pwd_context.hash("admin123"), # Hash the password!
+                    hashed_password=pwd_context.hash("admin123"),
                     role="admin",
                     last_login=now_utc,
                     organization_id=org.id,
@@ -199,18 +193,35 @@ async def lifespan(app: FastAPI):
                 db.add(admin_user)
                 await db.commit()
 
-            # await scripts.seed_demo_data.seed()
-            pass
+            # ✅ SEED SYSTEM_CONFIGS HERE
+            # Check if system_configs has ai_providers
+            config_stmt = select(SystemConfig).where(SystemConfig.key == "ai_providers")
+            config_result = await db.execute(config_stmt)
+            config = config_result.scalars().first()
+            if not config:
+                logger.info("Seeding ai_providers config...")
+                config = SystemConfig(
+                    key="ai_providers",
+                    value='{"ollama": {"enabled": true, "host": "http://localhost:11434", "model": "tinydolphin:latest"}}'
+                )
+                db.add(config)
+                await db.commit()
 
         except Exception as e:
             logger.warning(f"Lifespan seeding issue: {e}")
             await db.rollback()
-            
-    # Initialize Cognitive Lattices (Load FAISS and Simulated Graph)
+    
+    # --- ✅ NOW INITIALIZE GATEWAY ---
+    async with SessionLocal() as db:
+        await gateway._apply_config_async(db)
+        gateway._initialized_from_db = True
+        logger.info("✅ Intelligence Gateway initialized from database on startup")
+
+    # Initialize Cognitive Lattices
     logger.info("Lifespan: Initializing memory lattices...")
     app.state.repos["vector"]._load_or_create_index()
             
-    # Initialize MemoryService with the new repository architecture
+    # Initialize MemoryService
     app.state.memory_service = MemoryService(
         memory_repo=app.state.repos["memory"],
         vector_repo=app.state.repos["vector"],
@@ -223,12 +234,10 @@ async def lifespan(app: FastAPI):
         memory_service=app.state.memory_service,
         config={"batch_size": 10, "interval_hours": 1.0}
     )
-    # Inject attributes to ensure manual triggers work
     app.state.consolidation_task.trigger_event = asyncio.Event()
-
     asyncio.create_task(app.state.consolidation_task.run())
 
-    # Ignite Physical Telemetry Adapter (now HealthAgent in the Swarm)
+    # Ignite Physical Telemetry Adapter
     from app.swarm.specialized.health import HealthAgent
     app.state.medical_adapter = HealthAgent(
         orchestrator=app.state.orchestrator,
@@ -582,9 +591,17 @@ async def chat_endpoint(request: Request, current_user: User = Depends(get_curre
         data = await request.json()
         query = data.get("query", "")
         patient_id = data.get("patient_id") # Optional patient context
+        provider = data.get("provider", "ollama")
+        
         if not query:
             return {"error": "Query is required"}
-        result = await gateway.chat(current_user.id, query, request.app.state, patient_id=patient_id)
+            
+        result = await gateway.chat(current_user.id, query, request.app.state, patient_id=patient_id, provider=provider)
+        
+        # Ensure the response includes the provider
+        if "response" in result:
+            result["provider"] = provider
+            
         return result
     except Exception as e:
         logger.error(f"Chat endpoint error: {e}")

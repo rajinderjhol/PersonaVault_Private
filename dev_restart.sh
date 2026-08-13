@@ -29,12 +29,19 @@ for arg in "$@"; do
 done
 
 echo "🛑 Stopping PersonaVault processes..."
-# Ensure we kill uvicorn properly
-pkill -f "uvicorn" || true
-# Wait a bit longer to ensure processes have fully released ports
-sleep 2 
+pkill -9 -f "uvicorn" 2>/dev/null || true
+pkill -9 -f "python3 -m uvicorn" 2>/dev/null || true
+pkill -9 -f "app.main:app" 2>/dev/null || true
+fuser -k 8000/tcp 2>/dev/null || true
 pkill ollama 2>/dev/null || true
-sleep 1
+pkill -9 -f "llama-server" 2>/dev/null || true
+sleep 2
+
+if lsof -i :8000 > /dev/null 2>&1; then
+    echo "⚠️ Port 8000 still in use. Forcing kill..."
+    lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+    sleep 1
+fi
 
 if [ "$SAFE_MODE" = true ]; then
     echo "🛡️  Safe Restart initiated. Preserving database and memory lattices..."
@@ -56,27 +63,22 @@ fi
 # ============================================================
 echo -e "${CYAN}🧠 Setting up Ollama...${NC}"
 
-# Check if Ollama is installed
 if ! command -v ollama &> /dev/null; then
     echo -e "  ${YELLOW}⚠️  Ollama not found. Installing...${NC}"
-    
-    # Check and install zstd if needed
     if ! command -v zstd &> /dev/null; then
         echo -e "  ${CYAN}   Installing zstd...${NC}"
         sudo apt-get update -qq
         sudo apt-get install zstd -y -qq
     fi
-    
     curl -fsSL https://ollama.com/install.sh | sh
     echo -e "  ${GREEN}✅ Ollama installed.${NC}"
 fi
 
-# Start Ollama
 echo -e "  ${CYAN}🚀 Starting Ollama...${NC}"
+export OLLAMA_MODELS=~/ollama_models
 nohup ollama serve > ~/ollama.log 2>&1 &
 OLLAMA_PID=$!
 
-# Wait for Ollama
 echo -ne "  ⏳ Waiting for Ollama to initialize..."
 for i in {1..20}; do
     if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
@@ -90,7 +92,6 @@ for i in {1..20}; do
     fi
 done
 
-# Pull model if needed
 MODEL="tinydolphin"
 if command -v ollama &> /dev/null && curl -s http://localhost:11434/api/tags 2>/dev/null | grep -q "$MODEL"; then
     echo -e "  ${GREEN}✅ $MODEL model available.${NC}"
@@ -100,7 +101,7 @@ else
 fi
 
 # ============================================================
-# 4. DATABASE SETUP
+# 4. DATABASE SETUP - FIXED: Added ollama_model
 # ============================================================
 echo "🔧 Checking database tables..."
 python3 -c "
@@ -127,17 +128,27 @@ count = cursor.fetchone()[0]
 if count == 0:
     print('   - Seeding default configuration...')
     groq_key = os.environ.get('GROQ_API_KEY', '')
+    gemini_key = os.environ.get('GEMINI_API_KEY', '')
+    
+    groq_enabled = 'true' if groq_key else 'false'
+    gemini_enabled = 'true' if gemini_key else 'false'
     
     cursor.execute('''
     INSERT OR REPLACE INTO system_configs (key, value) VALUES 
-        ('primary_ai_provider', 'groq'),
-        ('ai_provider_groq_enabled', 'true'),
+        ('primary_ai_provider', 'ollama'),
+        ('ai_provider_groq_enabled', ?),
         ('ai_provider_groq_host', 'https://api.groq.com/openai/v1'),
         ('ai_provider_groq_model', 'llama-3.3-70b-versatile'),
         ('ai_provider_groq_api_key', ?),
+        ('ai_provider_gemini_enabled', ?),
+        ('ai_provider_gemini_host', 'null'),
+        ('ai_provider_gemini_model', 'gemini-1.5-flash'),
+        ('ai_provider_gemini_api_key', 'null'),
         ('ai_provider_ollama_enabled', 'true'),
-        ('ai_provider_ollama_host', 'http://localhost:11434')
-    ''', (groq_key,))
+        ('ai_provider_ollama_host', 'http://localhost:11434'),
+        ('ollama_model', 'tinydolphin:latest'),
+        ('ai_providers', '{\"ollama\": {\"enabled\": true, \"host\": \"http://localhost:11434\", \"model\": \"tinydolphin:latest\"}}')
+    ''', (groq_enabled, groq_key, gemini_enabled))
     conn.commit()
     print('   - Default configuration seeded.')
 
@@ -161,7 +172,7 @@ nohup python3 -m uvicorn app.main:app \
 UVICORN_PID=$!
 
 # ============================================================
-# 6. HEALTH CHECK (FIXED - Waits for Real Readiness)
+# 6. HEALTH CHECK
 # ============================================================
 echo -e "${CYAN}⏳ Waiting for PersonaVault to be fully ready...${NC}"
 
@@ -170,14 +181,12 @@ WAIT_COUNT=0
 HEALTHY=false
 
 while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-    # Check if uvicorn process is still running
     if ! pgrep -f "uvicorn app.main:app" > /dev/null; then
         echo -e "\n  ${RED}❌ Uvicorn process died!${NC}"
         echo -e "  ${YELLOW}   Check: tail -20 storage/logs/uvicorn.log${NC}"
         exit 1
     fi
     
-    # Check health endpoint
     HEALTH_RESPONSE=$(curl -s http://localhost:8000/health/engine 2>/dev/null)
     
     if echo "$HEALTH_RESPONSE" | grep -q '"status":"ready"'; then
@@ -186,7 +195,6 @@ while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
         break
     fi
     
-    # Show progress
     echo -ne "  ⏳ Waiting... ${WAIT_COUNT}/${MAX_WAIT}s\r"
     sleep 1
     WAIT_COUNT=$((WAIT_COUNT + 1))

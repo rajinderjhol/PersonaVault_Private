@@ -43,30 +43,9 @@ async def db_session(test_engine):
         yield session
         await session.rollback()
 
-@pytest.fixture
-def client(db_session):
-    """Create a test client with a fully authenticated admin user."""
-    loop = asyncio.get_event_loop()
-    user, token = loop.run_until_complete(create_test_admin(db_session))
-    
-    # Override the get_db dependency
-    async def override_get_db():
-        yield db_session
-        
-    # Override get_current_user
-    async def override_get_current_user():
-        return user
-    
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_get_current_user
-    
-    # Create client
-    with TestClient(app) as tc:
-        # Set the session cookie so RBAC works
-        tc.cookies.set("session_id", token)
-        yield tc
-    
-    app.dependency_overrides.clear()
+# ============================================================
+# CREATE TEST ADMIN HELPER
+# ============================================================
 
 async def create_test_admin(db_session):
     """Create a test admin user with an active session."""
@@ -81,7 +60,6 @@ async def create_test_admin(db_session):
     await db_session.commit()
     await db_session.refresh(user)
     
-    # Create an active session
     token = str(uuid.uuid4())
     session = UserSession(
         user_id=user.id,
@@ -94,6 +72,84 @@ async def create_test_admin(db_session):
     
     return user, token
 
+async def create_test_user(db_session, role="user"):
+    """Create a test user with an active session."""
+    user = User(
+        username=f"{role}_{uuid.uuid4().hex[:6]}",
+        email=f"{role}_{uuid.uuid4().hex[:6]}@test.com",
+        hashed_password="pw",
+        role=role,
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    
+    token = str(uuid.uuid4())
+    session = UserSession(
+        user_id=user.id,
+        session_token=token,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        is_active=True
+    )
+    db_session.add(session)
+    await db_session.commit()
+    
+    return user, token
+
+# ============================================================
+# FIXTURES
+# ============================================================
+
+@pytest.fixture
+def client(db_session):
+    """Create a test client with admin authentication."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    user, token = loop.run_until_complete(create_test_admin(db_session))
+    loop.close()
+    
+    async def override_get_db():
+        yield db_session
+    
+    async def override_get_current_user():
+        return user
+    
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    
+    with TestClient(app) as tc:
+        tc.cookies.set("session_id", token)
+        yield tc
+    
+    app.dependency_overrides.clear()
+
 @pytest.fixture
 def admin_client(client):
+    """Alias for client - already has admin auth."""
     return client
+
+@pytest.fixture
+def auth_client(db_session):
+    """Create a test client with regular user authentication."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    user, token = loop.run_until_complete(create_test_user(db_session, role="user"))
+    loop.close()
+    
+    async def override_get_db():
+        yield db_session
+    
+    async def override_get_current_user():
+        return user
+    
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    
+    with TestClient(app) as tc:
+        tc.cookies.set("session_id", token)
+        yield tc
+    
+    app.dependency_overrides.clear()

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PersonaVault Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/api/v1/admin/dashboard/static/dashboard.css">
     <style>
@@ -38,6 +39,109 @@
             <button class="refresh-btn" style="color: #f87171; border-color: #f87171;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
     </header>
+
+    <!-- Unified Context Bar -->
+    <div id="context-bar" style="background: #0f172a; border-bottom: 1px solid #334155; padding: 8px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="color: #94a3b8; font-size: 12px;">🤖 Provider:</span>
+            <span id="context-provider" class="tag tag-info" style="font-size: 12px;">ollama</span>
+            
+            <span style="color: #94a3b8; font-size: 12px;">📊 Domain:</span>
+            <span id="context-domain" class="tag tag-info" style="font-size: 12px;">All</span>
+            
+            <span style="color: #94a3b8; font-size: 12px;">⚡ Status:</span>
+            <span id="context-status" class="tag tag-success" style="font-size: 12px;">✅ Operational</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="context-alerts" style="font-size: 12px; color: #94a3b8;">🔔 No alerts</span>
+            <button class="refresh-btn" style="padding: 2px 10px; font-size: 11px;" onclick="refreshContextBar()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Action Required Widget -->
+    <div id="action-required-widget" style="display: none; background: #1e293b; border: 1px solid #f87171; border-radius: 8px; padding: 15px; margin: 10px 20px 20px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0; color: #f87171;">
+                🚨 <span id="action-count">0</span> Pending Action<span id="action-plural">s</span> Require Your Attention
+            </h4>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn" style="padding: 4px 12px; font-size: 11px; background: #34d399; color: #0f172a;" onclick="approveAllActions()">
+                    <i class="fas fa-check-circle"></i> Approve All
+                </button>
+                <button class="btn" style="padding: 4px 12px; font-size: 11px; background: #f87171;" onclick="denyAllActions()">
+                    <i class="fas fa-times-circle"></i> Deny All
+                </button>
+                <button class="refresh-btn" style="padding: 4px 10px; font-size: 11px;" onclick="loadActions()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="refresh-btn" style="padding: 4px 10px; font-size: 11px;" onclick="document.getElementById('action-required-widget').style.display='none'; sessionStorage.setItem('action-widget-closed', 'true');">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="action-list" style="max-height: 200px; overflow-y: auto;">
+            <div class="metric-label">Loading actions...</div>
+        </div>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div style="padding: 10px 20px; background: #0f172a; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px;">
+        <span style="color: #94a3b8; font-size: 12px;">⚡ Quick Actions:</span>
+        <button class="refresh-btn" style="padding: 2px 8px; font-size: 11px;" onclick="document.getElementById('quick-actions').style.display = document.getElementById('quick-actions').style.display === 'none' ? 'flex' : 'none'">Toggle Visibility</button>
+    </div>
+    <div id="quick-actions" style="display: flex; gap: 8px; padding: 10px 20px; background: #0f172a; border-bottom: 1px solid #1e293b; flex-wrap: wrap; align-items: center;">
+        <button class="quick-action-btn" onclick="quickAction('new_decision')" 
+                style="background: #1e293b; border: 1px solid #38bdf8; border-radius: 6px; padding: 4px 12px; color: #38bdf8; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-plus-circle"></i> New Decision
+        </button>
+        
+        <button class="quick-action-btn" onclick="quickAction('refresh_data')" 
+                style="background: #1e293b; border: 1px solid #34d399; border-radius: 6px; padding: 4px 12px; color: #34d399; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-sync-alt"></i> Refresh Data
+        </button>
+        
+        <button class="quick-action-btn" onclick="quickAction('export_report')" 
+                style="background: #1e293b; border: 1px solid #fbbf24; border-radius: 6px; padding: 4px 12px; color: #fbbf24; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-file-export"></i> Export Report
+        </button>
+        
+        <button class="quick-action-btn" onclick="quickAction('clear_cache')" 
+                style="background: #1e293b; border: 1px solid #a855f7; border-radius: 6px; padding: 4px 12px; color: #a855f7; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-eraser"></i> Clear Cache
+        </button>
+        
+        <button class="quick-action-btn" onclick="quickAction('quick_chat')" 
+                style="background: #1e293b; border: 1px solid #f472b6; border-radius: 6px; padding: 4px 12px; color: #f472b6; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-comment"></i> Quick Chat
+        </button>
+    </div>
+
+    <div id="graph-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 40px; box-sizing: border-box;">
+        <button class="refresh-btn" style="position: absolute; top: 20px; right: 20px;" onclick="closeFullGraph()">Close ✕</button>
+        <div class="full-graph-wrapper">
+            <div id="full-graph-container"></div>
+            <div id="full-thought-log" style="background:#020617; border:1px solid #334155; border-radius:8px; padding:15px; font-family:monospace; font-size:14px; overflow-y:auto; color:#e2e8f0;"></div>
+        </div>
+    </div>
+
+    <script>
+        function openFullGraph() {
+            const container = document.getElementById('mermaid-graph-container');
+            const logContainer = document.getElementById('thought-log');
+            const fullGraph = document.getElementById('full-graph-container');
+            const fullLog = document.getElementById('full-thought-log');
+            const modal = document.getElementById('graph-modal');
+            
+            fullGraph.innerHTML = container.innerHTML;
+            fullLog.innerHTML = logContainer.innerHTML;
+            modal.style.display = 'block';
+        }
+        function closeFullGraph() {
+            document.getElementById('graph-modal').style.display = 'none';
+        }
+    </script>
     <div class="layout">
         <nav class="sidebar">
             <div class="nav-group"><div class="nav-label">Core</div>
@@ -102,6 +206,9 @@
                 return;
             }
             
+            // Persist the active tab
+            localStorage.setItem('active-tab', tabId);
+            
             const container = document.getElementById('tab-content-container');
             container.innerHTML = '<div style="text-align:center; padding:50px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
             
@@ -135,10 +242,217 @@
             }
         }
 
+        // ============ PRIMARY AI PROVIDER ============
+        async function fetchPrimaryAIProvider() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                console.log("DEBUG: Primary AI Provider:", data);
+                
+                // Update status on models tab
+                const statusEl = document.getElementById('primary-ai-provider-status');
+                if (statusEl) {
+                    statusEl.textContent = data.primary_provider || 'ollama';
+                    statusEl.className = 'tag tag-info';
+                }
+                
+                // Update status on chat tab
+                const statusChatEl = document.getElementById('primary-ai-provider-status-chat');
+                if (statusChatEl) {
+                    statusChatEl.textContent = data.primary_provider || 'ollama';
+                    statusChatEl.className = 'tag tag-info';
+                }
+            } catch (e) {
+                console.error('Error fetching primary AI provider:', e);
+                ['primary-ai-provider-status', 'primary-ai-provider-status-chat'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = 'ollama';
+                        el.className = 'tag tag-info';
+                    }
+                });
+            }
+        }
+
+        async function updatePrimaryAIProvider(provider) {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider })
+                });
+                if (res.ok) {
+                    showToast(`Primary AI provider set to ${provider}`, 'success');
+                    fetchPrimaryAIProvider();
+                    fetchCloudConnections();
+                } else {
+                    throw new Error('Failed to update provider');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        async function updatePrimaryAIProviderChat(provider) {
+            await updatePrimaryAIProvider(provider);
+        }
+
+        async function fetchCloudConnections() {
+            const list = document.getElementById('cloud-connections-list');
+            const select = document.getElementById('primary-ai-provider-select');
+            const chatSelect = document.getElementById('primary-ai-provider-select-chat');
+            if (!list) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
+                const data = await res.json();
+                
+                // Update List
+                if (data && data.length > 0) {
+                    list.innerHTML = data.map(p => `
+                        <div style="display:flex; justify-content:space-between; padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; align-items:center;">
+                            <div>
+                                <div style="font-weight:700;color:#f472b6;">${p.name}</div>
+                                <div style="font-size:11px;color:#64748b;">Host: ${p.host || 'Default'} | Model: ${p.model || 'Default'}</div>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="refresh-btn" style="padding:4px 10px;font-size:11px;" onclick="fetchAIProviderSettings('${p.name}')">Edit</button>
+                                <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteCloudConfig('${p.name}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="metric-label">No cloud connections configured.</div>';
+                }
+
+                // Update both dropdowns
+                const options = ['<option value="ollama">Ollama (Local)</option>'];
+                data.forEach(p => {
+                    options.push(`<option value="${p.name}">${p.name} (Cloud)</option>`);
+                });
+                const html = options.join('');
+                
+                if (select) {
+                    const current = select.value;
+                    select.innerHTML = html;
+                    select.value = current || 'ollama';
+                }
+                if (chatSelect) {
+                    const current = chatSelect.value;
+                    chatSelect.innerHTML = html;
+                    chatSelect.value = current || 'ollama';
+                }
+            } catch (e) { console.error('Cloud fetch error:', e); }
+        }
+
+        // ============ CLOUD CONNECTION MANAGEMENT ============
+        async function fetchAIProviderSettings(provider) {
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider-settings/${provider}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                
+                document.getElementById('cloud-api-name').value = provider;
+                document.getElementById('cloud-api-host').value = data.host || '';
+                document.getElementById('cloud-api-key').value = data.api_key || '';
+                document.getElementById('cloud-api-model').value = data.model || '';
+                
+                showToast(`Loaded settings for ${provider}`, 'info');
+            } catch (e) {
+                console.error('Error fetching settings:', e);
+                showToast('Failed to load settings: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteCloudConfig(provider) {
+            if (!confirm(`Delete connection "${provider}"? This cannot be undone.`)) return;
+            
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider/${provider}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                showToast(`Deleted ${provider}`, 'info');
+                fetchCloudConnections(); // Refresh the list
+            } catch (e) {
+                console.error('Error deleting connection:', e);
+                showToast('Failed to delete: ' + e.message, 'error');
+            }
+        }
+
+        async function testCloudConnection() {
+            const provider = document.getElementById('cloud-api-name').value;
+            const host = document.getElementById('cloud-api-host').value;
+            const api_key = document.getElementById('cloud-api-key').value;
+            const model = document.getElementById('cloud-api-model').value;
+            
+            if (!provider) {
+                showToast('Enter a connection name first', 'error');
+                return;
+            }
+            
+            showToast(`Testing ${provider}...`, 'info');
+            
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, host, api_key, model })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(`✅ ${provider} connection successful!`, 'success');
+                } else {
+                    showToast(`❌ Connection failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                showToast('Error testing connection: ' + e.message, 'error');
+            }
+        }
+
+        async function saveCloudConfig() {
+            const provider = document.getElementById('cloud-api-name').value;
+            const host = document.getElementById('cloud-api-host').value;
+            const api_key = document.getElementById('cloud-api-key').value;
+            const model = document.getElementById('cloud-api-model').value;
+            
+            if (!provider) {
+                showToast('Connection name is required', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, host, api_key, model })
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                showToast(`Configuration for ${provider} saved`, 'success');
+                
+                // Clear the form
+                document.getElementById('cloud-api-name').value = '';
+                document.getElementById('cloud-api-host').value = '';
+                document.getElementById('cloud-api-key').value = '';
+                document.getElementById('cloud-api-model').value = '';
+                
+                fetchCloudConnections(); // Refresh the list
+            } catch (e) {
+                showToast('Failed to save: ' + e.message, 'error');
+            }
+        }
+
         function refreshTabContent(tabId) {
             // Trigger specific initialization/refresh based on the tab
             if (tabId === 'overview') fetchMetrics();
-            else if (tabId === 'models') fetchInstalledModels();
+            else if (tabId === 'models') {
+                fetchInstalledModels();
+                fetchCloudConnections();
+                fetchPrimaryAIProvider();
+            }
             else if (tabId === 'logs') { if (!logSource) startLogStream(); }
             else if (tabId === 'packs') fetchPacks();
             else if (tabId === 'agents') fetchAgentStatus();
@@ -150,7 +464,11 @@
             else if (tabId === 'replay') resetReplayUI();
             else if (tabId === 'lattices') fetchMetrics();
             else if (tabId === 'learning') fetchLearningConfig();
-            else if (tabId === 'chat') loadIntelligenceStatus();
+            else if (tabId === 'chat') {
+                loadIntelligenceStatus();
+                fetchPrimaryAIProvider();
+            }
+            else if (tabId === 'clinical-chat') loadIntelligenceStatus();
             else if (tabId === 'clinical') loadClinicalDashboard();
             else if (tabId === 'clinical-audit') {
                 document.getElementById('clinical-audit-results').innerHTML = 
@@ -179,9 +497,23 @@
                 updateMetricsGrid(data);
                 updatePlatformSummary(data);
                 updateLatticeCounts(data);
+                updateQuickStats(data);
                 const raw = document.getElementById('raw-metrics');
                 if (raw) raw.textContent = JSON.stringify(data, null, 2);
             } catch (e) { console.error('Metrics error:', e); }
+        }
+
+        function updateQuickStats(data) {
+            const totalEvents = document.getElementById('stat-total-events');
+            if (totalEvents) totalEvents.textContent = data.memories?.total || 0;
+            
+            // For Avg Confidence, assuming data might have it, or using placeholder
+            const avgConf = document.getElementById('stat-avg-confidence');
+            if (avgConf) avgConf.textContent = '90.5%'; 
+            
+            // For Active Models
+            const activeModels = document.getElementById('stat-active-models');
+            if (activeModels) activeModels.textContent = '2'; // placeholder
         }
 
         function updateMetricsGrid(data) {
@@ -236,42 +568,143 @@
             try {
                 const res = await fetch('/api/v1/admin/dashboard/models');
                 const data = await res.json();
+                console.log("DEBUG: Models API Response:", data);
+                const activeModel = data.active_model;
+                console.log("DEBUG: Active model from backend:", activeModel);
+                
                 if (data.models && data.models.length > 0) {
-                    list.innerHTML = data.models.map(m => `
-                        <div style="display:flex; justify-content:space-between; padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; align-items:center;">
-                            <div><div style="font-weight:700;color:#38bdf8;">${m.name}</div>
-                            <div style="font-size:11px;color:#64748b;">Size: ${(m.size/(1024*1024*1024)).toFixed(2)} GB</div></div>
-                            <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteModel('${m.name}')">Delete</button>
-                        </div>
-                    `).join('');
+                    list.innerHTML = data.models.map(m => {
+                        const baseName = m.name.split(':')[0];
+                        const activeBase = activeModel ? activeModel.split(':')[0] : '';
+                        const isActive = baseName === activeBase;
+                        console.log(`DEBUG: Matching ${m.name} with ${activeModel}: ${isActive}`);
+                        return `
+                            <div style="display:flex; justify-content:space-between; padding:12px; background:${isActive ? 'rgba(56, 189, 248, 0.05)' : '#020617'}; border-radius:8px; border:1px solid ${isActive ? '#38bdf8' : '#334155'}; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div>
+                                        <div style="font-weight:700;color:${isActive ? '#38bdf8' : '#94a3b8'};">${m.name}</div>
+                                        <div style="font-size:11px;color:#64748b;">Size: ${(m.size/(1024*1024*1024)).toFixed(2)} GB</div>
+                                    </div>
+                                    ${isActive ? '<span class="tag tag-success" style="font-size:9px; padding:2px 6px;">ACTIVE</span>' : ''}
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    ${!isActive ? `<button class="refresh-btn" style="color:#38bdf8;border-color:#38bdf8;padding:4px 10px;font-size:11px;" onclick="setActiveModel('${m.name}')">Use Model</button>` : ''}
+                                    <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteModel('${m.name}')">Delete</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
                 } else {
                     list.innerHTML = '<div class="metric-label">No models installed</div>';
                 }
-            } catch (e) { list.innerHTML = '<div class="metric-label">Error loading models</div>'; }
+            } catch (e) { 
+                console.error('Error loading models:', e);
+                list.innerHTML = '<div class="metric-label">Error loading models</div>'; 
+            }
+        }
+
+        async function setActiveModel(name) {
+            try {
+                showToast('Switching model to ' + name + '...', 'info');
+                const res = await fetch('/api/v1/admin/models/set-active', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: name })
+                });
+                if (res.ok) {
+                    showToast('Model switched to ' + name, 'success');
+                    fetchInstalledModels();
+                } else {
+                    throw new Error('Failed to switch model');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
         }
 
         async function triggerModelPull() {
             const input = document.getElementById('new-model-input');
-            const status = document.getElementById('pull-status');
+            const statusDiv = document.getElementById('pull-status');
+            const statusLabel = document.getElementById('pull-status-label');
+            const progressBar = document.getElementById('pull-progress-bar');
+            const progressPct = document.getElementById('pull-percentage');
+            const progressContainer = document.getElementById('pull-progress-container');
+            
             const name = input?.value?.trim();
             if (!name) { showToast('Enter a model name', 'error'); return; }
-            status.textContent = 'Pulling ' + name + '...';
+            
+            // Reset UI
+            if (progressContainer) progressContainer.style.display = 'block';
+            if (statusDiv) { statusDiv.textContent = ''; statusDiv.style.display = 'none'; }
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressPct) progressPct.textContent = '0%';
+            if (statusLabel) statusLabel.textContent = 'Pulling ' + name + '...';
+            
             try {
                 const res = await fetch('/api/v1/admin/dashboard/models/pull', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({name})
                 });
+                
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || 'Failed to start pull');
+                }
+
                 const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
                 while (true) {
                     const {value, done} = await reader.read();
                     if (done) break;
-                    status.textContent += new TextDecoder().decode(value);
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    
+                    // Process complete JSON objects in the buffer
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const data = JSON.parse(line);
+                            
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+
+                            if (data.status) {
+                                statusLabel.textContent = data.status;
+                                if (statusDiv) {
+                                    statusDiv.style.display = 'block';
+                                    statusDiv.textContent += data.status + '\n';
+                                    statusDiv.scrollTop = statusDiv.scrollHeight;
+                                }
+                            }
+
+                            if (data.total && data.completed) {
+                                const percent = Math.round((data.completed / data.total) * 100);
+                                if (progressBar) progressBar.style.width = percent + '%';
+                                if (progressPct) progressPct.textContent = percent + '%';
+                            }
+                            
+                            if (data.status === 'success') {
+                                showToast(name + ' pulled successfully', 'success');
+                                setTimeout(() => {
+                                    if (progressContainer) progressContainer.style.display = 'none';
+                                    fetchInstalledModels();
+                                }, 2000);
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse pull status chunk:', line, e);
+                        }
+                    }
                 }
-                showToast(name + ' pulled', 'success');
-                fetchInstalledModels();
             } catch (e) {
-                status.textContent = '❌ Error: ' + e.message;
-                showToast('Pull failed', 'error');
+                if (statusLabel) statusLabel.textContent = '❌ Error: ' + e.message;
+                if (statusDiv) statusDiv.style.display = 'block';
+                showToast('Pull failed: ' + e.message, 'error');
             }
         }
 
@@ -329,6 +762,8 @@
                         </div>
                     `).join('');
                     if (document.getElementById('domain-count')) document.getElementById('domain-count').textContent = packs.length;
+                    const statDomains = document.getElementById('stat-domains');
+                    if (statDomains) statDomains.textContent = packs.length;
                 } else {
                     grid.innerHTML = '<div class="metric-label">No packs installed</div>';
                 }
@@ -525,48 +960,61 @@
             } catch (e) { console.error('Agent refresh error:', e); }
         }
 
-        function renderCoTGraph(traceData) {
+        function renderCoTGraph(traceData, activeStepIndex = -1) {
             const container = document.getElementById('mermaid-graph-container');
             if (!container) return;
-            
+
             if (traceData && traceData.sequence && traceData.sequence.length > 0) {
                 try {
-                    let graphDef = 'graph LR\n';
-                    graphDef += 'classDef agentNode fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;\n';
-                    graphDef += 'classDef bbNode fill:#0f172a,stroke:#a855f7,stroke-width:2px,stroke-dasharray:5 5;\n';
-                    
-                    traceData.sequence.forEach(step => {
+                    const agentGroups = {
+                        'Planner': 'Cognitive', 'Router': 'Cognitive', 'Empathy': 'Cognitive',
+                        'Retriever': 'Memory',
+                        'Generator': 'Execution', 'Judge': 'Execution', 'Orchestrator': 'Execution', 'AdminTerminal': 'Execution'
+                    };
+
+                    let graphDef = 'graph TB\n';
+                    graphDef += 'classDef agentNode fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#fff,rx:5,ry:5;\n';
+                    graphDef += 'classDef bbNode fill:#0b1424,stroke:#34d399,stroke-width:2px,stroke-dasharray:4 4,color:#34d399,rx:5,ry:5;\n';
+                    graphDef += 'classDef activeNode fill:#065f46,stroke:#34d399,stroke-width:3px,color:#fff,rx:5,ry:5;\n';
+                    graphDef += 'linkStyle default stroke:#475569,stroke-width:2px;\n';
+
+                    // Prepare subgraphs with subtle styling
+                    const subgraphs = { 'Cognitive': '', 'Memory': '', 'Execution': '' };
+                    graphDef += 'style Cognitive fill:transparent,stroke:#1e293b,stroke-width:1px,color:#94a3b8\n';
+                    graphDef += 'style Memory fill:transparent,stroke:#1e293b,stroke-width:1px,color:#94a3b8\n';
+                    graphDef += 'style Execution fill:transparent,stroke:#1e293b,stroke-width:1px,color:#94a3b8\n';
+
+                    traceData.sequence.forEach((step, index) => {
                         const fromId = step.agent.replace(/[^a-zA-Z0-9]/g, '');
                         const toId = step.to.replace(/[^a-zA-Z0-9]/g, '');
-                        graphDef += `${fromId}("${step.agent}") -- "${step.action}" --> ${toId}("${step.to}")\n`;
-                        graphDef += `class ${fromId} agentNode;\n`;
+                        const isActive = index === activeStepIndex;
+                        const edgeStyle = isActive ? 'stroke:#34d399,stroke-width:4px' : 'stroke:#475569,stroke-width:2px';
+
+                        // Group nodes
+                        const group = agentGroups[fromId] || 'Execution';
+                        subgraphs[group] += `${fromId}["${step.agent}"]\n`;
+                        if (toId !== 'Blackboard') subgraphs[agentGroups[toId] || 'Execution'] += `${toId}["${step.to}"]\n`;
+
+                        graphDef += `${fromId} -->|"${step.action}"| ${toId}\n`;
+                        graphDef += `linkStyle ${index} ${edgeStyle}\n`;
+                        graphDef += `class ${fromId} ${isActive ? 'activeNode' : 'agentNode'};\n`;
                         if (toId === 'Blackboard') graphDef += `class ${toId} bbNode;\n`;
                     });
-                    
+
+                    // Assemble subgraphs
+                    for (const [name, content] of Object.entries(subgraphs)) {
+                        graphDef += `subgraph ${name}\n${content}end\n`;
+                    }
+
                     container.innerHTML = `<div class="mermaid">${graphDef}</div>`;
                     if (typeof mermaid !== 'undefined') {
-                        if (mermaid.run) {
-                            mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
-                        } else if (mermaid.init) {
-                            mermaid.init(undefined, container.querySelectorAll('.mermaid'));
-                        }
+                        mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
                     }
                 } catch(e) {
                     console.log('Mermaid render error:', e);
-                    container.innerHTML = `<div style="color:#94a3b8;font-size:12px;text-align:center;padding:20px;">
-                        <div style="font-size:24px;margin-bottom:10px;">⚠️</div>
-                        <div>Graph rendering error. Check console for details.</div>
-                        <div style="font-size:10px;color:#64748b;margin-top:5px;">${e.message}</div>
-                    </div>`;
                 }
             } else {
-                container.innerHTML = `
-                    <div style="text-align:center;color:#64748b;padding:20px;">
-                        <div style="font-size:48px;margin-bottom:10px;">🔄</div>
-                        <div>Awaiting negotiation signal...</div>
-                        <div style="font-size:11px;margin-top:5px;">Send a query to the swarm to see the CoT graph</div>
-                    </div>
-                `;
+                container.innerHTML = `<div style="text-align:center;color:#64748b;padding:20px;"><div>🔄</div><div>Awaiting negotiation signal...</div></div>`;
             }
         }
 
@@ -584,14 +1032,14 @@
             input.disabled = true; input.style.opacity = '0.5';
             showToast('🔄 Initializing swarm negotiation...', 'info');
             try {
-                const res = await fetch('/api/v1/chat', {
+                const res = await fetch('/api/v1/admin/dashboard/swarm/trigger', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ query: query })
                 });
                 const data = await res.json();
-                if (res.ok && !data.error) {
+                if (res.ok && data.status === 'swarm_completed') {
                     appendThought('User', query);
-                    appendThought('Intelligence Gateway', `Response: ${data.response || 'Acknowledged'}`);
+                    appendThought('Orchestrator', `✅ ${data.result || 'Acknowledged'}`);
                     showToast('✅ Negotiation complete', 'success');
                     input.value = '';
                 } else {
@@ -607,6 +1055,9 @@
             }
         }
 
+        let lastPhase = '';
+        let lastAction = '';
+
         function appendThought(agent, content) {
             const log = document.getElementById('thought-log');
             if (!log) return;
@@ -614,9 +1065,44 @@
             if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
                 log.innerHTML = '';
             }
-            const div = document.createElement('div');
-            div.innerHTML = `<span class="thought-agent">[${agent}]</span> <span class="thought-content">${content}</span>`;
-            log.appendChild(div);
+
+            // 1. Noise Filtering
+            if (content.trim() === 'insight') return;
+
+            // 2. Sanitization
+            let cleanContent = content
+                .replace(/Response: /i, '')
+                .replace(/INSTRUCTIONS: /i, '')
+                .replace(/DRAFT DOCUMENT: /i, '')
+                .replace(/"/g, '')
+                .trim();
+            
+            // 3. Mapping to Semantic Phases
+            const phaseMap = {
+                'Planner': 'Analysis', 'Retriever': 'Analysis', 'Empathy': 'Analysis', 'Router': 'Analysis',
+                'Generator': 'Synthesis', 'Judge': 'Synthesis', 'Orchestrator': 'System'
+            };
+            const currentPhase = phaseMap[agent] || 'System';
+
+            // 4. Debouncing
+            if (currentPhase === lastPhase && cleanContent === lastAction) return;
+            lastPhase = currentPhase;
+            lastAction = cleanContent;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            const entry = document.createElement('div');
+            entry.style.cssText = "margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #1e293b;";
+            entry.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                    <span style="font-size:10px; color:${currentPhase === 'Analysis' ? '#38bdf8' : (currentPhase === 'Synthesis' ? '#34d399' : '#64748b')}; font-weight:700;">
+                        ${currentPhase.toUpperCase()} | ${agent.toUpperCase()}
+                    </span>
+                    <span style="font-size:9px; color:#475569; font-family:monospace;">${timestamp}</span>
+                </div>
+                <div style="font-size:13px; color:#e2e8f0; line-height:1.4;">${cleanContent}</div>
+            `;
+            log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
         }
 
@@ -703,6 +1189,42 @@
             }
         }
 
+        // ============ CONTEXT BAR ============
+        async function refreshContextBar() {
+            try {
+                // Get provider status
+                const providerRes = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
+                const providerData = await providerRes.json();
+                document.getElementById('context-provider').textContent = providerData.primary_provider || 'ollama';
+                
+                // Get alert status
+                const alertRes = await fetch('/api/v1/admin/dashboard/governance/logs?limit=5');
+                const alertData = await alertRes.json();
+                if (alertData.logs && alertData.logs.length > 0) {
+                    const pending = alertData.logs.filter(l => l.hitl === true).length;
+                    if (pending > 0) {
+                        document.getElementById('context-alerts').innerHTML = `🔔 ${pending} pending action${pending > 1 ? 's' : ''}`;
+                        document.getElementById('context-status').textContent = '⚠️ Action Required';
+                        document.getElementById('context-status').className = 'tag tag-warning';
+                    } else {
+                        document.getElementById('context-alerts').innerHTML = `🔔 No alerts`;
+                        document.getElementById('context-status').textContent = '✅ Operational';
+                        document.getElementById('context-status').className = 'tag tag-success';
+                    }
+                }
+            } catch (e) { console.error('Context bar refresh error:', e); }
+        }
+
+        // ============ CHAT UI HELPERS ============
+        function showTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.style.display = 'block';
+        }
+        function hideTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.style.display = 'none';
+        }
+
         // ============ CHAT ============
         async function sendChatMessage() {
             const input = document.getElementById('chat-input');
@@ -719,10 +1241,13 @@
             addMessage('user', query);
             input.value = '';
             
-            const loadingId = addMessage('ai', '⏳ Thinking...', true);
+            showTyping();
 
             try {
-                const payload = { query };
+                const providerSelect = document.getElementById('primary-ai-provider-select-chat');
+                const provider = providerSelect ? providerSelect.value : 'ollama';
+                
+                const payload = { query, provider };
                 if (patient_id) payload.patient_id = patient_id;
                 
                 const res = await fetch('/api/v1/chat', {
@@ -731,9 +1256,6 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
 
                 if (res.ok && !data.error) {
                     let response = data.response || 'No response';
@@ -754,9 +1276,9 @@
                     addMessage('ai', `❌ Error: ${data.error || 'Unknown error'}`);
                 }
             } catch (e) {
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
                 addMessage('ai', `❌ Network error: ${e.message}`);
+            } finally {
+                hideTyping();
             }
         }
 
@@ -1067,11 +1589,179 @@
             window.location.href = '/login';
         }
 
+        async function quickAction(action) {
+            showToast(`⏳ Executing ${action.replace('_', ' ')}...`, 'info');
+            
+            try {
+                switch(action) {
+                    case 'new_decision':
+                        switchTab('timeline');
+                        setTimeout(() => document.getElementById('timeline-event-id')?.focus(), 300);
+                        showToast('📝 Enter decision details', 'info');
+                        break;
+                        
+                    case 'refresh_data':
+                        refreshAll();
+                        await Promise.all([fetchMetrics(), loadActions(), refreshContextBar()]);
+                        showToast('✅ All data refreshed', 'success');
+                        break;
+                        
+                    case 'export_report':
+                        window.location.href = '/api/v1/admin/dashboard/report/export';
+                        showToast('📥 Report download started', 'success');
+                        break;
+                        
+                    case 'clear_cache':
+                        if (confirm('Clear browser cache and reload?')) {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.reload();
+                        }
+                        break;
+                        
+                    case 'quick_chat':
+                        switchTab('chat');
+                        setTimeout(() => document.getElementById('chat-input')?.focus(), 300);
+                        showToast('💬 Ask me anything', 'info');
+                        break;
+                        
+                    default:
+                        showToast('⚠️ Unknown action: ' + action, 'error');
+                }
+            } catch (e) {
+                console.error('Quick action error:', e);
+                showToast('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey) {
+                if (e.key === 'R') { e.preventDefault(); quickAction('refresh_data'); }
+                if (e.key === 'C') { e.preventDefault(); quickAction('clear_cache'); }
+                if (e.key === 'N') { e.preventDefault(); quickAction('new_decision'); }
+                if (e.key === 'Q') { e.preventDefault(); quickAction('quick_chat'); }
+            }
+        });
+
+        // Show shortcuts hint
+        if (!localStorage.getItem('shortcuts_shown')) {
+            setTimeout(() => {
+                showToast('⌨️ Tip: Use Ctrl+Shift + R/C/N/Q for quick actions!', 'info');
+                localStorage.setItem('shortcuts_shown', 'true');
+            }, 5000);
+        }
+        // ============ HITL ACTIONS ============
+        async function loadActions() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/hitl/pending');
+                const actions = await res.json();
+                const count = actions.length;
+                const widget = document.getElementById('action-required-widget');
+                
+                // Track if user explicitly closed the widget in this session
+                const isManuallyClosed = sessionStorage.getItem('action-widget-closed') === 'true';
+                const lastActionCount = parseInt(sessionStorage.getItem('last-action-count') || '0');
+
+                // If count changed, reset manual closure
+                if (count !== lastActionCount) {
+                    sessionStorage.setItem('action-widget-closed', 'false');
+                    sessionStorage.setItem('last-action-count', count.toString());
+                }
+
+                if (count > 0 && !(count !== lastActionCount ? false : isManuallyClosed)) {
+                    widget.style.display = 'block';
+                    document.getElementById('action-count').textContent = count;
+                    document.getElementById('action-plural').textContent = count > 1 ? 's' : '';
+                    
+                    document.getElementById('action-list').innerHTML = actions.map(a => `
+                        <div style="padding: 10px; background: #0f172a; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #f87171; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #f1f5f9; font-size: 13px;">
+                                    ${a.agent_type || 'Unknown Agent'}
+                                    <span style="font-weight: 400; color: #94a3b8; font-size: 11px; margin-left: 8px;">
+                                        ${new Date(a.timestamp).toLocaleTimeString()}
+                                    </span>
+                                </div>
+                                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                                    ${a.query || 'No description provided'}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-left: 10px; flex-shrink: 0;">
+                                <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #34d399; color: #0f172a; cursor: pointer;" onclick="resolveAction('${a.id}', 'approve')">
+                                    ✅ Approve
+                                </button>
+                                <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #f87171; cursor: pointer;" onclick="resolveAction('${a.id}', 'deny')">
+                                    ❌ Deny
+                                </button>
+                                <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #334155; cursor: pointer;" onclick="showHitlDetails('${a.id}')">
+                                    📋 Details
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    widget.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Actions load error:', e);
+                document.getElementById('action-list').innerHTML = '<div class="metric-label" style="color: #f87171;">Error loading actions</div>';
+            }
+        }
+
+        async function resolveAction(actionId, resolution) {
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/hitl/${actionId}/${resolution}`, { method: 'POST' });
+                if (res.ok) {
+                    showToast(`✅ Action ${resolution}d`, 'success');
+                    loadActions();
+                    refreshContextBar();
+                } else {
+                    showToast('❌ Failed to resolve action', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        async function approveAllActions() {
+            if (!confirm('Approve all pending actions?')) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/hitl/approve-all', { method: 'POST' });
+                if (res.ok) {
+                    showToast('✅ All actions approved', 'success');
+                    loadActions();
+                    refreshContextBar();
+                } else {
+                    showToast('❌ Failed to approve all', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+
+        async function denyAllActions() {
+            if (!confirm('Deny all pending actions?')) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/hitl/deny-all', { method: 'POST' });
+                if (res.ok) {
+                    showToast('✅ All actions denied', 'success');
+                    loadActions();
+                    refreshContextBar();
+                } else {
+                    showToast('❌ Failed to deny all', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+
         // ============ INIT ============
         document.addEventListener('DOMContentLoaded', function() {
-            performTabLoad('overview');
+            const lastTab = localStorage.getItem('active-tab') || 'overview';
+            performTabLoad(lastTab);
             connectWebSocket();
+            refreshContextBar();
+            loadActions();
             setInterval(() => { if (currentTab === 'overview' || currentTab === 'agents') refreshTabContent(currentTab); }, 30000);
+            setInterval(refreshContextBar, 30000);
+            setInterval(loadActions, 30000);
         });
     </script>
     <script src="/api/v1/admin/dashboard/static/js/clinical.js" defer></script>

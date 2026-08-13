@@ -107,24 +107,12 @@ pip install -r requirements.txt
 
 ## 📊 **Dashboard Overview**
 
+The PersonaVault dashboard provides a professional, "Mission Control" style interface for comprehensive operational intelligence, monitoring, and agent orchestration.
+
 ```
 📊 PersonaVault Platform Dashboard
 ==================================
-
-🔹 Security Intelligence:
-   Events: 54 | Confidence: 90.8% | Trend: IMPROVING
-
-🔹 Compliance Intelligence:
-   Events: 7 | Confidence: 94.6% | Trend: IMPROVING
-
-🔹 Contract Intelligence:
-   Events: 15 | Confidence: 87.9% | Trend: IMPROVING
-
-🔹 Insurance Intelligence:
-   Events: 4 | Confidence: 91.5% | Trend: IMPROVING
-
-📊 Summary:
-   Total Domains: 5 | Total Events: 81 | Confidence: 90.5%
+[Operational Intelligence, Agent Swarm Traceability, System Health]
 ```
 
 ---

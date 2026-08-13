@@ -1,20 +1,251 @@
 <div id="trends-tab">
     <h2 style="color: var(--accent);">📈 Trend Analysis</h2>
-    <div class="card">
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <select id="trend-domain" class="input-field" style="flex:1;">
-                <option value="incident_response">Security Intelligence</option>
-                <option value="compliance_review">Compliance Intelligence</option>
-                <option value="contract_review">Contract Intelligence</option>
-                <option value="procurement_decision">Procurement Intelligence</option>
-                <option value="underwriting_decision">Insurance Intelligence</option>
-                <option value="robot_decision">Robotics Intelligence</option>
+    
+    <div class="card" style="margin-bottom: 20px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:15px;">
+            <select id="trend-domain" class="input-field" style="flex:1; min-width:150px;">
+                <option value="security">Security Intelligence</option>
+                <option value="compliance">Compliance Intelligence</option>
+                <option value="contract">Contract Intelligence</option>
+                <option value="procurement">Procurement Intelligence</option>
+                <option value="all">All Domains</option>
             </select>
             <input type="number" id="trend-days" value="30" class="input-field" style="width:100px;">
             <button class="btn" onclick="fetchTrends()"><i class="fas fa-chart-line"></i> Analyze</button>
+            <button class="btn" style="background:#334155;" onclick="exportTrendData()"><i class="fas fa-download"></i> Export</button>
         </div>
-        <div id="trend-result">
-            <div class="metric-label">Select a domain and click Analyze.</div>
+        
+        <!-- Chart -->
+        <div style="margin-top: 15px;">
+            <canvas id="trend-chart" style="max-height: 250px; width: 100%;"></canvas>
         </div>
     </div>
+
+    <!-- Stats Cards -->
+    <div id="trend-result" style="display: none;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom: 20px;">
+            <div class="card" style="border-top: 4px solid #38bdf8;">
+                <div class="metric-label">Total Events</div>
+                <div id="trend-total" class="metric-value" style="font-size:28px;">0</div>
+            </div>
+            <div class="card" style="border-top: 4px solid #34d399;">
+                <div class="metric-label">Avg Confidence</div>
+                <div id="trend-confidence" class="metric-value" style="font-size:28px;">0%</div>
+            </div>
+            <div class="card" style="border-top: 4px solid #fbbf24;">
+                <div class="metric-label">Trend</div>
+                <div id="trend-status" class="metric-value" style="font-size:28px;">➡️ Stable</div>
+            </div>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px;">
+            <div class="card">
+                <div class="metric-label">Decision Distribution</div>
+                <div id="trend-decisions" style="margin-top:10px;"></div>
+            </div>
+            <div class="card">
+                <div class="metric-label">Outcome Distribution</div>
+                <div id="trend-outcomes" style="margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="trend-loading" style="display: none; text-align:center; padding:40px; color:#64748b;">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <div style="margin-top:10px;">Analyzing trends...</div>
+    </div>
 </div>
+
+<script>
+let trendChart = null;
+
+async function fetchTrends() {
+    const domain = document.getElementById('trend-domain').value;
+    const days = document.getElementById('trend-days').value || 30;
+    
+    document.getElementById('trend-loading').style.display = 'block';
+    document.getElementById('trend-result').style.display = 'none';
+    
+    try {
+        const res = await fetch(`/api/v1/timeline/trends/${domain}?days=${days}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast('Error: ' + data.error, 'error');
+            document.getElementById('trend-loading').style.display = 'none';
+            return;
+        }
+        
+        // Update stats
+        document.getElementById('trend-total').textContent = data.total_events || 0;
+        document.getElementById('trend-confidence').textContent = ((data.average_confidence || 0) * 100).toFixed(1) + '%';
+        
+        const trendMap = {
+            'improving': '📈 Improving',
+            'stable': '➡️ Stable',
+            'declining': '📉 Declining'
+        };
+        document.getElementById('trend-status').textContent = trendMap[data.trend] || '➡️ Stable';
+        document.getElementById('trend-status').style.color = data.trend === 'improving' ? '#34d399' : data.trend === 'declining' ? '#f87171' : '#fbbf24';
+        
+        // Update decision distribution
+        const decisionHtml = Object.entries(data.decision_distribution || {}).map(([k, v]) => 
+            `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #1e293b;">
+                <span style="color:#94a3b8;">${k}</span>
+                <span style="color:#f1f5f9; font-weight:600;">${v}</span>
+            </div>`
+        ).join('');
+        document.getElementById('trend-decisions').innerHTML = decisionHtml || 'No decisions';
+        
+        // Update outcome distribution
+        const outcomeHtml = Object.entries(data.outcome_distribution || {}).map(([k, v]) => 
+            `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #1e293b;">
+                <span style="color:#94a3b8;">${k}</span>
+                <span style="color:#f1f5f9; font-weight:600;">${v}</span>
+            </div>`
+        ).join('');
+        document.getElementById('trend-outcomes').innerHTML = outcomeHtml || 'No outcomes';
+        
+        // Render chart if we have timeline data
+        if (data.timeline && data.timeline.length > 0) {
+            renderTrendChart(data.timeline);
+        } else {
+            renderEmptyChart();
+        }
+        
+        document.getElementById('trend-loading').style.display = 'none';
+        document.getElementById('trend-result').style.display = 'block';
+        
+    } catch (e) {
+        console.error('Trend fetch error:', e);
+        document.getElementById('trend-loading').style.display = 'none';
+        showToast('Error fetching trends: ' + e.message, 'error');
+    }
+}
+
+function renderTrendChart(timeline) {
+    const ctx = document.getElementById('trend-chart').getContext('2d');
+    
+    if (trendChart) trendChart.destroy();
+    
+    const labels = timeline.map(d => d.date || new Date(d.timestamp).toLocaleDateString());
+    const confidences = timeline.map(d => (d.confidence || d.avg_confidence || 0) * 100);
+    const counts = timeline.map(d => d.count || 1);
+    
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Confidence %',
+                    data: confidences,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: confidences.map(c => c > 85 ? '#34d399' : c > 70 ? '#fbbf24' : '#f87171'),
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Event Count',
+                    data: counts,
+                    borderColor: '#a855f7',
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { 
+                    labels: { 
+                        color: '#94a3b8',
+                        boxWidth: 12,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            let value = context.parsed.y;
+                            if (context.dataset.label.includes('Confidence')) {
+                                return label + ': ' + value.toFixed(1) + '%';
+                            }
+                            return label + ': ' + value;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    ticks: { color: '#64748b', maxTicksLimit: 15 },
+                    grid: { color: '#1e293b' }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    min: 50,
+                    max: 100,
+                    ticks: { color: '#64748b', callback: function(value) { return value + '%'; } },
+                    grid: { color: '#1e293b' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    min: 0,
+                    ticks: { color: '#64748b', stepSize: 1 },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+}
+
+function renderEmptyChart() {
+    const ctx = document.getElementById('trend-chart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+    
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['No Data'],
+            datasets: [{
+                label: 'No trend data available',
+                data: [0],
+                borderColor: '#64748b',
+                pointBackgroundColor: '#64748b'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: '#64748b' } }
+            },
+            scales: {
+                x: { ticks: { color: '#64748b' } },
+                y: { ticks: { color: '#64748b' } }
+            }
+        }
+    });
+}
+
+function exportTrendData() {
+    const domain = document.getElementById('trend-domain').value;
+    const days = document.getElementById('trend-days').value || 30;
+    window.location.href = `/api/v1/timeline/trends/${domain}?days=${days}&format=csv`;
+}
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for the tab to load
+    setTimeout(fetchTrends, 500);
+});
+</script>

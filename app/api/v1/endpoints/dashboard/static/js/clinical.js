@@ -26,16 +26,16 @@ function renderClinicalFeed(activities) {
     }
     
     feed.innerHTML = activities.map(a => `
-        <div style="padding:12px; background:#020617; border-radius:8px; border-left:3px solid ${getClinicalColor(a.type)}; margin-bottom:8px;">
+        <div style="padding:12px; background:#050b18; border-radius:8px; border-left:3px solid ${getClinicalColor(a.type)}; margin-bottom:8px;">
             <div style="display:flex; justify-content:space-between;">
-                <span style="font-weight:700; color:#38bdf8;">${a.type.toUpperCase()}</span>
+                <span style="font-weight:700; color:#64748b;">${a.type.toUpperCase()}</span>
                 <span style="color:#64748b; font-size:11px;">${new Date(a.timestamp).toLocaleString()}</span>
             </div>
-            <div style="font-size:13px; color:#f1f5f9;">${a.description}</div>
+            <div style="font-size:13px; color:#e2e8f0;">${a.description}</div>
             <div style="display:flex; gap:15px; margin-top:5px; font-size:11px;">
                 <span style="color:#94a3b8;">Confidence: ${a.confidence}%</span>
                 <span style="color:#${a.human_reviewed ? '34d399' : 'fbbf24'};">
-                    ${a.human_reviewed ? '✅ Human Reviewed' : '⏳ Pending Review'}
+                    ${a.human_reviewed ? '✅ Reviewed' : '⚠️ Pending'}
                 </span>
                 <span style="color:#64748b; font-family:monospace;">Receipt: ${a.receipt_id?.substring(0,12) || 'N/A'}</span>
             </div>
@@ -68,7 +68,7 @@ async function searchClinicalAudit() {
             results.innerHTML = data.decisions.map(d => `
                 <div style="padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; margin-bottom:8px;">
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="font-weight:700; color:#38bdf8;">${d.id}</span>
+                        <span style="font-weight:700; color:#64748b;">${d.id}</span>
                         <span class="tag ${d.status === 'verified' ? 'tag-success' : 'tag-warning'}">${d.status}</span>
                     </div>
                     <div style="font-size:12px; color:#94a3b8;">${d.description}</div>

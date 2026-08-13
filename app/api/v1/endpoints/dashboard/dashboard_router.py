@@ -100,6 +100,104 @@ async def clinical_js():
             return HTMLResponse(f.read(), media_type="application/javascript")
     return HTMLResponse("// JS not found", status_code=404)
 
+@router.post("/swarm/trigger")
+async def trigger_swarm_interaction(request: Request, body: dict, user_id: int = Depends(require_admin)):
+    """Directly inject a query into the Swarm and process it."""
+    query = body.get("query", "")
+    if not query:
+        raise HTTPException(status_code=400, detail="Query content required")
+    
+    blackboard = getattr(request.app.state, "blackboard", None)
+    orchestrator = getattr(request.app.state, "orchestrator", None)
+    
+    if not blackboard:
+        return {"status": "error", "message": "Blackboard not available"}
+    
+    await blackboard.post_insight(
+        agent_name="Admin-Terminal",
+        insight={"query": query, "status": "processing", "origin": "dashboard"},
+        importance=1.0
+    )
+    
+    await manager.broadcast(json.dumps({
+        "type": "thought_stream",
+        "agent": "Orchestrator",
+        "content": f"🚀 Processing query: '{query[:50]}...'"
+    }))
+    
+    if orchestrator:
+        try:
+            result = await orchestrator.run(
+                query=query,
+                context={"user_id": user_id, "origin": "dashboard"}
+            )
+            
+            await blackboard.post_insight(
+                agent_name="Orchestrator",
+                insight={
+                    "query": query,
+                    "status": "completed",
+                    "answer": result.get("answer", "No answer generated"),
+                    "evaluation": result.get("evaluation", {}),
+                    "confidence": result.get("confidence", 0.0)
+                },
+                importance=0.9
+            )
+            
+            await manager.broadcast(json.dumps({
+                "type": "thought_stream",
+                "agent": "Orchestrator",
+                "content": f"✅ Query processed successfully!"
+            }))
+            
+            return {
+                "status": "swarm_completed",
+                "message": f"Query processed: {query[:50]}...",
+                "result": result.get("answer", ""),
+                "confidence": result.get("confidence", 0.0),
+                "evaluation": result.get("evaluation", {})
+            }
+        except Exception as e:
+            logger.error(f"Swarm processing error: {e}")
+            await blackboard.post_insight(
+                agent_name="Orchestrator",
+                insight={
+                    "query": query,
+                    "status": "error",
+                    "error": str(e)
+                },
+                importance=0.5
+            )
+            return {
+                "status": "swarm_error",
+                "message": f"Error processing query: {str(e)}"
+            }
+    
+    return {"status": "swarm_ignited", "message": f"Query '{query}' posted to Blackboard."}
+    return HTMLResponse("// JS not found", status_code=404)
+
+@router.get("/swarm/negotiation-trace")
+async def get_negotiation_trace(
+    request: Request,
+    user_id: int = Depends(require_admin)
+):
+    """Get the real swarm negotiation trace from blackboard history."""
+    blackboard = getattr(request.app.state, "blackboard", None)
+    if blackboard and blackboard.history:
+        history = blackboard.history[-10:] # Recent steps
+        sequence = []
+        for i in range(len(history)):
+            step = history[i]
+            target = history[i+1].get("agent", "Blackboard") if i < len(history) - 1 else "Blackboard"
+            sequence.append({
+                "agent": step.get("agent", "Unknown"),
+                "to": target,
+                "action": step.get("data", {}).get("event", "insight")
+            })
+        return {"sequence": sequence}
+
+    return {"sequence": []}
+
 @router.get("/tab/{tab_id}", response_class=HTMLResponse)
 async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
     """Serve individual tab content."""
@@ -107,7 +205,7 @@ async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
     if tab_path.exists():
         with open(tab_path, "r") as f:
             return HTMLResponse(f.read())
-            
+    return HTMLResponse("<h1>Tab not found</h1>", status_code=404)
     # Fallback content to ensure UI functionality during refactor
     fallbacks = {
         "overview": '<div id="metrics-grid" class="grid"></div><div class="card"><h3 class="card-title">Intelligence Feed</h3><pre id="raw-metrics">Initializing system state...</pre></div>',
@@ -201,11 +299,68 @@ async def get_empathy_grounding(request: Request, user_id: int = Depends(require
         return {"mood": getattr(agent, "last_mood", "Calm"), "tone": getattr(agent, "last_tone", "Supportive")}
     return {"mood": "Calm", "tone": "Supportive"}
 @router.get("/models")
-async def list_models(request: Request, user_id: int = Depends(require_admin)):
+async def list_models(request: Request, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """List installed Ollama models and identify the active one from DB."""
+    active_model = "tinydolphin"
     try:
+        # Get active model from database
+        stmt = select(SystemConfig).where(SystemConfig.key == "ai_provider_ollama_model")
+        result = await db.execute(stmt)
+        config = result.scalars().first()
+        if config:
+            active_model = config.value
+            
+        logger.info(f"DEBUG: DB active model: {active_model}")
+        
         res = await request.app.state.ai_client.get(f"{Config.OLLAMA_BASE_URL}/api/tags")
-        return res.json()
-    except: return {"models": []}
+        data = res.json()
+        logger.info(f"DEBUG: Ollama models from API: {data.get('models', [])}")
+        return {
+            "models": data.get("models", []),
+            "active_model": active_model
+        }
+    except Exception as e:
+        logger.error(f"Error listing models: {e}")
+        return {"models": [], "active_model": active_model}
+
+@router.post("/models/pull")
+async def pull_model(request: Request, user_id: int = Depends(require_admin)):
+    """Pull a new model from Ollama registry with streaming updates."""
+    data = await request.json()
+    model_name = data.get("name")
+    if not model_name:
+        raise HTTPException(status_code=400, detail="Model name is required")
+
+    async def generate():
+        try:
+            async with request.app.state.ai_client.stream(
+                "POST", 
+                f"{Config.OLLAMA_BASE_URL}/api/pull",
+                json={"name": model_name},
+                timeout=None
+            ) as response:
+                async for chunk in response.aiter_text():
+                    yield chunk
+        except Exception as e:
+            yield json.dumps({"error": str(e)})
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+@router.delete("/models/{model_name}")
+async def delete_model(model_name: str, request: Request, user_id: int = Depends(require_admin)):
+    """Delete a model from Ollama."""
+    try:
+        res = await request.app.state.ai_client.request(
+            "DELETE",
+            f"{Config.OLLAMA_BASE_URL}/api/delete",
+            json={"name": model_name}
+        )
+        if res.status_code == 200:
+            return {"status": "success"}
+        else:
+            raise HTTPException(status_code=res.status_code, detail="Failed to delete model")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/logs/stream")
 async def stream_engine_logs(request: Request, user_id: int = Depends(require_admin)):
@@ -356,10 +511,18 @@ async def get_primary_ai_provider_dashboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Get the current primary AI provider for the dashboard."""
-    stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
-    result = await db.execute(stmt)
-    config = result.scalars().first()
-    return {"primary_provider": config.value if config else "ollama"}
+    try:
+        # Ensure gateway is initialized
+        await gateway.ensure_initialized()
+        stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
+        result = await db.execute(stmt)
+        config = result.scalars().first()
+        return {"primary_provider": config.value if config else "ollama"}
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in get_primary_ai_provider_dashboard: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Cognitive Engine Error: {str(e)}")
 
 @router.post("/config/primary-ai-provider")
 async def update_primary_ai_provider_dashboard(
@@ -654,3 +817,12 @@ async def _run_iot_simulation():
             await asyncio.sleep(5)
     except asyncio.CancelledError:
         pass
+
+@router.post("/config/refresh-gateway")
+async def refresh_gateway_config(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Refresh the gateway configuration from the database."""
+    await gateway.reload_config()
+    return {"status": "success", "message": "Gateway configuration reloaded"}

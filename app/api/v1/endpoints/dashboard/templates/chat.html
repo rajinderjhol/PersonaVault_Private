@@ -13,6 +13,9 @@ Connected databases (if configured)
 AI providers (Ollama, Gemini, etc.)
 What would you like to know?</div>
         </div>
+        <div id="typing-indicator" style="display:none; padding:10px; color:#94a3b8; font-size:12px;">
+            <i class="fas fa-ellipsis-h fa-spin"></i> AI is thinking...
+        </div>
         <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
             <input type="text" id="chat-input" placeholder="Ask me anything..." class="input-field" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') sendChatMessage()">
             <button class="btn" onclick="sendChatMessage()">Send</button>

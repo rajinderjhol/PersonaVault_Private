@@ -584,3 +584,29 @@ Create a robot decision event. (See v2.0 behaviour event schema)
 
 *Last Updated: July 2026*
 ```
+
+## XX. Admin Dashboard
+
+The Admin Dashboard provides real-time observability into the swarm's cognitive state.
+
+### 1. Agent Orchestration
+Monitors the swarm's activity via real-time telemetry.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/cognitive-load` | `GET` | Returns active orchestrator tasks and agent states. |
+| `/empathy/status` | `GET` | Returns the last mood and tone determined by the EmpathyAgent. |
+
+### 2. Cognitive Narrative & Orchestration (Live)
+Visualizes the agent collaboration and reasoning process.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/swarm/trigger` | `POST` | Triggers a query through the swarm orchestrator. |
+| `/swarm/negotiation-trace` | `GET` | Fetches the structured CoT trace from blackboard history for visualization. |
+
+**Cognitive Narrative Feed:**
+A real-time, human-readable stream that aggregates low-level technical agent events into high-level cognitive phases:
+*   **Analysis**: Planning, Retrieval, Context Analysis.
+*   **Synthesis**: Generation, Evaluation.
+*   **System**: Orchestration and final status updates.

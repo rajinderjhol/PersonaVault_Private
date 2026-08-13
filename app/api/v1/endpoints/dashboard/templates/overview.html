@@ -1,4 +1,22 @@
 <div id="overview-tab">
+    <div class="quick-stats" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
+        <div class="stat-card" style="background:var(--card-bg); padding:15px; border-radius:8px; border-left:4px solid var(--accent);">
+            <div style="font-size:11px; color:#94a3b8;">Total Events</div>
+            <div style="font-size:24px; font-weight:700; color:#e2e8f0;" id="stat-total-events">0</div>
+        </div>
+        <div class="stat-card" style="background:var(--card-bg); padding:15px; border-radius:8px; border-left:4px solid var(--success);">
+            <div style="font-size:11px; color:#94a3b8;">Avg Confidence</div>
+            <div style="font-size:24px; font-weight:700; color:var(--success);" id="stat-avg-confidence">0%</div>
+        </div>
+        <div class="stat-card" style="background:var(--card-bg); padding:15px; border-radius:8px; border-left:4px solid var(--warning);">
+            <div style="font-size:11px; color:#94a3b8;">Active Models</div>
+            <div style="font-size:24px; font-weight:700; color:var(--warning);" id="stat-active-models">0</div>
+        </div>
+        <div class="stat-card" style="background:var(--card-bg); padding:15px; border-radius:8px; border-left:4px solid var(--danger);">
+            <div style="font-size:11px; color:#94a3b8;">Domains</div>
+            <div style="font-size:24px; font-weight:700; color:var(--danger);" id="stat-domains">0</div>
+        </div>
+    </div>
     <div class="card" style="border-top: 4px solid var(--accent); margin-bottom: 25px;">
         <h3 class="card-title">👋 Welcome to PersonaVault!</h3>
         <p style="color: #94a3b8; font-size: 13px;">

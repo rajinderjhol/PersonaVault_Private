@@ -250,7 +250,9 @@ The application enforces a multi-layered security approach:
 
 The system is designed for production-grade monitoring:
 *   **Prometheus**: Tracking request latency and error rates across all endpoints.
-*   **Cognified Admin Dashboard**: A specialized router (`admin_dashboard.py`) providing real-time metrics, disk usage breakdown, and AI provider health.
+*   **Cognified Admin Dashboard**: A specialized router (`dashboard_router.py`) providing real-time metrics, system health, and cognitive trace visualization.
+*   **Cognitive Narrative Stream**: Real-time human-readable monitoring of agent swarm reasoning, providing high-level operational insight into agent collaboration.
+*   **CoT Visualization**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization and auditability.
 *   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs (SSE).
 *   **Model Management**: Direct interface for pulling and deleting Ollama models.
 
