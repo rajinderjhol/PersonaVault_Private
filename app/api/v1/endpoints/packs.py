@@ -12,7 +12,7 @@ router = APIRouter(prefix="/packs", tags=["behaviour-packs"])
 
 @router.get("/")
 async def list_packs(
-    user_id: int = Depends(require_admin),
+    user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """List all installed behaviour packs."""
@@ -85,3 +85,43 @@ async def get_pack(
         "policies": pack.policies,
         "evaluation_rules": pack.evaluation_rules
     }
+
+@router.post("/{pack_id}/toggle")
+async def toggle_pack(
+    pack_id: str,
+    user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Toggle a pack's active status."""
+    from sqlalchemy import select
+    from app.models.learning.behaviour_pack import BehaviourPack
+    
+    stmt = select(BehaviourPack).where(BehaviourPack.id == pack_id)
+    result = await db.execute(stmt)
+    pack = result.scalars().first()
+    
+    if not pack:
+        raise HTTPException(status_code=404, detail="Pack not found")
+    
+    new_status = not pack.is_active
+    pack.is_active = new_status
+    await db.commit()
+    return {"status": "success", "is_active": new_status}
+
+@router.delete("/{pack_id}")
+async def delete_pack(
+    pack_id: str,
+    user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a specific pack."""
+    from sqlalchemy import delete
+    from app.models.learning.behaviour_pack import BehaviourPack
+    
+    stmt = delete(BehaviourPack).where(BehaviourPack.id == pack_id)
+    result = await db.execute(stmt)
+    await db.commit()
+    
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Pack not found")
+    return {"status": "success"}

@@ -10,21 +10,6 @@ from typing import List, Optional, Dict, Any
 # Import the central Base from the session module to ensure metadata is shared
 from app.db.session import Base
 from app.models.pending_action import PendingAction
-
-# ============ SQLAlchemy Models ============
-
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String)
-    role = Column(String, default="user")
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 from app.models.organization import Organization
 from app.models.user import User
 from app.models.user_profile import UserProfile

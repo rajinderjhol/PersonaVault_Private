@@ -25,7 +25,7 @@ from passlib.context import CryptContext
 # Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization
+    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock
 )
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
@@ -374,15 +374,11 @@ app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
+app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
 
 # Modular Dashboard (Take precedence over legacy admin routes)
 app.include_router(dashboard_router, tags=["dashboard"])
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
-
-@app.get("/api/v1/packs/")
-async def list_intelligence_packs_unified(user_id: int = Depends(get_current_user)):
-    """Unified endpoint for Behaviour/Intelligence Packs discovery."""
-    return gateway.packs
 
 app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])

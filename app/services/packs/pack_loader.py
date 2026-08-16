@@ -79,15 +79,18 @@ class PackLoader:
                 
                 if existing:
                     logger.warning(f"Pack {pack.id} already exists, updating...")
-                    # Update existing pack
                     for key, value in pack.__dict__.items():
                         if not key.startswith('_') and key != 'installed_at':
                             setattr(existing, key, value)
+                    await db.flush()
+                    pack_name = existing.name
                 else:
                     db.add(pack)
+                    await db.flush()
+                    pack_name = pack.name
                 
                 await db.commit()
-                logger.info(f"✅ Pack {pack.name} installed successfully")
+                logger.info(f"✅ Pack {pack_name} installed successfully")
                 return True
             except Exception as e:
                 logger.error(f"Failed to install pack: {e}")
@@ -108,6 +111,6 @@ class PackLoader:
         """List all installed packs."""
         async with self.session_factory() as db:
             from sqlalchemy import select
-            stmt = select(BehaviourPack).where(BehaviourPack.is_active == True)
+            stmt = select(BehaviourPack)
             result = await db.execute(stmt)
             return result.scalars().all()

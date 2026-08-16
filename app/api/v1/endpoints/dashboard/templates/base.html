@@ -1655,7 +1655,9 @@
         async function loadActions() {
             try {
                 const res = await fetch('/api/v1/admin/dashboard/hitl/pending');
+                if (!res.ok) throw new Error('Failed to fetch actions');
                 const actions = await res.json();
+                if (!Array.isArray(actions)) throw new Error('Invalid response format');
                 const count = actions.length;
                 const widget = document.getElementById('action-required-widget');
                 
@@ -1705,7 +1707,7 @@
                 }
             } catch (e) {
                 console.error('Actions load error:', e);
-                document.getElementById('action-list').innerHTML = '<div class="metric-label" style="color: #f87171;">Error loading actions</div>';
+                // Keep the widget hidden if load fails to avoid UX noise
             }
         }
 
@@ -1765,5 +1767,8 @@
         });
     </script>
     <script src="/api/v1/admin/dashboard/static/js/clinical.js" defer></script>
-</body>
-</html>
+    <script src="/api/v1/admin/dashboard/static/js/clinical.js" defer></script>
+    <script src="/api/v1/admin/dashboard/static/js/packs.js" defer></script>
+    </body>
+    </html>
+

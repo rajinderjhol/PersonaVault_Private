@@ -100,6 +100,15 @@ async def clinical_js():
             return HTMLResponse(f.read(), media_type="application/javascript")
     return HTMLResponse("// JS not found", status_code=404)
 
+@router.get("/static/js/packs.js")
+async def packs_js():
+    """Serve the pack management logic JS."""
+    js_path = Path(__file__).parent / "static" / "js" / "packs.js"
+    if js_path.exists():
+        with open(js_path, "r") as f:
+            return HTMLResponse(f.read(), media_type="application/javascript")
+    return HTMLResponse("// JS not found", status_code=404)
+
 @router.post("/swarm/trigger")
 async def trigger_swarm_interaction(request: Request, body: dict, user_id: int = Depends(require_admin)):
     """Directly inject a query into the Swarm and process it."""
@@ -401,6 +410,32 @@ async def list_pending_hitl(user_id: int = Depends(require_admin), db: AsyncSess
     stmt = select(PendingAction).where(PendingAction.status == "pending").order_by(PendingAction.created_at.desc())
     results = (await db.execute(stmt)).scalars().all()
     return [{"id": p.id, "agent_type": p.agent_type, "query": p.query, "timestamp": p.created_at.isoformat()} for p in results]
+
+@router.post("/hitl/approve-all")
+async def approve_all_hitl(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(PendingAction).where(PendingAction.status == "pending")
+    actions = (await db.execute(stmt)).scalars().all()
+    for action in actions:
+        action.status = "approved"
+        action.resolved_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"status": "success", "count": len(actions)}
+
+@router.post("/hitl/deny-all")
+async def deny_all_hitl(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(PendingAction).where(PendingAction.status == "pending")
+    actions = (await db.execute(stmt)).scalars().all()
+    for action in actions:
+        action.status = "rejected"
+        action.resolved_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"status": "success", "count": len(actions)}
 
 @router.get("/governance/logs")
 async def get_governance_logs(user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
@@ -826,3 +861,28 @@ async def refresh_gateway_config(
     """Refresh the gateway configuration from the database."""
     await gateway.reload_config()
     return {"status": "success", "message": "Gateway configuration reloaded"}
+
+@router.post("/system/maintenance/purge-pip")
+async def purge_pip_cache(user_id: int = Depends(require_admin)):
+    """Purge pip cache to free up disk space."""
+    import subprocess
+    subprocess.run(["pip", "cache", "purge"], check=False)
+    return {"status": "success", "message": "Pip cache purged."}
+
+@router.post("/system/maintenance/cleanup-logs")
+async def cleanup_logs(user_id: int = Depends(require_admin)):
+    """Clear engine logs."""
+    log_file = "storage/logs/uvicorn.log"
+    if os.path.exists(log_file):
+        open(log_file, 'w').close()
+    return {"status": "success", "message": "Logs cleared."}
+
+@router.post("/system/maintenance/reset-vector")
+async def reset_vector_index(user_id: int = Depends(require_admin)):
+    """Reset the FAISS vector index."""
+    storage_dir = Path("storage")
+    index_file = storage_dir / "vector_index.faiss"
+    metadata_file = storage_dir / "vector_metadata.pkl"
+    if index_file.exists(): index_file.unlink()
+    if metadata_file.exists(): metadata_file.unlink()
+    return {"status": "success", "message": "Vector index reset."}

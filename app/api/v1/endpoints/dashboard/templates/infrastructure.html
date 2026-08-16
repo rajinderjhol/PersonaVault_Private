@@ -1,0 +1,164 @@
+<div id="infrastructure-tab" style="padding: 20px;">
+    <h2 style="color: var(--accent);">🏗️ Infrastructure & Environment</h2>
+    <p style="color: var(--text-secondary);">Manage database backends, AI providers, and system maintenance.</p>
+    
+    <div class="grid">
+        <!-- AI Provider Settings -->
+        <div class="card">
+            <div class="card-title">🤖 Primary AI Provider</div>
+            <div style="margin-top: 15px;">
+                <label class="metric-label">Active Provider</label>
+                <select id="primary-provider-select" class="btn" style="width: 100%; margin: 10px 0; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--accent);">
+                    <option value="ollama">Ollama (Local-First)</option>
+                    <option value="gemini">Gemini (Cloud-Hybrid)</option>
+                    <option value="groq">Groq (High-Speed)</option>
+                </select>
+                <button class="btn btn-primary" onclick="savePrimaryProvider()" style="width: 100%;">Apply Engine Shift</button>
+            </div>
+        </div>
+
+        <!-- Database & Memory Lattices -->
+        <div class="card">
+            <div class="card-title">💾 Database & Lattices</div>
+            <div style="margin-top: 15px;">
+                <div class="metric-label">Relational Engine</div>
+                <div id="db-engine-status" class="metric-value" style="font-size: 1.2rem; color: var(--accent);">SQLite (Converged)</div>
+                
+                <div class="metric-label" style="margin-top: 15px;">Vector Lattice (FAISS)</div>
+                <div id="vector-status" class="metric-value" style="font-size: 1.2rem;">Healthy</div>
+                
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn" onclick="resetVectorIndex()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444;">Reset Index</button>
+                    <button class="btn" onclick="vacuumDatabase()">Vacuum DB</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cloud Shell Maintenance -->
+        <div class="card">
+            <div class="card-title">🧹 System Maintenance</div>
+            <div style="margin-top: 15px;">
+                <div class="metric-label">Disk Usage (Cloud Shell)</div>
+                <div id="disk-usage-percent" class="metric-value">--%</div>
+                <div class="mem-viz-container" style="height: 10px; margin: 10px 0;">
+                    <div id="disk-usage-bar" style="width: 0%; background: var(--accent); height: 100%; transition: width 0.5s;"></div>
+                </div>
+                
+                <button class="btn" onclick="purgePipCache()" style="width: 100%; margin-top: 10px;">Purge Pip Cache</button>
+                <button class="btn" onclick="cleanupLogs()" style="width: 100%; margin-top: 10px;">Clear Engine Logs</button>
+            </div>
+        </div>
+        
+        <!-- API Credentials -->
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-title">🔑 API Credentials & Keys</div>
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                <div>
+                    <label class="metric-label">Gemini API Key</label>
+                    <input type="password" id="gemini-key" class="btn" style="width: 100%; text-align: left; margin-top: 5px;" placeholder="Enter Gemini Key...">
+                </div>
+                <div>
+                    <label class="metric-label">Groq API Key</label>
+                    <input type="password" id="groq-key" class="btn" style="width: 100%; text-align: left; margin-top: 5px;" placeholder="Enter Groq Key...">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveApiKeys()" style="margin-top: 20px;">Secure & Save Keys</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadInfraSettings() {
+        try {
+            // Load Primary Provider
+            const resProvider = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
+            const dataProvider = await resProvider.json();
+            document.getElementById('primary-provider-select').value = dataProvider.primary_provider;
+
+            // Load Metrics (Disk, DB)
+            const resMetrics = await fetch('/api/v1/admin/dashboard/metrics');
+            const metrics = await resMetrics.json();
+            
+            if (metrics.system && metrics.system.storage_used) {
+                const storage = metrics.system.storage_used;
+                document.getElementById('disk-usage-percent').innerText = storage.used_percent + '%';
+                document.getElementById('disk-usage-bar').style.width = storage.used_percent + '%';
+                
+                if (storage.used_percent > 85) {
+                    document.getElementById('disk-usage-bar').style.backgroundColor = '#ef4444';
+                }
+            }
+
+            // Load specific API keys (placeholder for security)
+            const resGemini = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings/gemini');
+            const geminiData = await resGemini.json();
+            if (geminiData.api_key) document.getElementById('gemini-key').value = '********';
+
+            const resGroq = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings/groq');
+            const groqData = await resGroq.json();
+            if (groqData.api_key) document.getElementById('groq-key').value = '********';
+
+        } catch (e) {
+            console.error('Error loading infra settings:', e);
+        }
+    }
+
+    async function savePrimaryProvider() {
+        const provider = document.getElementById('primary-provider-select').value;
+        const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ provider })
+        });
+        if (res.ok) alert('Primary AI Provider updated and gateway reloaded.');
+    }
+
+    async function saveApiKeys() {
+        const geminiKey = document.getElementById('gemini-key').value;
+        const groqKey = document.getElementById('groq-key').value;
+
+        if (geminiKey && geminiKey !== '********') {
+            await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ provider: 'gemini', api_key: geminiKey })
+            });
+        }
+
+        if (groqKey && groqKey !== '********') {
+            await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ provider: 'groq', api_key: groqKey })
+            });
+        }
+        
+        alert('API Credentials saved securely.');
+        loadInfraSettings();
+    }
+
+    async function purgePipCache() {
+        if (confirm('Are you sure you want to purge the pip cache? This will free up space but slow down future installs.')) {
+            const res = await fetch('/api/v1/admin/dashboard/system/maintenance/purge-pip', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message || 'Purge completed.');
+            loadInfraSettings();
+        }
+    }
+
+    async function cleanupLogs() {
+        const res = await fetch('/api/v1/admin/dashboard/system/maintenance/cleanup-logs', { method: 'POST' });
+        alert('Engine logs cleared.');
+        loadInfraSettings();
+    }
+
+    async function resetVectorIndex() {
+        if (confirm('CRITICAL: This will delete the current FAISS index and metadata. The system will rebuild it on next start. Proceed?')) {
+            await fetch('/api/v1/admin/dashboard/system/maintenance/reset-vector', { method: 'POST' });
+            alert('Vector index purged.');
+            loadInfraSettings();
+        }
+    }
+
+    loadInfraSettings();
+</script>

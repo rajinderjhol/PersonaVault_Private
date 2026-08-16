@@ -3,11 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, timezone
 import random
 
-router = APIRouter(prefix="/api/v1/timeline/trends", tags=["trends"])
+router = APIRouter(prefix="/timeline/trends", tags=["trends"])
 
-@router.get("/incident_response")
-async def mock_incident_response_trends(days: int = 30):
-    """Mock trends data until real endpoint is implemented."""
+@router.get("/{domain}")
+async def mock_trends(domain: str, days: int = 30):
+    """Mock trends data for a given domain."""
     data = []
     now = datetime.now(timezone.utc)
     for i in range(days):
@@ -18,7 +18,8 @@ async def mock_incident_response_trends(days: int = 30):
         })
     return {
         "status": "success",
-        "data": data[::-1],  # Reverse to show oldest first
+        "domain": domain,
+        "data": data[::-1],
         "days": days,
         "total": sum(d["count"] for d in data)
     }

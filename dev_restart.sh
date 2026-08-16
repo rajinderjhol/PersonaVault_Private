@@ -156,6 +156,13 @@ conn.close()
 print('✅ Database tables verified.')
 "
 
+echo "🌱 Running comprehensive data seeding..."
+python3 scripts/seed_all_data.py
+python3 scripts/populate_test_data.py
+echo "📦 Installing Domain Intelligence Packs..."
+python3 scripts/install_all_packs.py
+echo "✅ Data seeding and pack installation complete."
+
 # ============================================================
 # 5. START SERVER
 # ============================================================
