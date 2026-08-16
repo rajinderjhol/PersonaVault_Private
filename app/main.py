@@ -8,6 +8,7 @@ import asyncio
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from app.db.session import engine, Base, SessionLocal, get_db, AsyncSession
 import json
@@ -35,6 +36,13 @@ from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
 from app.api.v1.endpoints.documents import router as documents_router
+from app.api.v1.endpoints.chat_router import router as chat_router
+from app.api.v1.endpoints.patterns import router as patterns_router
+from app.api.v1.endpoints.policies import router as policies_router
+from app.api.v1.endpoints.predictive import router as predictive_router
+from app.api.v1.endpoints.generative import router as generative_router
+from app.api.v1.endpoints.collaborative import router as collaborative_router
+from app.api.v1.endpoints.multimodal import router as multimodal_router
 from app.api.v1.endpoints.clinical import router as clinical_router
 from app.api.v1.endpoints.dashboard.dashboard_router import router as dashboard_router
 from app.core.audit import audit_middleware
@@ -66,13 +74,15 @@ from app.repositories.faiss.vector import FAISSSemanticRepository
 from app.repositories.neo4j.graph import Neo4jGraphRepository
 from app.services.intelligence_gateway import gateway, MCPRegistry
 from app.services.consolidation_service import ConsolidationTask
+from app.services.self_improving import SelfImprovingIntelligence
 import scripts.seed_demo_data
 
 # Create tables
 from app.models import (
     AuditLog, UserSession, Memory, User, SystemConfig, Organization,
     LegalMatter, LegalDocument, WorkflowTask, AISetting, IoTDevice, IoTData,
-    SemanticPattern, PersonalContext, UserPersona, MedicalAlert, PendingAction, EpisodicEntry
+    SemanticPattern, PersonalContext, UserPersona, MedicalAlert, PendingAction, EpisodicEntry,
+    ChatSession, ChatMessage
 )
 from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
@@ -121,6 +131,8 @@ async def lifespan(app: FastAPI):
 
     # Initialize the Cognitive Swarm
     logger.info("Lifespan: Igniting Cognitive Swarm...")
+    app.state.self_improving = SelfImprovingIntelligence()
+    await app.state.self_improving.initialize()
     app.state.blackboard = CognitiveBlackboard()
     app.state.ai_router = AIRouter(engine_mode="Local-First (Ollama)")
     
@@ -311,6 +323,8 @@ async def _protected_metrics_app(scope, receive, send):
 
 app.mount("/metrics", _protected_metrics_app)
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # CORS middleware — origins are driven by ALLOWED_ORIGINS env var
 # In development (CORS_ALLOW_ALL=true + APP_ENV=development): wildcard is permitted
 # In all other cases: only listed origins are allowed
@@ -372,9 +386,18 @@ app.include_router(personalization.router, prefix="/api/v1")
 app.include_router(automation.router, prefix="/api/v1")
 app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
-app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
+# Modular Router Registration
+from app.api.v1.endpoints.chat import router as chat_router
+from app.api.v1.endpoints.intelligence import router as intelligence_router
+from app.api.v1.endpoints.mcp_tools import router as mcp_tools_router
+
+app.include_router(chat_router)
+app.include_router(intelligence_router)
+app.include_router(mcp_tools_router)
+
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
+
 
 # Modular Dashboard (Take precedence over legacy admin routes)
 app.include_router(dashboard_router, tags=["dashboard"])
@@ -385,6 +408,13 @@ app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
+app.include_router(chat_router, prefix="/api/v1")
+app.include_router(patterns_router, prefix="/api/v1")
+app.include_router(policies_router)
+app.include_router(predictive_router)
+app.include_router(generative_router)
+app.include_router(collaborative_router)
+app.include_router(multimodal_router)
 app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
@@ -575,68 +605,6 @@ async def health_check():
         "service": "PersonaVault API",
         "version": "1.0.0",
         "environment": "production"
-    }
-
-@app.post("/api/v1/chat")
-async def chat_endpoint(request: Request, current_user: User = Depends(get_current_user)):
-    """
-    Unified chat endpoint - uses the Intelligence Gateway.
-    This is the main user-facing chat interface.
-    """
-    try:
-        data = await request.json()
-        query = data.get("query", "")
-        patient_id = data.get("patient_id") # Optional patient context
-        provider = data.get("provider", "ollama")
-        
-        if not query:
-            return {"error": "Query is required"}
-            
-        result = await gateway.chat(current_user.id, query, request.app.state, patient_id=patient_id, provider=provider)
-        
-        # Ensure the response includes the provider
-        if "response" in result:
-            result["provider"] = provider
-            
-        return result
-    except Exception as e:
-        logger.error(f"Chat endpoint error: {e}")
-        return {"error": str(e)}
-
-@app.get("/api/v1/mcp/tools")
-async def list_mcp_tools():
-    """List all available MCP tools."""
-    return {"tools": MCPRegistry.list_tools()}
-
-@app.post("/api/v1/mcp/call/{tool_name}")
-async def call_mcp_tool(tool_name: str, request: Request, user_id: int = Depends(get_current_user)):
-    """Call any MCP tool by name."""
-    try:
-        data = await request.json()
-        result = await MCPRegistry.call(tool_name, **data)
-        return result
-    except Exception as e:
-        logger.error(f"MCP call error: {e}")
-        return {"success": False, "error": str(e)}
-
-@app.get("/api/v1/intelligence/status")
-async def intelligence_status(user_id: int = Depends(get_current_user)):
-    """Get the current status of the Intelligence Gateway."""
-    # Ensure gateway has loaded database overrides so the UI shows cloud providers
-    if not getattr(gateway, "_initialized_from_db", True):
-        await gateway.reload_config()
-
-    # Ensure we show the current state of enabled providers
-    enabled_providers = [name for name, cfg in gateway.ai_tool.providers.items() if cfg.get("enabled")]
-    
-    return {
-        "mode": gateway.config.get("router", {}).get("strategy", "hybrid"),
-        "providers": enabled_providers,
-        "databases": list(gateway.db_tool.connections.keys()),
-        "files": len(gateway.file_tool.index),
-        "packs": len(gateway.packs),
-        "web_search": gateway.web_tool.enabled,
-        "agent_swarm": gateway.agent_tool is not None
     }
 
 @app.get("/api/v1/admin/dashboard/cognitive-load")

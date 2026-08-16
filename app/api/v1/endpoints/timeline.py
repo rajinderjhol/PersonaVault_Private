@@ -114,8 +114,8 @@ async def compare_decisions(
     
     return result
 
-@router.get("/trends/{event_type}")
-async def get_trends(
+@router.get("/trends_original/{event_type}")
+async def get_trends_original(
     event_type: str,
     days: int = Query(30, description="Number of days to analyze"),
     user_id: int = Depends(require_admin),
@@ -129,3 +129,33 @@ async def get_trends(
         raise HTTPException(status_code=404, detail=result["error"])
     
     return result
+
+@router.get("/trends/{event_type}")
+async def get_trends(
+    event_type: str,
+    days: int = Query(30, description="Number of days to analyze"),
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get decision trends for an event type with pattern insights."""
+    from app.services.decision_integration import DecisionIntegration
+    
+    # Get base trends
+    trends = await get_trends_original(event_type, days, user_id, db)
+    
+    # Add pattern insights
+    integration = DecisionIntegration(db)
+    patterns = await integration.self_improving.get_active_patterns()
+    
+    # Filter patterns relevant to this event type
+    relevant = [p for p in patterns if p.get("type") == "domain" or p.get("trigger") in event_type.lower()]
+    
+    trends["pattern_insights"] = relevant
+    
+    # Add improvement recommendation if any
+    if trends.get("trend") == "declining":
+        improvement_patterns = [p for p in relevant if p.get("type") == "improvement"]
+        if improvement_patterns:
+            trends["recommendation"] = f"Apply improvement pattern: {improvement_patterns[0].get('correction', '')}"
+    
+    return trends

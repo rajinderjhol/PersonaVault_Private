@@ -45,6 +45,8 @@ from app.utils.plugin_loader import PluginLoader
 from app.core.permissions import check_tool_permission
 from app.models import User
 from sqlalchemy import select
+from app.services.thought_tracker import ThoughtTracker
+from app.services.safe_cache import SafeCache
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +151,8 @@ class IntelligenceGateway:
         self.web_tool = WebTool()
         self.ai_tool = AITool()
         self.agent_tool = None
+        self.thought_tracker = ThoughtTracker()
+        self.cache = SafeCache(max_size=50, default_ttl=300)
         self._initialized_from_db = False
         self.packs = []
         self._register_mcp_tools()
@@ -156,6 +160,12 @@ class IntelligenceGateway:
     # ==================== AI GENERATE ====================
     
     async def generate(self, provider: str, query: str, context: str = "") -> Dict[str, Any]:
+        cache_key = self.cache._get_key(query, {"provider": provider})
+        cached = self.cache.get(cache_key)
+        if cached:
+            logger.info(f"🔁 Cache hit for query: {query[:50]}...")
+            return cached
+
         start_time = time.time()
         provider_key = provider.lower()
         config = self.ai_tool.providers.get(provider_key)
@@ -187,7 +197,7 @@ class IntelligenceGateway:
             
             try:
                 logger.info(f"Ollama request started at {start_time}")
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(timeout=30.0) as client:
                     response = await client.post(
                         f"{host}/api/chat",
                         json={
@@ -199,15 +209,20 @@ class IntelligenceGateway:
                             "stream": False,
                             "options": {"temperature": 0.2}
                         },
-                        timeout=120.0
+                        timeout=30.0
                     )
                     end_time = time.time()
                     logger.info(f"Ollama request completed in {end_time - start_time} seconds")
                     if response.status_code == 200:
                         msg_data = response.json().get("message", {})
-                        return {"response": msg_data.get("content", "No response")}
+                        result = {"response": msg_data.get("content", "No response")}
+                        self.cache.set(cache_key, result)
+                        return result
                     else:
                         return {"response": f"[Ollama error {response.status_code}]"}
+            except httpx.TimeoutException:
+                logger.error(f"Ollama request timed out after 30 seconds")
+                return {"response": "[Ollama timeout - please try again]"}
             except Exception as e:
                 logger.exception(f"Ollama error type: {type(e).__name__}, message: {str(e)}")
                 return {"response": f"[Ollama unavailable: {type(e).__name__}]"}
@@ -241,7 +256,9 @@ class IntelligenceGateway:
                         timeout=120.0
                     )
                     if response.status_code == 200:
-                        return {"response": response.json()["choices"][0]["message"]["content"]}
+                        result = {"response": response.json()["choices"][0]["message"]["content"]}
+                        self.cache.set(cache_key, result)
+                        return result
                     else:
                         return {"response": f"[Groq error {response.status_code}]"}
             except Exception as e:
@@ -263,7 +280,9 @@ class IntelligenceGateway:
                     system_instruction=system_instruction
                 )
                 response = await model.generate_content_async(f"{formatted_context}\n\nUSER_QUERY: {query}")
-                return {"response": response.text}
+                result = {"response": response.text}
+                self.cache.set(cache_key, result)
+                return result
             except Exception as e:
                 return {"response": f"[Gemini unavailable: {str(e)}]"}
         
@@ -338,7 +357,8 @@ class IntelligenceGateway:
         """Reload configuration from database."""
         self._initialized_from_db = False
         await self.ensure_initialized()
-        logger.info("✅ Intelligence Gateway reloaded")
+        self.cache.invalidate_all()
+        logger.info("✅ Intelligence Gateway reloaded and cache invalidated")
     
     async def hot_reload(self, db: AsyncSession):
         """Hot reload configuration."""
@@ -361,25 +381,34 @@ class IntelligenceGateway:
 
     async def chat(self, user_id: int, query: str, state: Any = None, patient_id: str = None, provider: str = "ollama") -> Dict[str, Any]:
         chat_start = time.time()
+        self.thought_tracker.start()
+        self.thought_tracker.add_step("Understanding", f"Processing query: '{query}'")
         
         # Normalize user_id
         user_id_int = user_id.id if hasattr(user_id, 'id') else user_id
         if not isinstance(user_id_int, int):
             return {"error": "Invalid user_id"}
         
+        self.thought_tracker.add_step("RBAC Check", f"Validating permissions for user {user_id_int}")
         user_role = await self.get_user_role(user_id_int)
         
         await self.ensure_initialized()
+        self.thought_tracker.add_step("Config", "Gateway initialized")
         
-        # Use the provided provider or default to ollama
+        # Use the provided provider (respect user selection)
         context = "Context assembled."
+        logger.info(f"🔄 Chat using provider: {provider}")
         
         # Bypass MCP registry for direct Ollama call
+        self.thought_tracker.add_step("Routing", f"Routing to provider: {provider}")
         result = await self.generate(provider, query, context=context)
+        self.thought_tracker.add_step("Generation", "Response generated")
         
         # Ensure the response includes the provider
         final_result = {"response": result.get("response", "No response")}
         final_result["provider"] = provider
+        final_result["thought_process"] = self.thought_tracker.get_steps()
+        final_result["total_time"] = self.thought_tracker.get_total_time()
         
         return final_result
     

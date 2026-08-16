@@ -14,6 +14,7 @@ from app.models.organization import Organization
 from app.models.user import User
 from app.models.user_profile import UserProfile
 from app.models.system_config import SystemConfig
+from app.models.chat import ChatSession, ChatMessage
 
 # Role model is still here, keeping it.
 class Role(Base):

@@ -1,0 +1,124 @@
+<!-- Proactive Suggestions Widget -->
+<div id="suggestions-widget" class="card" style="border-top: 4px solid #a855f7; margin-bottom: 20px; display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 class="card-title" style="color: #a855f7;">
+            💡 Proactive Suggestions
+            <span id="suggestion-count" class="tag tag-info" style="font-size: 10px; margin-left: 8px;">0</span>
+        </h3>
+        <button class="refresh-btn" onclick="loadSuggestions()" style="padding: 2px 8px; font-size: 10px;">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+    <div id="suggestions-container">
+        <div class="metric-label">Loading suggestions...</div>
+    </div>
+</div>
+
+<script>
+async function loadSuggestions() {
+    const widget = document.getElementById('suggestions-widget');
+    const container = document.getElementById('suggestions-container');
+    
+    try {
+        const res = await fetch('/api/v1/predictive/suggestions');
+        if (!res.ok) throw new Error('Failed to load suggestions');
+        const data = await res.json();
+        
+        const suggestions = data.suggestions || {};
+        const total = data.total || 0;
+        
+        if (total === 0) {
+            widget.style.display = 'none';
+            return;
+        }
+        
+        widget.style.display = 'block';
+        document.getElementById('suggestion-count').textContent = total;
+        
+        let html = '';
+        
+        // High priority
+        if (suggestions.high && suggestions.high.length > 0) {
+            html += suggestions.high.map(s => `
+                <div style="padding: 10px; background: rgba(248, 113, 113, 0.1); border: 1px solid #f87171; border-radius: 6px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas ${s.icon || 'fa-bullhorn'}" style="color: #f87171;"></i>
+                            <div>
+                                <div style="font-weight: 600; color: #f1f5f9; font-size: 13px;">${s.title}</div>
+                                <div style="font-size: 12px; color: #94a3b8;">${s.description}</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #38bdf8;" onclick="handleSuggestionAction('${s.action}', '${s.action_url}')">
+                                <i class="fas fa-arrow-right"></i> Go
+                            </button>
+                            <button class="btn" style="padding: 2px 10px; font-size: 10px; background: transparent; color: #64748b;" onclick="dismissSuggestion('${s.title}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Medium priority
+        if (suggestions.medium && suggestions.medium.length > 0) {
+            html += suggestions.medium.map(s => `
+                <div style="padding: 8px 10px; background: rgba(251, 191, 36, 0.05); border: 1px solid #fbbf24; border-radius: 4px; margin-bottom: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas ${s.icon || 'fa-info-circle'}" style="color: #fbbf24;"></i>
+                            <div>
+                                <span style="color: #f1f5f9; font-size: 13px;">${s.title}</span>
+                                <span style="font-size: 11px; color: #94a3b8; margin-left: 8px;">${s.description}</span>
+                            </div>
+                        </div>
+                        <button class="btn" style="padding: 2px 8px; font-size: 10px; background: #334155;" onclick="handleSuggestionAction('${s.action}', '${s.action_url}')">
+                            View
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        container.innerHTML = html;
+        
+    } catch (e) {
+        console.error('Error loading suggestions:', e);
+        container.innerHTML = '<div class="metric-label" style="color: #f87171;">Error loading suggestions</div>';
+    }
+}
+
+function handleSuggestionAction(action, url) {
+    if (url) {
+        window.location.href = url;
+    } else if (action) {
+        // Handle custom actions
+        if (action === 'generate_trend_report') {
+            showToast('📈 Generating trend report...', 'info');
+            // Redirect to trends tab
+            switchTab('trends');
+        } else {
+            showToast('Action: ' + action, 'info');
+        }
+    }
+}
+
+async function dismissSuggestion(title) {
+    // Dismiss the suggestion
+    const res = await fetch('/api/v1/predictive/suggestions/' + encodeURIComponent(title) + '/dismiss', {
+        method: 'POST'
+    });
+    if (res.ok) {
+        showToast('Suggestion dismissed', 'info');
+        loadSuggestions();
+    }
+}
+
+// Load suggestions on page load and every 60 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(loadSuggestions, 1000);
+    setInterval(loadSuggestions, 60000);
+});
+</script>

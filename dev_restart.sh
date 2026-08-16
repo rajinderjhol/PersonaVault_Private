@@ -76,6 +76,8 @@ fi
 
 echo -e "  ${CYAN}🚀 Starting Ollama...${NC}"
 export OLLAMA_MODELS=~/ollama_models
+export OLLAMA_CONTEXT_LENGTH=2048
+export OLLAMA_NUM_PARALLEL=1
 nohup ollama serve > ~/ollama.log 2>&1 &
 OLLAMA_PID=$!
 
@@ -139,7 +141,7 @@ if count == 0:
         ('ai_provider_groq_enabled', ?),
         ('ai_provider_groq_host', 'https://api.groq.com/openai/v1'),
         ('ai_provider_groq_model', 'llama-3.3-70b-versatile'),
-        ('ai_provider_groq_api_key', ?),
+        ('ai_provider_groq_api_key', 'YOUR_GROQ_API_KEY'),
         ('ai_provider_gemini_enabled', ?),
         ('ai_provider_gemini_host', 'null'),
         ('ai_provider_gemini_model', 'gemini-1.5-flash'),
@@ -147,8 +149,8 @@ if count == 0:
         ('ai_provider_ollama_enabled', 'true'),
         ('ai_provider_ollama_host', 'http://localhost:11434'),
         ('ollama_model', 'tinydolphin:latest'),
-        ('ai_providers', '{\"ollama\": {\"enabled\": true, \"host\": \"http://localhost:11434\", \"model\": \"tinydolphin:latest\"}}')
-    ''', (groq_enabled, groq_key, gemini_enabled))
+        ('ai_providers', '{"ollama": {"enabled": true, "host": "http://localhost:11434", "model": "tinydolphin:latest"}, "groq": {"enabled": true, "host": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile", "api_key": "YOUR_GROQ_API_KEY"}}')
+    ''', (groq_enabled, gemini_enabled))
     conn.commit()
     print('   - Default configuration seeded.')
 

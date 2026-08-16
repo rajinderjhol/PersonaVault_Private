@@ -77,6 +77,20 @@ curl http://localhost:8000/health
 
 ---
 
+## 🚀 Leapfrog Production Deployment Checklist
+
+Following the completion of the 7-phase Leapfrog roadmap, ensure the following production readiness tasks are met:
+
+- [ ] **Database Migration**: Switch from SQLite to PostgreSQL (update `DATABASE_URL` in `.env`).
+- [ ] **Infrastructure**: Move from Cloud Shell to persistent infrastructure (VMs or Kubernetes).
+- [ ] **Secrets Management**: Inject API keys via GCP Secret Manager (DO NOT use local `.env` files in production).
+- [ ] **Logging**: Configure production log sinks (Cloud Logging / Stackdriver).
+- [ ] **Audit**: Ensure audit logs are persisted to immutable storage.
+- [ ] **Security**: Enable HTTPS with SSL termination.
+- [ ] **Performance**: Scale Ollama instances or transition to high-throughput inference endpoints.
+
+---
+
 ## 🏗️ Kubernetes Deployment
 
 ### Prerequisites

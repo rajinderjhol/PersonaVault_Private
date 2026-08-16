@@ -1242,6 +1242,13 @@
             input.value = '';
             
             showTyping();
+            
+            // Clear previous thoughts
+            const thoughtContainer = document.getElementById('thought-process-container');
+            if (thoughtContainer) {
+                thoughtContainer.style.display = 'none';
+                thoughtContainer.innerHTML = '';
+            }
 
             try {
                 const providerSelect = document.getElementById('primary-ai-provider-select-chat');
@@ -1272,6 +1279,12 @@
                     response += `\n⚡ Provider: ${provider}`;
                     
                     addMessage('ai', response);
+                    
+                    // Render thought process if present
+                    if (data.thought_process) {
+                        renderThoughtProcess(data.thought_process, data.total_time);
+                    }
+                    
                 } else {
                     addMessage('ai', `❌ Error: ${data.error || 'Unknown error'}`);
                 }
@@ -1281,6 +1294,44 @@
                 hideTyping();
             }
         }
+        
+        function toggleThoughtProcess() {
+            const steps = document.getElementById('thought-steps');
+            const toggle = document.getElementById('thought-toggle');
+            if (steps.style.display === 'none') {
+                steps.style.display = 'block';
+                toggle.textContent = 'Hide';
+            } else {
+                steps.style.display = 'none';
+                toggle.textContent = 'Show';
+            }
+        }
+
+        function renderThoughtProcess(steps, totalTime) {
+            const container = document.getElementById('thought-process-container');
+            if (!container) return;
+            
+            let stepsHtml = steps.map(s => `
+                <div style="margin-bottom: 5px;">
+                    <span style="font-weight: 600; color: #38bdf8;">⏱️ Step ${s.step}: ${s.label} (${s.duration.toFixed(2)}s)</span><br>
+                    <span style="color: #cbd5e1; font-size: 11px;">${s.description}</span>
+                </div>
+            `).join('');
+            
+            container.innerHTML = `
+                <div style="border-top: 1px solid #334155; padding-top: 8px;">
+                    <div onclick="toggleThoughtProcess()" style="cursor: pointer; color: #38bdf8; font-size: 12px;">
+                        <i class="fas fa-brain"></i> <span id="thought-toggle">Show</span> thought process
+                        <span style="color: #64748b; font-size: 11px;">(Total: ${totalTime.toFixed(2)}s)</span>
+                    </div>
+                    <div id="thought-steps" style="display: none; margin-top: 8px; background: #020617; border-radius: 6px; padding: 10px; border: 1px solid #1e293b;">
+                        ${stepsHtml}
+                    </div>
+                </div>
+            `;
+            container.style.display = 'block';
+        }
+
 
         function addMessage(type, content, isLoading = false) {
             const container = document.getElementById('chat-messages');
@@ -1765,6 +1816,99 @@
             setInterval(refreshContextBar, 30000);
             setInterval(loadActions, 30000);
         });
+        // ============ LIVE THOUGHT PROCESS ============
+
+        let thoughtSteps = [];
+        let thoughtTimer = null;
+
+        function toggleThoughtProcess() {
+            const container = document.getElementById('thought-steps');
+            const label = document.getElementById('thought-toggle-label');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                label.textContent = 'Hide';
+            } else {
+                container.style.display = 'none';
+                label.textContent = 'Show';
+            }
+        }
+
+        function addThoughtStep(step) {
+            const container = document.getElementById('thought-steps-container');
+            if (!container) return;
+            
+            // Ensure container is visible
+            document.getElementById('thought-process').style.display = 'block';
+            
+            const div = document.createElement('div');
+            div.className = `thought-step ${step.status || 'in-progress'}`;
+            div.id = `thought-step-${step.step}`;
+            
+            const statusIcon = {
+                'in-progress': '⏳',
+                'complete': '✅',
+                'failed': '❌'
+            }[step.status] || '⏳';
+            
+            div.innerHTML = `
+                <div>
+                    <span class="step-label">${statusIcon} Step ${step.step}: ${step.label}</span>
+                    <span class="step-duration">(${step.timestamp.toFixed(2)}s)</span>
+                    <span class="step-status ${step.status || 'in-progress'}">${step.status || 'in-progress'}</span>
+                </div>
+                <div style="color: #94a3b8; font-size: 11px; margin-left: 20px;">${step.description}</div>
+                ${step.data ? `<div style="color: #64748b; font-size: 10px; margin-left: 20px;">${JSON.stringify(step.data)}</div>` : ''}
+                ${step.error ? `<div style="color: #f87171; font-size: 11px; margin-left: 20px;">❌ ${step.error}</div>` : ''}
+            `;
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateThoughtStep(stepIndex, status, data) {
+            const el = document.getElementById(`thought-step-${stepIndex}`);
+            if (!el) return;
+            
+            const step = thoughtSteps[stepIndex - 1];
+            if (step) {
+                step.status = status;
+                if (data) step.data = data;
+                el.className = `thought-step ${status}`;
+                // Update the status text
+                const statusEl = el.querySelector('.step-status');
+                if (statusEl) {
+                    statusEl.textContent = status;
+                    statusEl.className = `step-status ${status}`;
+                }
+            }
+        }
+
+        function startThoughtTimer() {
+            const timerEl = document.getElementById('thought-timer');
+            if (!timerEl) return;
+            let start = Date.now();
+            thoughtTimer = setInterval(() => {
+                const elapsed = (Date.now() - start) / 1000;
+                timerEl.textContent = `Total: ${elapsed.toFixed(1)}s`;
+            }, 100);
+        }
+
+        function stopThoughtTimer() {
+            if (thoughtTimer) {
+                clearInterval(thoughtTimer);
+                thoughtTimer = null;
+            }
+        }
+
+        function clearThoughtProcess() {
+            const container = document.getElementById('thought-steps-container');
+            const processContainer = document.getElementById('thought-process');
+            if (container) container.innerHTML = '';
+            if (processContainer) processContainer.style.display = 'none';
+            thoughtSteps = [];
+            stopThoughtTimer();
+            document.getElementById('thought-timer').textContent = '';
+        }
     </script>
     <script src="/api/v1/admin/dashboard/static/js/clinical.js" defer></script>
     <script src="/api/v1/admin/dashboard/static/js/clinical.js" defer></script>
