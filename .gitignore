@@ -73,3 +73,9 @@ cookies.txt
 backend-cert.pem
 backend-key.pem
 full_db_dump.sql
+*.bak*
+*.corrupt
+*.broken*
+.env.backup_*
+fix_*.py
+index_*.py

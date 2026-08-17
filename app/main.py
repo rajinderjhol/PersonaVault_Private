@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import asyncio
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Depends, status
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
@@ -36,7 +37,6 @@ from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
 from app.api.v1.endpoints.documents import router as documents_router
-from app.api.v1.endpoints.chat_router import router as chat_router
 from app.api.v1.endpoints.patterns import router as patterns_router
 from app.api.v1.endpoints.policies import router as policies_router
 from app.api.v1.endpoints.predictive import router as predictive_router
@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
     )
     
     # Inject shared client into global services
-    vector_service._client = app.state.ai_client
+    vector_service.set_client(app.state.ai_client)
 
     # --- Initialize Repositories ---
     logger.info("Lifespan: Initializing Repositories...")
@@ -240,12 +240,18 @@ async def lifespan(app: FastAPI):
         graph_repo=app.state.repos["graph"]
     )
 
-    # Ignite background Crystallization Task
+    # Ignite background Crystallization Task with optimized settings
     app.state.consolidation_task = ConsolidationTask(
         orchestrator=app.state.orchestrator,
         memory_service=app.state.memory_service,
-        config={"batch_size": 10, "interval_hours": 1.0}
+        config={
+            "batch_size": 20,  # Increased from 10
+            "interval_hours": 0.5,  # Every 30 minutes instead of 1 hour
+            "max_workers": 4  # Parallel processing workers
+        }
     )
+    # Enable parallel execution
+    app.state.orchestrator._parallel_execution = True
     app.state.consolidation_task.trigger_event = asyncio.Event()
     asyncio.create_task(app.state.consolidation_task.run())
 
@@ -273,6 +279,14 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Serve static files
+static_dir = "app/static"
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    
+# Also mount for dashboard static
+app.mount("/api/v1/admin/dashboard/static", StaticFiles(directory=static_dir), name="dashboard_static")
 
 # --- PRODUCTION READINESS IMPROVEMENTS ---
 
@@ -387,11 +401,15 @@ app.include_router(automation.router, prefix="/api/v1")
 app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 # Modular Router Registration
-from app.api.v1.endpoints.chat import router as chat_router
+from app.api.v1.endpoints.chat_router import router as chat_router
+from app.api.v1.endpoints.chat_stream import router as chat_stream_router
+from app.api.v1.endpoints.chat_sessions import router as chat_sessions_router
 from app.api.v1.endpoints.intelligence import router as intelligence_router
 from app.api.v1.endpoints.mcp_tools import router as mcp_tools_router
 
 app.include_router(chat_router)
+app.include_router(chat_stream_router)
+app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
 app.include_router(mcp_tools_router)
 
@@ -408,7 +426,6 @@ app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
-app.include_router(chat_router, prefix="/api/v1")
 app.include_router(patterns_router, prefix="/api/v1")
 app.include_router(policies_router)
 app.include_router(predictive_router)
@@ -653,3 +670,20 @@ if __name__ == "__main__":
         "propagate": False,
     }
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_config=LOGGING_CONFIG)
+
+# Warm up Ollama to prevent first-request timeout
+async def warmup_ollama():
+    """Warm up Ollama by sending a small test request."""
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(
+                "http://localhost:11434/api/generate",
+                json={"model": "tinydolphin", "prompt": "Hello", "stream": False}
+            )
+        logger.info("✅ Ollama warmed up")
+    except Exception as e:
+        logger.warning(f"Ollama warmup failed: {e}")
+
+# Add to lifespan startup
+# Find where lifespan starts and add the warmup

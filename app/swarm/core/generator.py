@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.config import Config
 import warnings
 
-# Suppress the specific FutureWarning from the legacy google-generativeai package
+# Suppress warnings
 warnings.filterwarnings("ignore", message=".*google.generativeai.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -38,7 +38,6 @@ class GeneratorAgent:
     def __init__(self, client: Optional[httpx.AsyncClient] = None):
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.ollama_url = Config.OLLAMA_BASE_URL
-        # Safely access model name with fallback to environment or default
         self.ollama_model = getattr(Config, "OLLAMA_LLM_MODEL", os.getenv("OLLAMA_LLM_MODEL", "tinydolphin"))
         self.client = client or httpx.AsyncClient()
         
@@ -53,9 +52,8 @@ class GeneratorAgent:
         logger.info("GeneratorAgent initialized")
     
     async def _get_primary_provider(self) -> str:
-        """Fetch the current primary provider from database with environment fallback."""
         try:
-            from app.db.session import SessionLocal # Using the FastAPI-style session
+            from app.db.session import SessionLocal
             from app.models import SystemConfig
             
             async with SessionLocal() as session:
@@ -76,21 +74,21 @@ class GeneratorAgent:
         reasoning_insight: Any = None,
         route: Dict[str, Any] = None,
         situational_awareness: Dict[str, Any] = None,
-        persona: Any = None, # User persona from Layer 3
-        response_tone: str = "neutral", # From EmpathyAgent
+        persona: Any = None,
+        response_tone: str = "neutral",
         hitl_approved: bool = False
     ) -> Dict[str, Any]:
-        """Generate content based on routing decision, reasoning, and context."""
         prompt = self._build_prompt(query, context, reasoning_insight, situational_awareness, persona)
         
-        # 1. Attempt the provider suggested by the AIRouter
         result = None
         if route and "provider" in route:
             provider = route["provider"]
-            logger.info(f"GeneratorAgent: Routing to {provider} as requested by AIRouter")
+            logger.info(f"GeneratorAgent: Routing to {provider} as requested")
             
             if provider == "ollama":
                 result = await self._try_ollama(prompt)
+            elif provider == "groq":
+                result = await self._try_groq(prompt)
             elif provider == "gemini":
                 result = await self._try_gemini(prompt)
             
@@ -99,10 +97,11 @@ class GeneratorAgent:
                     result["hitl_approved"] = True
                 return result
 
-        # 2. Dynamic Fallback: If route failed or wasn't provided, follow configured search order
         primary = await self._get_primary_provider()
-        # Exclude the provider we already tried via route to avoid redundant calls
-        providers = ["ollama", "gemini"] if primary == "ollama" else ["gemini", "ollama"]
+        providers = ["ollama", "groq", "gemini"]
+        if primary in providers:
+            providers.remove(primary)
+            providers.insert(0, primary)
         
         for provider in providers:
             if route and route.get("provider") == provider:
@@ -110,6 +109,8 @@ class GeneratorAgent:
 
             if provider == "ollama":
                 result = await self._try_ollama(prompt)
+            elif provider == "groq":
+                result = await self._try_groq(prompt)
             elif provider == "gemini":
                 result = await self._try_gemini(prompt)
             
@@ -118,7 +119,6 @@ class GeneratorAgent:
                     result["hitl_approved"] = True
                 return result
         
-        # 3. Final Synthesis Fallback
         logger.info("Falling back to template-based generation")
         result = self._fallback_generate(query, context)
         if hitl_approved:
@@ -126,7 +126,6 @@ class GeneratorAgent:
         return result
     
     async def _try_ollama(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Internal helper to attempt generation via Ollama."""
         try:
             logger.info(f"Attempting generation with Ollama ({self.ollama_model})...")
             res = await self.client.post(
@@ -135,7 +134,7 @@ class GeneratorAgent:
                     "model": self.ollama_model,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {"temperature": 0.3}
+                    "options": {"temperature": 0.1}
                 },
                 timeout=30.0
             )
@@ -148,19 +147,73 @@ class GeneratorAgent:
                         "confidence": 0.85
                     }
         except Exception as e:
-            logger.warning(f"Ollama generation failed or unreachable: {e}")
+            logger.warning(f"Ollama generation failed: {e}")
         return None
     
+    async def _try_groq(self, prompt: str) -> Optional[Dict[str, Any]]:
+        groq_key = os.getenv("GROQ_API_KEY")
+        if not groq_key:
+            logger.warning("GROQ_API_KEY not set")
+            return None
+        
+        try:
+            # Get the model from database or use default
+            model = "qwen/qwen3.6-27b"
+            try:
+                from app.db.session import SessionLocal
+                from app.models import SystemConfig
+                import json
+                
+                async with SessionLocal() as session:
+                    stmt = select(SystemConfig).where(SystemConfig.key == "ai_providers")
+                    result = await session.execute(stmt)
+                    config = result.scalars().first()
+                    if config:
+                        ai_config = json.loads(config.value)
+                        if "groq" in ai_config and "model" in ai_config["groq"]:
+                            model = ai_config["groq"]["model"]
+            except Exception as e:
+                logger.warning(f"Could not load Groq model from DB: {e}")
+            
+            logger.info(f"Attempting generation with Groq (model: {model})...")
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                res = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {groq_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.1,
+                        "max_tokens": 500
+                    }
+                )
+                
+                if res.status_code == 200:
+                    response_text = res.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                    if response_text:
+                        return {
+                            "answer": response_text,
+                            "source": "groq",
+                            "confidence": 0.92
+                        }
+                else:
+                    logger.error(f"Groq API error: {res.status_code}")
+                    return None
+        except Exception as e:
+            logger.error(f"Groq generation failed: {e}")
+            return None
+    
     async def _try_gemini(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Internal helper to attempt generation via Gemini."""
         if not self.gemini_key:
             return None
         
         try:
             logger.info("Attempting generation with Gemini...")
             if HAS_NEW_GEMINI:
-                # New SDK is natively built with modern patterns
-                # Wrapped in to_thread to ensure it remains non-blocking
                 response = await asyncio.to_thread(
                     self.genai_client.models.generate_content,
                     model='gemini-2.0-flash-exp', 
@@ -185,14 +238,12 @@ class GeneratorAgent:
         query: str, 
         context: List[Any], 
         reasoning_insight: Any = None,
-        situational_awareness: Dict[str, Any] = None, # From Layer 1
-        response_tone: str = "neutral", # From EmpathyAgent
+        situational_awareness: Dict[str, Any] = None,
+        response_tone: str = "neutral",
         persona: Any = None
     ) -> str:
-        """Constructs a structured prompt for the LLM."""
         reasoning_str = f"\nREASONING INSIGHTS:\n{reasoning_insight}\n" if reasoning_insight else ""
         
-        # Extract template from context
         template = ""
         if context and len(context) > 0:
             item = context[0]
@@ -203,12 +254,10 @@ class GeneratorAgent:
             else:
                 template = str(item)
         
-        # Format grounding data
         awareness_str = json.dumps(situational_awareness) if situational_awareness else "No real-time context available."
         writing_style = persona.writing_style if persona else "balanced"
         comm_style = persona.communication_style if persona else "casual"
         
-
         prompt = f"""
 USER PERSONA:
 Writing Style: {writing_style}
@@ -230,8 +279,6 @@ Replace any placeholders in the template with appropriate content.
         return prompt.strip()
     
     def _fallback_generate(self, query: str, context: List[Any]) -> Dict[str, Any]:
-        """Generate a fallback response when AI is unavailable."""
-        # Extract template from context
         template = ""
         if context and len(context) > 0:
             item = context[0]
@@ -242,10 +289,7 @@ Replace any placeholders in the template with appropriate content.
             else:
                 template = str(item)
         
-        # Extract placeholders
         placeholders = re.findall(r'\{([^}]+)\}', template)
-        
-        # Generate sample values
         variables = {}
         for p in placeholders:
             if "name" in p.lower() or "client" in p.lower():
@@ -259,7 +303,6 @@ Replace any placeholders in the template with appropriate content.
             else:
                 variables[p] = f"[{p}]"
         
-        # Replace placeholders
         result = template
         for key, value in variables.items():
             result = result.replace(f"{{{key}}}", str(value))

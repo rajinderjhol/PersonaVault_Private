@@ -140,7 +140,7 @@ if count == 0:
         ('primary_ai_provider', 'ollama'),
         ('ai_provider_groq_enabled', ?),
         ('ai_provider_groq_host', 'https://api.groq.com/openai/v1'),
-        ('ai_provider_groq_model', 'llama-3.3-70b-versatile'),
+        ('ai_provider_groq_model', 'qwen/qwen3.6-27b'),
         ('ai_provider_groq_api_key', 'YOUR_GROQ_API_KEY'),
         ('ai_provider_gemini_enabled', ?),
         ('ai_provider_gemini_host', 'null'),
@@ -149,7 +149,7 @@ if count == 0:
         ('ai_provider_ollama_enabled', 'true'),
         ('ai_provider_ollama_host', 'http://localhost:11434'),
         ('ollama_model', 'tinydolphin:latest'),
-        ('ai_providers', '{"ollama": {"enabled": true, "host": "http://localhost:11434", "model": "tinydolphin:latest"}, "groq": {"enabled": true, "host": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile", "api_key": "YOUR_GROQ_API_KEY"}}')
+        ('ai_providers', '{"ollama": {"enabled": true, "host": "http://localhost:11434", "model": "tinydolphin:latest"}, "groq": {"enabled": true, "host": "https://api.groq.com/openai/v1", "model": "qwen/qwen3.6-27b", "api_key": "YOUR_GROQ_API_KEY"}}')
     ''', (groq_enabled, gemini_enabled))
     conn.commit()
     print('   - Default configuration seeded.')
@@ -163,6 +163,8 @@ python3 scripts/seed_all_data.py
 python3 scripts/populate_test_data.py
 echo "📦 Installing Domain Intelligence Packs..."
 python3 scripts/install_all_packs.py
+echo "🌱 Seeding contract and profile memories..."
+python3 scripts/seed_contract_memories.py
 echo "✅ Data seeding and pack installation complete."
 
 # ============================================================

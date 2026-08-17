@@ -32,6 +32,22 @@
         <h3 style="margin-top:0; color:#f472b6;">Configured Cloud Connections</h3>
         <div id="cloud-connections-list" style="display:flex; flex-direction:column; gap:12px;">
             <div class="metric-label">Loading connections...</div>
+
+    <div class="card" style="margin-bottom:25px; border-top: 4px solid #34d399;">
+        <h3 style="margin-top:0; color:#34d399;">🔄 Reload API Keys from .env</h3>
+        <p style="color: #94a3b8; font-size: 13px;">
+            Load API keys from your .env file into the database. This is useful when you update your .env file 
+            without restarting the server.
+        </p>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button class="btn" onclick="reloadApiKeys()" style="background: #34d399; color: #0f172a;">
+                <i class="fas fa-sync-alt"></i> Reload from .env
+            </button>
+            <span id="reload-status" style="font-size: 12px; color: #94a3b8;"></span>
+        </div>
+        <div id="reload-result" style="margin-top: 10px; display: none; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #020617; font-size: 12px; font-family: monospace;"></div>
+    </div>
+
         </div>
     </div>
 
@@ -62,3 +78,203 @@
         </div>
     </div>
 </div>
+
+
+<script>
+async function reloadApiKeys() {
+    const statusEl = document.getElementById('reload-status');
+    const resultEl = document.getElementById('reload-result');
+    
+    statusEl.textContent = '⏳ Reloading API keys from .env...';
+    statusEl.style.color = '#fbbf24';
+    resultEl.style.display = 'none';
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/config/reload-api-keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            statusEl.textContent = '✅ ' + data.message;
+            statusEl.style.color = '#34d399';
+            
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = `
+                <div style="color: #34d399;">✅ Successfully loaded ${data.providers_loaded?.length || 0} provider(s)</div>
+                <div style="color: #94a3b8; margin-top: 4px;">Providers: ${data.providers_loaded?.join(', ') || 'None'}</div>
+                <div style="color: #64748b; margin-top: 4px; font-size: 11px;">Env vars found: ${data.env_vars_found?.join(', ') || 'None'}</div>
+            `;
+            
+            // Refresh the cloud connections list
+            if (typeof fetchCloudConnections === 'function') {
+                fetchCloudConnections();
+            }
+            if (typeof fetchPrimaryAIProvider === 'function') {
+                fetchPrimaryAIProvider();
+            }
+        } else if (data.status === 'no_keys_found') {
+            statusEl.textContent = '⚠️ ' + data.message;
+            statusEl.style.color = '#fbbf24';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = `
+                <div style="color: #fbbf24;">⚠️ ${data.message}</div>
+                <div style="color: #64748b; margin-top: 4px; font-size: 11px;">Env vars found: ${data.env_vars_found?.join(', ') || 'None'}</div>
+                <div style="color: #64748b; margin-top: 4px; font-size: 11px;">Add GROQ_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY to .env</div>
+            `;
+        } else {
+            statusEl.textContent = '❌ Error: ' + (data.error || 'Unknown error');
+            statusEl.style.color = '#f87171';
+        }
+    } catch (e) {
+        statusEl.textContent = '❌ Network error: ' + e.message;
+        statusEl.style.color = '#f87171';
+        console.error('Reload error:', e);
+    }
+}
+</script>
+
+<script>
+// ============ CLOUD CONNECTIONS MANAGEMENT ============
+
+async function fetchCloudConnections() {
+    const list = document.getElementById('cloud-connections-list');
+    if (!list) return;
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
+        if (!res.ok) throw new Error('Failed to fetch cloud connections');
+        const data = await res.json();
+        console.log('📋 Cloud connections:', data);
+        
+        if (data && data.length > 0) {
+            list.innerHTML = data.map(p => `
+                <div style="display:flex; justify-content:space-between; padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; align-items:center; margin-bottom:10px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; color:#f472b6;">${p.name}</div>
+                        <div style="font-size:11px; color:#64748b;">
+                            Host: ${p.host || 'Default'} | Model: ${p.model || 'Default'}
+                            ${p.enabled ? '<span class="tag tag-success" style="font-size:9px; padding:2px 6px; margin-left:8px;">ACTIVE</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="refresh-btn" style="color:#38bdf8; border-color:#38bdf8; padding:4px 10px; font-size:11px;" onclick="editCloudConnection('${p.name}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="refresh-btn" style="color:#f87171; border-color:#f87171; padding:4px 10px; font-size:11px;" onclick="deleteCloudConnection('${p.name}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = '<div class="metric-label">No cloud connections configured. Add one using the form above.</div>';
+        }
+    } catch (e) {
+        console.error('Error fetching cloud connections:', e);
+        list.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading connections</div>';
+    }
+}
+
+async function editCloudConnection(name) {
+    try {
+        // Fetch current config
+        const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider-settings/${name}`);
+        if (!res.ok) throw new Error('Failed to fetch config');
+        const data = await res.json();
+        
+        // Fill the edit form fields
+        document.getElementById('cloud-api-name').value = name;
+        document.getElementById('cloud-api-host').value = data.host || '';
+        document.getElementById('cloud-api-key').value = data.api_key || '';
+        document.getElementById('cloud-api-model').value = data.model || '';
+        
+        // Change button text to "Update Connection"
+        const saveBtn = document.querySelector('#models-tab .card:nth-child(2) .btn:last-child');
+        if (saveBtn) {
+            saveBtn.textContent = 'Update Connection';
+            saveBtn.style.background = '#fbbf24';
+            saveBtn.onclick = function() {
+                updateCloudConnection(name);
+            };
+        }
+        
+        showToast(`Editing ${name} configuration`, 'info');
+    } catch (e) {
+        console.error('Error editing cloud connection:', e);
+        showToast('Error loading configuration', 'error');
+    }
+}
+
+async function updateCloudConnection(name) {
+    const host = document.getElementById('cloud-api-host').value;
+    const api_key = document.getElementById('cloud-api-key').value;
+    const model = document.getElementById('cloud-api-model').value;
+    
+    if (!host || !api_key || !model) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider: name, host, api_key, model })
+        });
+        if (!res.ok) throw new Error('Failed to update');
+        
+        showToast(`✅ ${name} configuration updated`, 'success');
+        
+        // Reset form
+        document.getElementById('cloud-api-name').value = '';
+        document.getElementById('cloud-api-host').value = '';
+        document.getElementById('cloud-api-key').value = '';
+        document.getElementById('cloud-api-model').value = '';
+        
+        // Reset button
+        const saveBtn = document.querySelector('#models-tab .card:nth-child(2) .btn:last-child');
+        if (saveBtn) {
+            saveBtn.textContent = 'Save Connection';
+            saveBtn.style.background = '#a855f7';
+            saveBtn.onclick = function() {
+                saveCloudConfig();
+            };
+        }
+        
+        // Refresh connections
+        fetchCloudConnections();
+        fetchPrimaryAIProvider();
+    } catch (e) {
+        console.error('Error updating cloud connection:', e);
+        showToast('Error updating configuration', 'error');
+    }
+}
+
+async function deleteCloudConnection(name) {
+    if (!confirm(`Delete connection "${name}"? This cannot be undone.`)) return;
+    
+    try {
+        const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider/${name}`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to delete');
+        
+        showToast(`✅ ${name} deleted`, 'info');
+        fetchCloudConnections();
+    } catch (e) {
+        console.error('Error deleting cloud connection:', e);
+        showToast('Error deleting configuration', 'error');
+    }
+}
+
+// Initialize cloud connections on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on the models tab
+    const modelsTab = document.getElementById('models-tab');
+    if (modelsTab) {
+        setTimeout(fetchCloudConnections, 500);
+    }
+});
+</script>

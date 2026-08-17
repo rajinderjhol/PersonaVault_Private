@@ -53,6 +53,93 @@ def _safe_metric_get(metric, default=0):
 
 router = APIRouter(prefix="/admin/dashboard", tags=["admin"])
 
+@router.get("/ws/health")
+async def websocket_health(
+    user_id: int = Depends(require_admin)
+):
+    """
+    Check WebSocket connection health.
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "active_connections": len(manager.active_connections),
+        "max_connections": getattr(manager, 'max_connections', 100)
+    }
+
+@router.get("/learning/consolidation/stats")
+async def get_consolidation_stats(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get consolidation performance statistics.
+    """
+    # Get counts
+    total_entries = await db.execute(
+        select(func.count(EpisodicEntry.id))
+    )
+    total = total_entries.scalar_one() or 0
+    
+    unconsolidated = await db.execute(
+        select(func.count(EpisodicEntry.id)).where(
+            EpisodicEntry.consolidated == False
+        )
+    )
+    pending = unconsolidated.scalar_one() or 0
+    
+    patterns = await db.execute(
+        select(func.count(SemanticPattern.id))
+    )
+    pattern_count = patterns.scalar_one() or 0
+    
+    # Get recent consolidation activity
+    recent = await db.execute(
+        select(EpisodicEntry)
+        .where(EpisodicEntry.consolidated == True)
+        .order_by(EpisodicEntry.timestamp.desc())
+        .limit(10)
+    )
+    recent_entries = recent.scalars().all()
+    
+    return {
+        "total_episodic_entries": total,
+        "pending_consolidation": pending,
+        "total_patterns": pattern_count,
+        "consolidation_rate": round((total - pending) / total * 100, 1) if total > 0 else 0,
+        "recent_consolidated": [
+            {
+                "id": entry.id,
+                "query": entry.query[:50] if entry.query else "No query",
+                "timestamp": entry.timestamp.isoformat()
+            }
+            for entry in recent_entries
+        ],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@router.get("/orchestrator/performance")
+async def get_orchestrator_performance(
+    request: Request,
+    user_id: int = Depends(require_admin)
+):
+    """Get orchestrator performance metrics."""
+    if not hasattr(request.app.state, 'orchestrator'):
+        return {"error": "Orchestrator not initialized"}
+    
+    orchestrator = request.app.state.orchestrator
+    
+    return {
+        "parallel_mode": getattr(orchestrator, '_parallel_execution', False),
+        "active_tasks": orchestrator.active_tasks,
+        "agent_activity": orchestrator.agent_activity,
+        "last_stages": [
+            {"name": s.name, "duration_ms": s.duration_ms}
+            for s in getattr(orchestrator, '_stages', [])[-5:]
+        ],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # ============ Metrics & Monitoring ============
 
 @router.get("/metrics")

@@ -28,6 +28,40 @@
         <div class="card"><div class="metric-label">Loading...</div></div>
     </div>
 
+    <!-- Consolidation Stats -->
+    <div class="card" style="border-top: 4px solid #a855f7; margin-bottom: 25px;">
+        <h3 class="card-title">⚡ Consolidation Engine</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">
+            <div>
+                <div class="metric-label">Total Episodic</div>
+                <div id="consolidation-total" class="metric-value" style="font-size: 24px;">0</div>
+            </div>
+            <div>
+                <div class="metric-label">Pending Consolidation</div>
+                <div id="consolidation-pending" class="metric-value" style="font-size: 24px; color: #fbbf24;">0</div>
+            </div>
+            <div>
+                <div class="metric-label">Total Patterns</div>
+                <div id="consolidation-patterns" class="metric-value" style="font-size: 24px; color: #a855f7;">0</div>
+            </div>
+            <div>
+                <div class="metric-label">Consolidation Rate</div>
+                <div id="consolidation-rate" class="metric-value" style="font-size: 24px; color: #34d399;">0%</div>
+            </div>
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 10px;">
+            <button class="btn" style="background: #a855f7; padding: 4px 12px; font-size: 11px;" onclick="triggerConsolidation()">
+                <i class="fas fa-bolt"></i> Run Consolidation
+            </button>
+            <button class="refresh-btn" style="padding: 4px 12px; font-size: 11px;" onclick="loadConsolidationStats()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div id="consolidation-recent" style="margin-top: 10px; max-height: 100px; overflow-y: auto;">
+            <div class="metric-label">Recent consolidated entries will appear here</div>
+        </div>
+    </div>
+
     <div class="card" style="border-top: 4px solid #34d399; margin-bottom: 25px;">
         <h3 class="card-title">📊 Platform Summary</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">

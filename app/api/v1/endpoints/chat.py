@@ -26,15 +26,22 @@ async def chat_endpoint(
         query = data.get("query", "")
         patient_id = data.get("patient_id")
         provider = data.get("provider", "ollama")
+        
+        # If provider is not available, try fallback
+        available_providers = ["ollama", "groq", "gemini"]
+        if provider not in available_providers:
+            logger.warning(f"Unknown provider {provider}, falling back to ollama")
+            provider = "ollama"
+            
         session_id = data.get("session_id")
+        
+        logger.info(f"🔍 DEBUG: Chat endpoint received provider: '{provider}' for query: '{query}'")
         
         if not query:
             return {"error": "Query is required"}
         
-        # Log which provider is being used
-        logger.info(f"🔄 Chat request with provider: {provider} from user: {current_user.id}")
-        
         # Get response
+        logger.info(f"🔍 DEBUG: Calling gateway.chat with provider: '{provider}'")
         result = await gateway.chat(
             user_id=current_user.id,
             query=query,
@@ -42,10 +49,7 @@ async def chat_endpoint(
             patient_id=patient_id,
             provider=provider
         )
-        
-        # Ensure provider is in the response
-        if result and "response" in result:
-            result["provider"] = provider
+        logger.info(f"🔍 DEBUG: gateway.chat returned response from provider: '{result.get('provider')}'")
         
         # Self-improving intelligence
         if hasattr(request.app.state, "self_improving"):

@@ -35,30 +35,7 @@ from app.services.intelligence_gateway import gateway # Import the global gatewa
 
 router = APIRouter(prefix="/api/v1/admin/dashboard", tags=["admin"])
 
-@router.get("/", response_class=HTMLResponse)
-async def dashboard_root(request: Request):
-    """Serve the main dashboard UI."""
-    if not request.cookies.get("session_id"):
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    
-    base_path = TEMPLATE_DIR / "base.html"
-    if base_path.exists():
-        with open(base_path, "r") as f:
-            return HTMLResponse(f.read())
-    return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
-logger = logging.getLogger(__name__)
-
 TEMPLATE_DIR = Path(__file__).parent / "templates"
-
-def _safe_metric_get(metric, default=0, labels=None):
-    try:
-        if labels:
-            # For prometheus Gauge with labels
-            return metric.labels(**labels)._value.get()
-        if hasattr(metric, '_value') and hasattr(metric._value, 'get'): return metric._value.get()
-        if hasattr(metric, 'value'): return metric.value
-        return float(metric) if metric is not None else default
-    except: return default
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard_ui(request: Request):
@@ -72,42 +49,6 @@ async def dashboard_ui(request: Request):
         with open(base_path, "r") as f:
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
-
-@router.get("/static/dashboard.css")
-async def dashboard_css():
-    """Serve the dashboard CSS."""
-    css_path = Path(__file__).parent / "static" / "dashboard.css"
-    if css_path.exists():
-        with open(css_path, "r") as f:
-            return HTMLResponse(f.read(), media_type="text/css")
-    return HTMLResponse("/* CSS not found */", status_code=404)
-
-@router.get("/static/glassmorphism.css")
-async def glassmorphism_css():
-    """Serve the glassmorphism CSS."""
-    css_path = Path(__file__).parent / "static" / "glassmorphism.css"
-    if css_path.exists():
-        with open(css_path, "r") as f:
-            return HTMLResponse(f.read(), media_type="text/css")
-    return HTMLResponse("/* CSS not found */", status_code=404)
-
-@router.get("/static/js/clinical.js")
-async def clinical_js():
-    """Serve the clinical logic JS."""
-    js_path = Path(__file__).parent / "static" / "js" / "clinical.js"
-    if js_path.exists():
-        with open(js_path, "r") as f:
-            return HTMLResponse(f.read(), media_type="application/javascript")
-    return HTMLResponse("// JS not found", status_code=404)
-
-@router.get("/static/js/packs.js")
-async def packs_js():
-    """Serve the pack management logic JS."""
-    js_path = Path(__file__).parent / "static" / "js" / "packs.js"
-    if js_path.exists():
-        with open(js_path, "r") as f:
-            return HTMLResponse(f.read(), media_type="application/javascript")
-    return HTMLResponse("// JS not found", status_code=404)
 
 @router.post("/swarm/trigger")
 async def trigger_swarm_interaction(request: Request, body: dict, user_id: int = Depends(require_admin)):
@@ -886,3 +827,160 @@ async def reset_vector_index(user_id: int = Depends(require_admin)):
     if index_file.exists(): index_file.unlink()
     if metadata_file.exists(): metadata_file.unlink()
     return {"status": "success", "message": "Vector index reset."}
+
+@router.get("/chat")
+async def get_chat_with_version():
+    """Serve chat.html with version for cache busting."""
+    from pathlib import Path
+    import os
+    
+    version = "1.0.1"
+    try:
+        with open("app/version.txt", "r") as f:
+            version = f.read().strip()
+    except:
+        pass
+    
+    html_path = Path(__file__).parent / "templates" / "chat.html"
+    if html_path.exists():
+        with open(html_path, "r") as f:
+            content = f.read()
+        # Replace any references to chat.html with versioned URL
+        return HTMLResponse(content)
+    return HTMLResponse("<h1>Chat not found</h1>", status_code=404)
+
+# ============ API KEY MANAGEMENT ============
+@router.post("/config/reload-api-keys")
+async def reload_api_keys(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Reload API keys from .env file and update the database.
+    This is useful when you update your .env file and want to apply changes without restart.
+    """
+    import os
+    import json
+    from pathlib import Path
+    
+    try:
+        # Find .env file
+        env_path = Path(__file__).parent.parent.parent.parent.parent / ".env"
+        if not env_path.exists():
+            env_path = Path.cwd() / ".env"
+        if not env_path.exists():
+            return {"error": ".env file not found"}
+        
+        # Read .env file
+        env_vars = {}
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    env_vars[key.strip()] = value.strip().strip('"').strip("'")
+        
+        # Check for API keys
+        api_keys = {}
+        groq_key = env_vars.get('GROQ_API_KEY')
+        if groq_key and groq_key != 'YOUR_GROQ_API_KEY':
+            api_keys['groq'] = {
+                'enabled': True,
+                'host': 'https://api.groq.com/openai/v1',
+                'model': 'qwen/qwen3.6-27b',
+                'api_key': groq_key
+            }
+            print(f"✅ Found Groq API key: {groq_key[:10]}...")
+        
+        gemini_key = env_vars.get('GEMINI_API_KEY')
+        if gemini_key and gemini_key != 'YOUR_GEMINI_API_KEY':
+            api_keys['gemini'] = {
+                'enabled': True,
+                'host': 'https://generativelanguage.googleapis.com/v1beta',
+                'model': 'gemini-2.0-flash-exp',
+                'api_key': gemini_key
+            }
+            print(f"✅ Found Gemini API key: {gemini_key[:10]}...")
+        
+        deepseek_key = env_vars.get('DEEPSEEK_API_KEY')
+        if deepseek_key and deepseek_key != 'YOUR_DEEPSEEK_API_KEY':
+            api_keys['deepseek'] = {
+                'enabled': True,
+                'host': 'https://api.deepseek.com/v1',
+                'model': 'deepseek-chat',
+                'api_key': deepseek_key
+            }
+            print(f"✅ Found DeepSeek API key: {deepseek_key[:10]}...")
+        
+        if not api_keys:
+            return {
+                "status": "no_keys_found",
+                "message": "No API keys found in .env file. Please add GROQ_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY.",
+                "env_vars_found": list(env_vars.keys())
+            }
+        
+        # Update database with the API keys
+        from app.models import SystemConfig
+        
+        # Get current ai_providers config
+        stmt = select(SystemConfig).where(SystemConfig.key == "ai_providers")
+        result = await db.execute(stmt)
+        config = result.scalars().first()
+        
+        if config:
+            try:
+                current = json.loads(config.value)
+            except:
+                current = {}
+            
+            # Merge with existing (preserve ollama settings)
+            if 'ollama' not in current:
+                current['ollama'] = {
+                    'enabled': True,
+                    'host': 'http://localhost:11434',
+                    'model': 'tinydolphin:latest'
+                }
+            
+            # Update with new API keys
+            for provider, settings in api_keys.items():
+                current[provider] = settings
+            
+            config.value = json.dumps(current)
+            await db.commit()
+            
+            # Also update the gateway
+            from app.services.intelligence_gateway import gateway
+            await gateway._apply_config_async(db)
+            
+            return {
+                "status": "success",
+                "message": f"✅ Loaded {len(api_keys)} API key(s) from .env",
+                "providers_loaded": list(api_keys.keys()),
+                "env_vars_found": list(env_vars.keys())
+            }
+        else:
+            # Create new config
+            new_config = {'ollama': {'enabled': True, 'host': 'http://localhost:11434', 'model': 'tinydolphin:latest'}}
+            for provider, settings in api_keys.items():
+                new_config[provider] = settings
+            
+            new_system_config = SystemConfig(
+                key="ai_providers",
+                value=json.dumps(new_config)
+            )
+            db.add(new_system_config)
+            await db.commit()
+            
+            return {
+                "status": "success",
+                "message": f"✅ Created new config with {len(api_keys)} API key(s) from .env",
+                "providers_loaded": list(api_keys.keys())
+            }
+            
+    except Exception as e:
+        await db.rollback()
+        return {
+            "status": "error",
+            "error": str(e)
+        }

@@ -1,4 +1,4 @@
-# app/services/intelligence_gateway.py - FULLY FIXED VERSION
+# app/services/intelligence_gateway.py - CLEAN VERSION
 
 """
 Unified Intelligence Gateway for PersonaVault. Handles ALL intelligence routing through MCP protocol.
@@ -47,6 +47,7 @@ from app.models import User
 from sqlalchemy import select
 from app.services.thought_tracker import ThoughtTracker
 from app.services.safe_cache import SafeCache
+from app.services.ollama_manager import ollama_manager
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,39 @@ class IntelligenceGateway:
         self._initialized_from_db = False
         self.packs = []
         self._register_mcp_tools()
+        self._register_groq_provider()  # Register Groq on startup
+
+    # ==================== GROQ PROVIDER REGISTRATION ====================
+    
+    def _register_groq_provider(self):
+        """Register Groq provider with the correct model."""
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if not groq_key:
+            # Try to read from .env
+            try:
+                env_paths = [".env", "../.env", "../../.env"]
+                for env_path in env_paths:
+                    if os.path.exists(env_path):
+                        with open(env_path, "r") as f:
+                            for line in f:
+                                if line.startswith("GROQ_API_KEY="):
+                                    groq_key = line.split("=")[1].strip().strip('"').strip("'")
+                                    break
+                        if groq_key:
+                            break
+            except Exception:
+                pass
+        
+        if groq_key and groq_key != "YOUR_GROQ_API_KEY":
+            self.ai_tool.register_provider("groq", {
+                "enabled": True,
+                "host": "https://api.groq.com/openai/v1",
+                "model": "qwen/qwen3.6-27b",
+                "api_key": groq_key
+            })
+            logger.info("✅ Groq provider registered with qwen/qwen3.6-27b")
+        else:
+            logger.warning("⚠️ GROQ_API_KEY not found or invalid, Groq provider not registered")
 
     # ==================== AI GENERATE ====================
     
@@ -170,8 +204,7 @@ class IntelligenceGateway:
         provider_key = provider.lower()
         config = self.ai_tool.providers.get(provider_key)
         
-        # Debug logging
-        logger.info(f"🔍 DEBUG - Provider: {provider_key}, Model: {config.get('model') if config else 'N/A'}")
+        logger.info(f"🔍 DEBUG - Provider: {provider_key}, Config: {config}")
         
         system_instruction = (
             "You are PersonaVault, a secure and human-centric private AI assistant.\n\n"
@@ -189,15 +222,12 @@ class IntelligenceGateway:
             if not HAS_HTTPX:
                 return {"response": "[Ollama not available - httpx missing]"}
             
-            host = "http://localhost:11434"
+            host = config.get('host', "http://localhost:11434") if config else "http://localhost:11434"
             model = config.get("model", "tinydolphin:latest") if config else "tinydolphin:latest"
-            if config:
-                host = config.get('host', host)
-                model = config.get("model", "tinydolphin:latest") if config else "tinydolphin:latest"
             
             try:
-                logger.info(f"Ollama request started at {start_time}")
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                logger.info(f"Ollama request: model={model}, host={host}")
+                async with httpx.AsyncClient(timeout=60.0) as client:
                     response = await client.post(
                         f"{host}/api/chat",
                         json={
@@ -209,10 +239,8 @@ class IntelligenceGateway:
                             "stream": False,
                             "options": {"temperature": 0.2}
                         },
-                        timeout=30.0
+                        timeout=60.0
                     )
-                    end_time = time.time()
-                    logger.info(f"Ollama request completed in {end_time - start_time} seconds")
                     if response.status_code == 200:
                         msg_data = response.json().get("message", {})
                         result = {"response": msg_data.get("content", "No response")}
@@ -221,10 +249,8 @@ class IntelligenceGateway:
                     else:
                         return {"response": f"[Ollama error {response.status_code}]"}
             except httpx.TimeoutException:
-                logger.error(f"Ollama request timed out after 30 seconds")
                 return {"response": "[Ollama timeout - please try again]"}
             except Exception as e:
-                logger.exception(f"Ollama error type: {type(e).__name__}, message: {str(e)}")
                 return {"response": f"[Ollama unavailable: {type(e).__name__}]"}
         
         # GROQ (Cloud)
@@ -236,7 +262,10 @@ class IntelligenceGateway:
             if not api_key:
                 return {"response": "[Groq API key not configured]"}
             
+            model = config.get("model", "qwen/qwen3.6-27b") if config else "qwen/qwen3.6-27b"
+            
             try:
+                logger.info(f"Groq request: model={model}")
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         "https://api.groq.com/openai/v1/chat/completions",
@@ -245,7 +274,7 @@ class IntelligenceGateway:
                             "Content-Type": "application/json"
                         },
                         json={
-                            "model": config.get("model", "llama-3.3-70b-versatile") if config else "llama-3.3-70b-versatile",
+                            "model": model,
                             "messages": [
                                 {"role": "system", "content": system_instruction},
                                 {"role": "user", "content": f"{formatted_context}\n\nUSER_QUERY: {query}"}
@@ -273,10 +302,12 @@ class IntelligenceGateway:
             if not api_key:
                 return {"response": "[Gemini API key not configured]"}
             
+            model_name = config.get("model", "gemini-2.0-flash") if config else "gemini-2.0-flash"
+            
             try:
                 genai.configure(api_key=api_key)
                 model = genai.GenerativeModel(
-                    model_name=config.get("model", "gemini-2.0-flash") if config else "gemini-2.0-flash",
+                    model_name=model_name,
                     system_instruction=system_instruction
                 )
                 response = await model.generate_content_async(f"{formatted_context}\n\nUSER_QUERY: {query}")
@@ -327,23 +358,17 @@ class IntelligenceGateway:
             ai_providers = await repo.get_config("ai_providers") or {}
             logger.info(f"DEBUG: ai_providers loaded: {ai_providers}")
             for name, ai_config in ai_providers.items():
-                logger.info(f"DEBUG: Processing provider: {name}, config: {ai_config}")
                 if ai_config.get("enabled", False):
                     self.ai_tool.register_provider(name, ai_config)
-                    logger.info(f"DEBUG: Registered provider: {name}")
+                    logger.info(f"Registered provider: {name}")
                 else:
-                    logger.info(f"DEBUG: Provider {name} is disabled")
+                    logger.info(f"Provider {name} is disabled")
             self.packs = await repo.get_config("packs") or []
         except Exception as e:
             logger.warning(f"Could not load config from DB: {e}")
     
-    # PUBLIC WRAPPER FOR TESTS
     async def apply_config(self, db: AsyncSession) -> None:
         """Public wrapper for _apply_config_async (used by tests)."""
-        await self._apply_config_async(db)
-    
-    async def _load_config_from_db(self, db: AsyncSession):
-        """Load configuration from database."""
         await self._apply_config_async(db)
     
     async def ensure_initialized(self):
@@ -384,7 +409,6 @@ class IntelligenceGateway:
         self.thought_tracker.start()
         self.thought_tracker.add_step("Understanding", f"Processing query: '{query}'")
         
-        # Normalize user_id
         user_id_int = user_id.id if hasattr(user_id, 'id') else user_id
         if not isinstance(user_id_int, int):
             return {"error": "Invalid user_id"}
@@ -395,16 +419,13 @@ class IntelligenceGateway:
         await self.ensure_initialized()
         self.thought_tracker.add_step("Config", "Gateway initialized")
         
-        # Use the provided provider (respect user selection)
         context = "Context assembled."
         logger.info(f"🔄 Chat using provider: {provider}")
         
-        # Bypass MCP registry for direct Ollama call
         self.thought_tracker.add_step("Routing", f"Routing to provider: {provider}")
         result = await self.generate(provider, query, context=context)
         self.thought_tracker.add_step("Generation", "Response generated")
         
-        # Ensure the response includes the provider
         final_result = {"response": result.get("response", "No response")}
         final_result["provider"] = provider
         final_result["thought_process"] = self.thought_tracker.get_steps()
@@ -423,3 +444,8 @@ class IntelligenceGateway:
 # ============================================================================
 
 gateway = IntelligenceGateway()
+
+# Register Groq provider immediately
+gateway._register_groq_provider()
+
+logger.info("✅ Intelligence Gateway initialized")

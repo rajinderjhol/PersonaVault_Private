@@ -12,6 +12,12 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 class VectorService:
+
+    def set_client(self, client):
+        """Set the HTTP client for embeddings."""
+        self._client = client
+        logger.info("VectorService: HTTP client initialized")
+
     """FAISS-based vector search for semantic memory retrieval."""
     
     def __init__(self, index_path: str = "storage/vector_index.faiss", 
