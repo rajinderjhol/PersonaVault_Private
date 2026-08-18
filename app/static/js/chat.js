@@ -1,12 +1,16 @@
 // ============================================================
-// CHAT FUNCTIONS - Complete chat UI
+// CHAT FUNCTIONS - Complete chat UI with all features
 // ============================================================
+
+// ============ CONFIGURATION ============
+let autoScroll = true;
+const MAX_MESSAGE_LENGTH = 2000;
 
 // ============ FETCH HELPER ============
 function getFetchOptions(method = 'GET', body = null) {
     const options = {
         method: method,
-        credentials: 'include',  // Sends HTTP-only cookies automatically
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json'
         }
@@ -22,55 +26,69 @@ let thoughtSteps = [];
 let thoughtTimer = null;
 let thoughtStartTime = null;
 
+// ============ MARKDOWN CONFIGURATION ============
+const markdownConfig = {
+    gfm: true,
+    breaks: true,
+    headerIds: false,
+    mangle: false,
+    highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(code, { language: lang }).value;
+            } catch (e) {
+                return code;
+            }
+        }
+        try {
+            return hljs.highlightAuto(code).value;
+        } catch (e) {
+            return code;
+        }
+    }
+};
+
+if (typeof marked !== 'undefined') {
+    marked.setOptions(markdownConfig);
+    console.log('✅ Markdown configured');
+}
+
 // ============ THOUGHT PROCESS TOGGLE ============
 function toggleThoughtProcess() {
-    let container = document.getElementById('thought-process-container');
-    let toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
+    const container = document.getElementById('thought-process-container');
+    const toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
     
     if (!container) {
         const chatContainer = document.getElementById('chat-container') || document.body;
-        container = document.createElement('div');
-        container.id = 'thought-process-container';
-        container.style.cssText = 'margin-top: 10px; display: block;';
+        const newContainer = document.createElement('div');
+        newContainer.id = 'thought-process-container';
+        newContainer.style.cssText = 'margin-top: 10px; display: block;';
         
         const thoughtProcess = document.createElement('div');
         thoughtProcess.id = 'thought-process';
         thoughtProcess.style.cssText = 'max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 12px; color: #94a3b8;';
-        container.appendChild(thoughtProcess);
+        newContainer.appendChild(thoughtProcess);
         
         const statusEl = document.createElement('div');
         statusEl.id = 'thought-status';
         statusEl.style.cssText = 'font-size: 11px; color: #64748b; margin-top: 4px;';
-        container.appendChild(statusEl);
+        newContainer.appendChild(statusEl);
         
         const chatMessages = document.getElementById('chat-messages');
         if (chatMessages && chatMessages.parentElement) {
-            chatMessages.parentElement.insertBefore(container, chatMessages.nextSibling);
+            chatMessages.parentElement.insertBefore(newContainer, chatMessages.nextSibling);
         } else {
-            chatContainer.appendChild(container);
+            chatContainer.appendChild(newContainer);
         }
         
         if (!toggleBtn) {
-            toggleBtn = document.createElement('button');
-            toggleBtn.textContent = '▼ Hide Thought Process';
-            toggleBtn.setAttribute('onclick', 'toggleThoughtProcess()');
-            toggleBtn.style.cssText = 'margin: 5px 0; padding: 4px 12px; background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 12px;';
-            container.parentElement.insertBefore(toggleBtn, container);
-        }
-        return;
-    }
-    
-    if (toggleBtn && toggleBtn.parentElement === container) {
-        const parent = container.parentElement;
-        if (parent) {
             const newBtn = document.createElement('button');
-            newBtn.textContent = container.style.display === 'none' ? '▶ Show Thought Process' : '▼ Hide Thought Process';
+            newBtn.textContent = '▼ Hide Thought Process';
             newBtn.setAttribute('onclick', 'toggleThoughtProcess()');
             newBtn.style.cssText = 'margin: 5px 0; padding: 4px 12px; background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 12px;';
-            parent.insertBefore(newBtn, container);
-            toggleBtn.remove();
-            toggleBtn = newBtn;
+            newContainer.parentElement.insertBefore(newBtn, newContainer);
         }
+        return;
     }
     
     if (container.style.display === 'none' || container.style.display === '') {
@@ -118,6 +136,8 @@ async function togglePinSession(sessionId) {
         if (res.ok) {
             await loadSessions();
             showToast('Session pinned! 📌', 'success');
+        } else {
+            showToast('Failed to pin session', 'error');
         }
     } catch (e) {
         console.error('Error pinning session:', e);
@@ -133,11 +153,25 @@ async function toggleUnpinSession(sessionId) {
         if (res.ok) {
             await loadSessions();
             showToast('Session unpinned', 'info');
+        } else {
+            showToast('Failed to unpin session', 'error');
         }
     } catch (e) {
         console.error('Error unpinning session:', e);
         showToast('Error unpinning session', 'error');
     }
+}
+
+// ============ AUTO-SCROLL TOGGLE ============
+function toggleAutoScroll() {
+    autoScroll = !autoScroll;
+    const btn = document.getElementById('auto-scroll-btn');
+    if (btn) {
+        btn.textContent = autoScroll ? '📌 Auto-scroll On' : '📌 Auto-scroll Off';
+        btn.style.borderColor = autoScroll ? '#38bdf8' : '#334155';
+        btn.style.color = autoScroll ? '#f1f5f9' : '#64748b';
+    }
+    showToast(autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled', 'info');
 }
 
 // ============ SESSIONS ============
@@ -150,11 +184,10 @@ async function loadSessions() {
         if (!res.ok) throw new Error('Failed to load sessions');
         let sessions = await res.json();
         
-        // Sort: pinned first, then by updated_at
         sessions.sort((a, b) => {
             if (a.pinned && !b.pinned) return -1;
             if (!a.pinned && b.pinned) return 1;
-            return new Date(b.updated_at) - new Date(a.updated_at);
+            return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
         });
         
         if (sessions.length === 0) {
@@ -166,6 +199,7 @@ async function loadSessions() {
         for (let i = 0; i < sessions.length; i++) {
             const s = sessions[i];
             const isActive = s.id === currentSessionId;
+            const msgCount = s.message_count || 0;
             html += `
                 <div class="session-item" onclick="loadSession(${s.id})" 
                      style="padding: 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; 
@@ -177,10 +211,12 @@ async function loadSessions() {
                         <span class="session-title" style="color: #f1f5f9; font-size: 13px; font-weight: ${isActive ? '600' : '400'};">
                             ${s.pinned ? '📌 ' : ''}${s.title || 'Untitled Chat'}
                         </span>
-                        <span style="font-size: 10px; color: #64748b;">${new Date(s.updated_at).toLocaleDateString()}</span>
+                        <span style="font-size: 10px; color: #64748b;">${new Date(s.updated_at || s.created_at).toLocaleDateString()}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 10px; color: #64748b;">${s.message_count || 0} messages</span>
+                        <span style="font-size: 10px; color: #64748b;">
+                            💬 ${msgCount} message${msgCount !== 1 ? 's' : ''}
+                        </span>
                         <div style="display: flex; gap: 6px;">
                             ${s.pinned ? 
                                 `<button onclick="event.stopPropagation(); toggleUnpinSession(${s.id})" 
@@ -251,6 +287,7 @@ async function loadSession(sessionId) {
                 let html = '';
                 for (let i = 0; i < data.messages.length; i++) {
                     const m = data.messages[i];
+                    const time = new Date(m.created_at || m.timestamp).toLocaleTimeString();
                     html += `
                         <div class="message ${m.role}" 
                              style="padding: 12px; background: ${m.role === 'user' ? '#1e293b' : '#0f172a'}; 
@@ -260,6 +297,7 @@ async function loadSession(sessionId) {
                                     white-space: pre-wrap; word-wrap: break-word;">
                             ${m.content}
                             ${m.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${m.provider}</div>` : ''}
+                            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">${time}</div>
                         </div>
                     `;
                 }
@@ -282,9 +320,57 @@ async function sendMessage() {
     if (!input) return;
     const query = input.value.trim();
     if (!query) return;
+    
+    if (query.length > MAX_MESSAGE_LENGTH) {
+        showToast(`Message exceeds ${MAX_MESSAGE_LENGTH} characters`, 'error');
+        return;
+    }
+    
     input.value = '';
     await sendChatMessage(query);
 }
+
+// ============ QUICK PROMPTS ============
+function sendQuickPrompt(prompt) {
+    const input = document.getElementById('chat-input');
+    if (input) {
+        input.value = prompt;
+        sendChatMessageStream();
+    }
+}
+
+// ============ RENDER STREAMING MARKDOWN ============
+function renderStreamingMarkdown(element, content) {
+    if (!element) return;
+    
+    try {
+        if (!content || content.trim() === '') {
+            element.innerHTML = '<span style="opacity: 0.5;">▍</span>';
+            return;
+        }
+        
+        let html = marked.parse(content, markdownConfig);
+        html = html.replace(/<pre><code>/g, '<pre><code style="display: block; padding: 12px; overflow-x: auto;">');
+        element.innerHTML = html;
+        
+        if (!content.endsWith(' ')) {
+            element.innerHTML += '<span style="opacity: 0.3; animation: blink 1s infinite;">▍</span>';
+        }
+    } catch (e) {
+        console.warn('Markdown parsing failed:', e);
+        element.textContent = content || '';
+    }
+}
+
+// Add blinking cursor animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes blink {
+        0%, 50% { opacity: 0.3; }
+        51%, 100% { opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
 
 // ============ STREAMING CHAT ============
 async function sendChatMessageStream() {
@@ -308,39 +394,35 @@ async function sendChatMessageStream() {
     await sendChatMessage(message);
 }
 
-// ============ QUICK PROMPTS ============
-function sendQuickPrompt(prompt) {
-    const input = document.getElementById('chat-input');
-    if (input) {
-        input.value = prompt;
-        sendChatMessageStream();
-    }
-}
-
-// ============ CORE CHAT FUNCTION ============
+// ============ MAIN CHAT FUNCTION ============
 async function sendChatMessage(query) {
     const providerSelect = document.getElementById('chat-provider');
     const provider = providerSelect ? providerSelect.value : 'groq';
     
     const container = document.getElementById('chat-messages');
-    if (container) {
-        container.innerHTML += `
-            <div class="message user" 
-                 style="padding: 12px; background: #1e293b; border: 1px solid #38bdf8; 
-                        border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
-                        margin-left: auto; white-space: pre-wrap; word-wrap: break-word;">
-                ${query}
-            </div>
-        `;
-        container.scrollTop = container.scrollHeight;
-    }
+    if (!container) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Add user message
+    container.innerHTML += `
+        <div class="message user" 
+             style="padding: 12px; background: #1e293b; border: 1px solid #38bdf8; 
+                    border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
+                    margin-left: auto; white-space: pre-wrap; word-wrap: break-word;">
+            ${query}
+            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">${timestamp}</div>
+        </div>
+    `;
+    
+    if (autoScroll) container.scrollTop = container.scrollHeight;
     
     showTyping();
     startThoughtTimer();
     addThoughtStep({ step: 1, label: 'Initializing', description: 'Processing your request...', status: 'active' });
     
     try {
-        const res = await fetch('/api/v1/chat', 
+        const response = await fetch('/api/v1/chat/stream', 
             getFetchOptions('POST', {
                 query: query,
                 provider: provider,
@@ -349,99 +431,198 @@ async function sendChatMessage(query) {
             })
         );
         
-        if (res.status === 401) {
+        if (response.status === 401) {
             hideTyping();
             stopThoughtTimer();
             showToast('Session expired. Please refresh the page.', 'error');
-            if (container) {
-                container.innerHTML += `
-                    <div class="message ai" 
-                         style="padding: 12px; background: #1a0f0f; border: 1px solid #f87171; 
-                                border-radius: 8px; margin-bottom: 10px; max-width: 85%;">
-                        ⚠️ Session expired. Please refresh the page to continue.
-                    </div>
-                `;
-            }
+            container.innerHTML += `
+                <div class="message ai" 
+                     style="padding: 12px; background: #1a0f0f; border: 1px solid #f87171; 
+                            border-radius: 8px; margin-bottom: 10px; max-width: 85%;">
+                    ⚠️ Session expired. Please refresh the page to continue.
+                </div>
+            `;
             return;
         }
         
-        if (!res.ok) throw new Error('Failed to send message');
+        if (!response.ok) throw new Error('Failed to send message');
         
-        const data = await res.json();
+        // Create AI message container
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ai';
+        messageDiv.style.cssText = `
+            padding: 16px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            max-width: 85%;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow: hidden;
+        `;
+        
+        const markdownDiv = document.createElement('div');
+        markdownDiv.className = 'markdown-body';
+        markdownDiv.style.cssText = 'color: #e2e8f0; font-size: 14px; line-height: 1.6; min-height: 20px;';
+        messageDiv.appendChild(markdownDiv);
+        
+        const providerDiv = document.createElement('div');
+        providerDiv.style.cssText = 'font-size: 10px; color: #64748b; margin-top: 8px;';
+        providerDiv.textContent = `⚡ ${provider}`;
+        messageDiv.appendChild(providerDiv);
+        
+        const timestampDiv = document.createElement('div');
+        timestampDiv.style.cssText = 'font-size: 10px; color: #64748b; margin-top: 4px;';
+        timestampDiv.textContent = new Date().toLocaleTimeString();
+        messageDiv.appendChild(timestampDiv);
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.cssText = 'margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid #1e293b; padding-top: 8px;';
+        actionsDiv.innerHTML = `
+            <button onclick="copyMessageContent(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">📋 Copy</button>
+            <button onclick="shareMessage(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">🔗 Share</button>
+            <button onclick="exportMessage(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">📥 Export</button>
+        `;
+        messageDiv.appendChild(actionsDiv);
+        
+        container.appendChild(messageDiv);
+        if (autoScroll) container.scrollTop = container.scrollHeight;
+        
+        // Process stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+        let buffer = '';
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6).trim();
+                    if (data === '[DONE]') continue;
+                    
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.content) {
+                            fullContent += parsed.content;
+                            renderStreamingMarkdown(markdownDiv, fullContent);
+                            if (autoScroll) container.scrollTop = container.scrollHeight;
+                        }
+                        if (parsed.thought_process) {
+                            updateThoughtProcessUI(parsed.thought_process);
+                        }
+                        if (parsed.session_id) {
+                            currentSessionId = parsed.session_id;
+                            const idEl = document.getElementById('session-id-display');
+                            if (idEl) idEl.textContent = '#' + parsed.session_id;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse stream data:', data);
+                    }
+                }
+            }
+        }
+        
+        // Final render
+        renderStreamingMarkdown(markdownDiv, fullContent);
+        const cursor = markdownDiv.querySelector('span[style*="blink"]');
+        if (cursor) cursor.remove();
+        
+        highlightCodeBlocks(messageDiv);
+        completeAllThoughtSteps();
         hideTyping();
         stopThoughtTimer();
         
-        if (data.thought_process && data.thought_process.length > 0) {
-            const firstStep = data.thought_process[0];
-            if (firstStep) {
-                updateThoughtStep(1, firstStep.status || 'complete', firstStep.data);
-            }
-            for (let i = 1; i < data.thought_process.length; i++) {
-                const step = data.thought_process[i];
-                addThoughtStep({
-                    step: step.step || i + 1,
-                    label: step.label || 'Step',
-                    description: step.description || '',
-                    status: step.status || 'complete',
-                    duration: step.duration || 0,
-                    data: step.data || {}
-                });
-            }
-            setTimeout(() => {
-                completeAllThoughtSteps();
-            }, 500);
-        } else {
-            setTimeout(() => {
-                completeAllThoughtSteps();
-            }, 300);
-        }
-        
-        if (container && data.response) {
-            container.innerHTML += `
-                <div class="message ai" 
-                     style="padding: 12px; background: #0f172a; border: 1px solid #334155; 
-                            border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
-                            white-space: pre-wrap; word-wrap: break-word;">
-                    ${data.response}
-                    ${data.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${data.provider}</div>` : ''}
-                    <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button onclick="copyMessageContent(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 2px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">📋 Copy</button>
-                        <button onclick="shareMessage(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 2px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🔗 Share</button>
-                    </div>
-                </div>
-            `;
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        if (data.session_id) {
-            currentSessionId = data.session_id;
-            const idEl = document.getElementById('session-id-display');
-            if (idEl) idEl.textContent = '#' + data.session_id;
-            await loadSessions();
-        }
+        await loadSessions();
         
     } catch (e) {
         console.error('Chat error:', e);
         hideTyping();
         stopThoughtTimer();
-        if (container) {
-            container.innerHTML += `
-                <div class="message ai" 
-                     style="padding: 12px; background: #1a0f0f; border: 1px solid #f87171; 
-                            border-radius: 8px; margin-bottom: 10px; max-width: 85%;">
-                    ❌ Error: ${e.message || 'Failed to send message'}
-                </div>
-            `;
-            container.scrollTop = container.scrollHeight;
-        }
+        container.innerHTML += `
+            <div class="message ai" 
+                 style="padding: 12px; background: #1a0f0f; border: 1px solid #f87171; 
+                        border-radius: 8px; margin-bottom: 10px; max-width: 85%;">
+                ❌ Error: ${e.message || 'Failed to send message'}
+            </div>
+        `;
+        if (autoScroll) container.scrollTop = container.scrollHeight;
         showToast('Error sending message', 'error');
     }
 }
 
-// ============ COPY & SHARE ============
+// ============ HIGHLIGHT CODE BLOCKS ============
+function highlightCodeBlocks(container) {
+    if (typeof hljs === 'undefined') return;
+    
+    container.querySelectorAll('pre code').forEach((block) => {
+        try {
+            hljs.highlightElement(block);
+        } catch (e) {
+            console.warn('Failed to highlight code block:', e);
+        }
+    });
+    
+    container.querySelectorAll('pre').forEach((pre) => {
+        if (pre.querySelector('.code-copy-btn')) return;
+        
+        const code = pre.querySelector('code');
+        if (code) {
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'code-copy-btn';
+            copyBtn.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: #1e293b;
+                border: 1px solid #334155;
+                color: #94a3b8;
+                padding: 4px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 10px;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+                z-index: 10;
+            `;
+            copyBtn.textContent = '📋 Copy';
+            copyBtn.onclick = function(e) {
+                e.stopPropagation();
+                const codeText = code.textContent;
+                navigator.clipboard.writeText(codeText).then(() => {
+                    this.textContent = '✅ Copied!';
+                    this.style.opacity = '1';
+                    setTimeout(() => {
+                        this.textContent = '📋 Copy';
+                        this.style.opacity = '0.7';
+                    }, 2000);
+                });
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(copyBtn);
+        }
+    });
+}
+
+// ============ UPDATE THOUGHT PROCESS ============
+function updateThoughtProcessUI(thoughtSteps) {
+    if (!thoughtSteps || !Array.isArray(thoughtSteps)) return;
+    thoughtSteps.forEach((step, index) => {
+        updateThoughtStep(index + 1, step.status || 'complete', step.data);
+    });
+}
+
+// ============ COPY, SHARE, EXPORT ============
 function copyMessageContent(btn) {
     const messageDiv = btn.closest('.message.ai');
-    const content = messageDiv?.textContent?.replace('📋 Copy', '').replace('🔗 Share', '').trim() || '';
+    const content = messageDiv?.querySelector('.markdown-body')?.textContent || '';
     navigator.clipboard.writeText(content).then(() => {
         btn.textContent = '✅ Copied!';
         setTimeout(() => btn.textContent = '📋 Copy', 2000);
@@ -450,12 +631,9 @@ function copyMessageContent(btn) {
 
 function shareMessage(btn) {
     const messageDiv = btn.closest('.message.ai');
-    const content = messageDiv?.textContent?.replace('📋 Copy', '').replace('🔗 Share', '').trim() || '';
+    const content = messageDiv?.querySelector('.markdown-body')?.textContent || '';
     if (navigator.share) {
-        navigator.share({
-            title: 'PersonaVault Chat',
-            text: content,
-        }).catch(() => {});
+        navigator.share({ title: 'PersonaVault Chat', text: content }).catch(() => {});
     } else {
         navigator.clipboard.writeText(content).then(() => {
             showToast('Message copied to clipboard! 📋', 'success');
@@ -463,45 +641,24 @@ function shareMessage(btn) {
     }
 }
 
-// ============ RENAME SESSION ============
-function renameSession(newTitle) {
-    if (!currentSessionId || !newTitle) return;
+function exportMessage(btn) {
+    const messageDiv = btn.closest('.message.ai');
+    const content = messageDiv?.querySelector('.markdown-body')?.textContent || '';
+    if (!content) {
+        showToast('No content to export', 'error');
+        return;
+    }
     
-    fetch('/api/v1/chat/sessions/' + currentSessionId, 
-        getFetchOptions('PATCH', { title: newTitle })
-    )
-    .then(res => res.json())
-    .then(() => {
-        const titleEl = document.getElementById('current-session-title');
-        if (titleEl) titleEl.textContent = newTitle;
-        showToast('Session renamed', 'success');
-        loadSessions();
-    })
-    .catch(() => showToast('Error renaming session', 'error'));
-}
-
-// ============ DELETE SESSION ============
-function deleteCurrentSession() {
-    if (!currentSessionId) return;
-    if (!confirm('Delete this session?')) return;
-    
-    fetch('/api/v1/chat/sessions/' + currentSessionId, 
-        getFetchOptions('DELETE')
-    )
-    .then(() => {
-        currentSessionId = null;
-        const titleEl = document.getElementById('current-session-title');
-        if (titleEl) titleEl.textContent = 'New Chat';
-        const idEl = document.getElementById('session-id-display');
-        if (idEl) idEl.textContent = '';
-        const container = document.getElementById('chat-messages');
-        if (container) {
-            container.innerHTML = '<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Session deleted. Create a new chat to get started.</div>';
-        }
-        loadSessions();
-        showToast('Session deleted', 'info');
-    })
-    .catch(() => showToast('Error deleting session', 'error'));
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `personavault-export-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Message exported! 📥', 'success');
 }
 
 // ============ THOUGHT PROCESS UI ============
@@ -530,49 +687,8 @@ function stopThoughtTimer() {
 }
 
 function addThoughtStep(step) {
-    let container = document.getElementById('thought-process');
-    if (!container) {
-        let parentContainer = document.getElementById('thought-process-container');
-        if (!parentContainer) {
-            const chatContainer = document.getElementById('chat-container') || document.body;
-            parentContainer = document.createElement('div');
-            parentContainer.id = 'thought-process-container';
-            parentContainer.style.cssText = 'margin-top: 10px; display: block;';
-            
-            container = document.createElement('div');
-            container.id = 'thought-process';
-            container.style.cssText = 'max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 12px; color: #94a3b8;';
-            parentContainer.appendChild(container);
-            
-            const statusEl = document.createElement('div');
-            statusEl.id = 'thought-status';
-            statusEl.style.cssText = 'font-size: 11px; color: #64748b; margin-top: 4px;';
-            parentContainer.appendChild(statusEl);
-            
-            const chatMessages = document.getElementById('chat-messages');
-            if (chatMessages && chatMessages.parentElement) {
-                chatMessages.parentElement.insertBefore(parentContainer, chatMessages.nextSibling);
-            } else {
-                chatContainer.appendChild(parentContainer);
-            }
-            
-            if (!document.querySelector('[onclick="toggleThoughtProcess()"]')) {
-                const toggleBtn = document.createElement('button');
-                toggleBtn.textContent = '▼ Hide Thought Process';
-                toggleBtn.setAttribute('onclick', 'toggleThoughtProcess()');
-                toggleBtn.style.cssText = 'margin: 5px 0; padding: 4px 12px; background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 12px;';
-                parentContainer.parentElement.insertBefore(toggleBtn, parentContainer);
-            }
-        } else {
-            container = document.getElementById('thought-process');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'thought-process';
-                container.style.cssText = 'max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 12px; color: #94a3b8;';
-                parentContainer.insertBefore(container, parentContainer.firstChild);
-            }
-        }
-    }
+    const container = document.getElementById('thought-process');
+    if (!container) return;
     
     const stepEl = document.createElement('div');
     stepEl.className = 'thought-step';
@@ -601,15 +717,6 @@ function addThoughtStep(step) {
     
     container.appendChild(stepEl);
     container.scrollTop = container.scrollHeight;
-    
-    const parentContainer = document.getElementById('thought-process-container');
-    if (parentContainer) {
-        parentContainer.style.display = 'block';
-        const toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
-        if (toggleBtn) {
-            toggleBtn.textContent = '▼ Hide Thought Process';
-        }
-    }
 }
 
 function updateThoughtStep(stepNumber, status, data) {
@@ -655,19 +762,10 @@ function clearThoughtProcess() {
     if (container) {
         container.innerHTML = '';
     }
+    stopThoughtTimer();
     const statusEl = document.getElementById('thought-status');
     if (statusEl) {
         statusEl.textContent = '';
-    }
-    stopThoughtTimer();
-    
-    const parentContainer = document.getElementById('thought-process-container');
-    if (parentContainer) {
-        parentContainer.style.display = 'none';
-        const toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
-        if (toggleBtn) {
-            toggleBtn.textContent = '▶ Show Thought Process';
-        }
     }
 }
 
@@ -689,7 +787,7 @@ function showTyping() {
     `;
     typingEl.innerHTML = '⏳ Thinking...';
     container.appendChild(typingEl);
-    container.scrollTop = container.scrollHeight;
+    if (autoScroll) container.scrollTop = container.scrollHeight;
 }
 
 function hideTyping() {
@@ -749,8 +847,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 sendChatMessageStream();
             }
+            if (e.key === 'Escape') {
+                this.value = '';
+            }
+        });
+        
+        // Character counter
+        const counter = document.createElement('div');
+        counter.style.cssText = 'text-align: right; font-size: 11px; color: #64748b; margin-top: 4px;';
+        counter.textContent = '0 / 2000';
+        input.parentNode.appendChild(counter);
+        
+        input.addEventListener('input', function() {
+            const count = this.value.length;
+            counter.textContent = `${count} / ${MAX_MESSAGE_LENGTH}`;
+            counter.style.color = count > MAX_MESSAGE_LENGTH - 100 ? '#f87171' : '#64748b';
         });
     }
+    
+    // Ctrl+Enter shortcut
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            sendChatMessageStream();
+        }
+    });
     
     loadSessions();
     
@@ -778,86 +899,7 @@ window.toggleUnpinSession = toggleUnpinSession;
 window.sendQuickPrompt = sendQuickPrompt;
 window.copyMessageContent = copyMessageContent;
 window.shareMessage = shareMessage;
+window.exportMessage = exportMessage;
+window.toggleAutoScroll = toggleAutoScroll;
 
-// Add CSS animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-`;
-document.head.appendChild(style);
-
-console.log('✅ chat.js loaded - Chat functions available globally');
-// ============ SESSION SEARCH ============
-function searchSessions(query) {
-    const items = document.querySelectorAll('.session-item');
-    query = query.toLowerCase().trim();
-    let visibleCount = 0;
-    
-    items.forEach(item => {
-        const title = item.querySelector('.session-title')?.textContent?.toLowerCase() || '';
-        const matches = title.includes(query);
-        item.style.display = matches ? 'flex' : 'none';
-        if (matches) visibleCount++;
-    });
-    
-    // Show "no results" message
-    const list = document.getElementById('session-list');
-    const noResults = document.getElementById('no-session-results');
-    if (visibleCount === 0 && !noResults) {
-        const msg = document.createElement('div');
-        msg.id = 'no-session-results';
-        msg.className = 'metric-label';
-        msg.style.cssText = 'padding: 10px; color: #64748b; text-align: center;';
-        msg.textContent = `No sessions found matching "${query}"`;
-        if (list) list.appendChild(msg);
-    } else if (noResults && visibleCount > 0) {
-        noResults.remove();
-    }
-}
-
-// ============ SESSION PINNING ============
-async function togglePinSession(sessionId) {
-    try {
-        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/pin`, 
-            getFetchOptions('PATCH', { pinned: true })
-        );
-        if (res.ok) {
-            await loadSessions();
-            showToast('Session pinned! 📌', 'success');
-        } else {
-            showToast('Failed to pin session', 'error');
-        }
-    } catch (e) {
-        console.error('Error pinning session:', e);
-        showToast('Error pinning session', 'error');
-    }
-}
-
-async function toggleUnpinSession(sessionId) {
-    try {
-        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/unpin`, 
-            getFetchOptions('PATCH')
-        );
-        if (res.ok) {
-            await loadSessions();
-            showToast('Session unpinned', 'info');
-        } else {
-            showToast('Failed to unpin session', 'error');
-        }
-    } catch (e) {
-        console.error('Error unpinning session:', e);
-        showToast('Error unpinning session', 'error');
-    }
-}
-
-// ============ QUICK PROMPTS ============
-function sendQuickPrompt(prompt) {
-    const input = document.getElementById('chat-input');
-    if (input) {
-        input.value = prompt;
-        sendChatMessageStream();
-    }
-}
+console.log('✅ chat.js loaded - All chat functions available');

@@ -100,7 +100,7 @@ os.makedirs("storage/uploads", exist_ok=True)
 os.makedirs("storage/logs", exist_ok=True)
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager

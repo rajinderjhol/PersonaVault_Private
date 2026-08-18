@@ -55,7 +55,7 @@ async def list_sessions(
                 "user_id": session.user_id,
                 "pinned": session.pinned or 0,
                 "created_at": session.created_at,
-                "updated_at": session.created_at,
+                "updated_at": session.updated_at or session.created_at,
                 "message_count": message_count
             })
         
@@ -94,7 +94,7 @@ async def create_session(
             "user_id": new_session.user_id,
             "pinned": new_session.pinned or 0,
             "created_at": new_session.created_at,
-            "updated_at": new_session.created_at,
+            "updated_at": new_session.updated_at or new_session.created_at,
             "message_count": 0
         }
     except Exception as e:
