@@ -20,6 +20,9 @@ class SessionCreate(BaseModel):
 class SessionUpdate(BaseModel):
     title: str
 
+class SessionPinUpdate(BaseModel):
+    pinned: bool
+
 @router.post("/sessions")
 async def create_session(
     data: SessionCreate,

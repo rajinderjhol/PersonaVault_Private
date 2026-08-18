@@ -6,7 +6,7 @@
 function getFetchOptions(method = 'GET', body = null) {
     const options = {
         method: method,
-        credentials: 'include',
+        credentials: 'include',  // Sends HTTP-only cookies automatically
         headers: {
             'Content-Type': 'application/json'
         }
@@ -27,7 +27,6 @@ function toggleThoughtProcess() {
     let container = document.getElementById('thought-process-container');
     let toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
     
-    // If no container found, create one
     if (!container) {
         const chatContainer = document.getElementById('chat-container') || document.body;
         container = document.createElement('div');
@@ -44,7 +43,6 @@ function toggleThoughtProcess() {
         statusEl.style.cssText = 'font-size: 11px; color: #64748b; margin-top: 4px;';
         container.appendChild(statusEl);
         
-        // Insert after chat messages
         const chatMessages = document.getElementById('chat-messages');
         if (chatMessages && chatMessages.parentElement) {
             chatMessages.parentElement.insertBefore(container, chatMessages.nextSibling);
@@ -52,7 +50,6 @@ function toggleThoughtProcess() {
             chatContainer.appendChild(container);
         }
         
-        // If toggle button doesn't exist, create one
         if (!toggleBtn) {
             toggleBtn = document.createElement('button');
             toggleBtn.textContent = '▼ Hide Thought Process';
@@ -63,7 +60,6 @@ function toggleThoughtProcess() {
         return;
     }
     
-    // Ensure the toggle button is outside the container
     if (toggleBtn && toggleBtn.parentElement === container) {
         const parent = container.parentElement;
         if (parent) {
@@ -77,17 +73,70 @@ function toggleThoughtProcess() {
         }
     }
     
-    // Toggle the container visibility
     if (container.style.display === 'none' || container.style.display === '') {
         container.style.display = 'block';
-        if (toggleBtn) {
-            toggleBtn.textContent = '▼ Hide Thought Process';
-        }
+        if (toggleBtn) toggleBtn.textContent = '▼ Hide Thought Process';
     } else {
         container.style.display = 'none';
-        if (toggleBtn) {
-            toggleBtn.textContent = '▶ Show Thought Process';
+        if (toggleBtn) toggleBtn.textContent = '▶ Show Thought Process';
+    }
+}
+
+// ============ SESSION SEARCH ============
+function searchSessions(query) {
+    const items = document.querySelectorAll('.session-item');
+    query = query.toLowerCase().trim();
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const title = item.querySelector('.session-title')?.textContent?.toLowerCase() || '';
+        const matches = title.includes(query);
+        item.style.display = matches ? 'flex' : 'none';
+        if (matches) visibleCount++;
+    });
+    
+    const list = document.getElementById('session-list');
+    const noResults = document.getElementById('no-session-results');
+    if (visibleCount === 0 && !noResults) {
+        const msg = document.createElement('div');
+        msg.id = 'no-session-results';
+        msg.className = 'metric-label';
+        msg.style.cssText = 'padding: 10px; color: #64748b; text-align: center;';
+        msg.textContent = `No sessions found matching "${query}"`;
+        if (list) list.appendChild(msg);
+    } else if (noResults && visibleCount > 0) {
+        noResults.remove();
+    }
+}
+
+// ============ SESSION PINNING ============
+async function togglePinSession(sessionId) {
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/pin`, 
+            getFetchOptions('PATCH', { pinned: true })
+        );
+        if (res.ok) {
+            await loadSessions();
+            showToast('Session pinned! 📌', 'success');
         }
+    } catch (e) {
+        console.error('Error pinning session:', e);
+        showToast('Error pinning session', 'error');
+    }
+}
+
+async function toggleUnpinSession(sessionId) {
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/unpin`, 
+            getFetchOptions('PATCH')
+        );
+        if (res.ok) {
+            await loadSessions();
+            showToast('Session unpinned', 'info');
+        }
+    } catch (e) {
+        console.error('Error unpinning session:', e);
+        showToast('Error unpinning session', 'error');
     }
 }
 
@@ -99,7 +148,14 @@ async function loadSessions() {
     try {
         const res = await fetch('/api/v1/chat/sessions', getFetchOptions());
         if (!res.ok) throw new Error('Failed to load sessions');
-        const sessions = await res.json();
+        let sessions = await res.json();
+        
+        // Sort: pinned first, then by updated_at
+        sessions.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            return new Date(b.updated_at) - new Date(a.updated_at);
+        });
         
         if (sessions.length === 0) {
             list.innerHTML = '<div class="metric-label" style="padding: 10px;">No saved chats. Start a new conversation!</div>';
@@ -114,14 +170,30 @@ async function loadSessions() {
                 <div class="session-item" onclick="loadSession(${s.id})" 
                      style="padding: 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; 
                             background: ${isActive ? '#1e293b' : 'transparent'}; 
-                            border: 1px solid ${isActive ? '#38bdf8' : 'transparent'};">
+                            border: 1px solid ${isActive ? '#38bdf8' : 'transparent'};
+                            ${s.pinned ? 'border-left: 3px solid #fbbf24;' : ''}
+                            display: flex; flex-direction: column; gap: 4px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #f1f5f9; font-size: 13px; font-weight: ${isActive ? '600' : '400'};">
-                            ${s.title || 'Untitled Chat'}
+                        <span class="session-title" style="color: #f1f5f9; font-size: 13px; font-weight: ${isActive ? '600' : '400'};">
+                            ${s.pinned ? '📌 ' : ''}${s.title || 'Untitled Chat'}
                         </span>
                         <span style="font-size: 10px; color: #64748b;">${new Date(s.updated_at).toLocaleDateString()}</span>
                     </div>
-                    <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${s.message_count || 0} messages</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 10px; color: #64748b;">${s.message_count || 0} messages</span>
+                        <div style="display: flex; gap: 6px;">
+                            ${s.pinned ? 
+                                `<button onclick="event.stopPropagation(); toggleUnpinSession(${s.id})" 
+                                         style="background: none; border: none; color: #fbbf24; cursor: pointer; font-size: 10px;">
+                                    📌 Unpin
+                                </button>` :
+                                `<button onclick="event.stopPropagation(); togglePinSession(${s.id})" 
+                                         style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 10px;">
+                                    📌 Pin
+                                </button>`
+                            }
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -214,7 +286,7 @@ async function sendMessage() {
     await sendChatMessage(query);
 }
 
-// ============ STREAMING CHAT (for dashboard) ============
+// ============ STREAMING CHAT ============
 async function sendChatMessageStream() {
     const input = document.getElementById('chat-input');
     if (!input) {
@@ -234,6 +306,15 @@ async function sendChatMessageStream() {
     if (!message) return;
     input.value = '';
     await sendChatMessage(message);
+}
+
+// ============ QUICK PROMPTS ============
+function sendQuickPrompt(prompt) {
+    const input = document.getElementById('chat-input');
+    if (input) {
+        input.value = prompt;
+        sendChatMessageStream();
+    }
 }
 
 // ============ CORE CHAT FUNCTION ============
@@ -323,6 +404,10 @@ async function sendChatMessage(query) {
                             white-space: pre-wrap; word-wrap: break-word;">
                     ${data.response}
                     ${data.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${data.provider}</div>` : ''}
+                    <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="copyMessageContent(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 2px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">📋 Copy</button>
+                        <button onclick="shareMessage(this)" style="background: #1e293b; border: none; color: #94a3b8; padding: 2px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🔗 Share</button>
+                    </div>
                 </div>
             `;
             container.scrollTop = container.scrollHeight;
@@ -350,6 +435,31 @@ async function sendChatMessage(query) {
             container.scrollTop = container.scrollHeight;
         }
         showToast('Error sending message', 'error');
+    }
+}
+
+// ============ COPY & SHARE ============
+function copyMessageContent(btn) {
+    const messageDiv = btn.closest('.message.ai');
+    const content = messageDiv?.textContent?.replace('📋 Copy', '').replace('🔗 Share', '').trim() || '';
+    navigator.clipboard.writeText(content).then(() => {
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = '📋 Copy', 2000);
+    });
+}
+
+function shareMessage(btn) {
+    const messageDiv = btn.closest('.message.ai');
+    const content = messageDiv?.textContent?.replace('📋 Copy', '').replace('🔗 Share', '').trim() || '';
+    if (navigator.share) {
+        navigator.share({
+            title: 'PersonaVault Chat',
+            text: content,
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(content).then(() => {
+            showToast('Message copied to clipboard! 📋', 'success');
+        });
     }
 }
 
@@ -420,13 +530,10 @@ function stopThoughtTimer() {
 }
 
 function addThoughtStep(step) {
-    // Ensure the thought process container exists
     let container = document.getElementById('thought-process');
     if (!container) {
-        // Create the container
         let parentContainer = document.getElementById('thought-process-container');
         if (!parentContainer) {
-            // Create the parent container too
             const chatContainer = document.getElementById('chat-container') || document.body;
             parentContainer = document.createElement('div');
             parentContainer.id = 'thought-process-container';
@@ -442,7 +549,6 @@ function addThoughtStep(step) {
             statusEl.style.cssText = 'font-size: 11px; color: #64748b; margin-top: 4px;';
             parentContainer.appendChild(statusEl);
             
-            // Insert after chat messages
             const chatMessages = document.getElementById('chat-messages');
             if (chatMessages && chatMessages.parentElement) {
                 chatMessages.parentElement.insertBefore(parentContainer, chatMessages.nextSibling);
@@ -450,7 +556,6 @@ function addThoughtStep(step) {
                 chatContainer.appendChild(parentContainer);
             }
             
-            // Create toggle button if it doesn't exist
             if (!document.querySelector('[onclick="toggleThoughtProcess()"]')) {
                 const toggleBtn = document.createElement('button');
                 toggleBtn.textContent = '▼ Hide Thought Process';
@@ -497,7 +602,6 @@ function addThoughtStep(step) {
     container.appendChild(stepEl);
     container.scrollTop = container.scrollHeight;
     
-    // Show the container and update button
     const parentContainer = document.getElementById('thought-process-container');
     if (parentContainer) {
         parentContainer.style.display = 'block';
@@ -557,7 +661,6 @@ function clearThoughtProcess() {
     }
     stopThoughtTimer();
     
-    // Hide the container and update button
     const parentContainer = document.getElementById('thought-process-container');
     if (parentContainer) {
         parentContainer.style.display = 'none';
@@ -669,6 +772,12 @@ window.deleteCurrentSession = deleteCurrentSession;
 window.showToast = showToast;
 window.toggleThoughtProcess = toggleThoughtProcess;
 window.clearThoughtProcess = clearThoughtProcess;
+window.searchSessions = searchSessions;
+window.togglePinSession = togglePinSession;
+window.toggleUnpinSession = toggleUnpinSession;
+window.sendQuickPrompt = sendQuickPrompt;
+window.copyMessageContent = copyMessageContent;
+window.shareMessage = shareMessage;
 
 // Add CSS animation
 const style = document.createElement('style');
