@@ -1,165 +1,245 @@
 """
-Chat Session Management Endpoints
+Chat Sessions Endpoints
 """
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, func
-from pydantic import BaseModel
+from typing import List, Optional
 from datetime import datetime
+from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.core.dependencies import get_current_user_id
-from app.models import ChatSession, ChatMessage
+from app.core.dependencies import get_current_user
+from app.models.chat import ChatSession, ChatMessage
+from app.models.user import User
+from app.schemas.chat import (
+    ChatSessionCreate,
+    ChatSessionUpdate,
+    ChatSessionResponse,
+    ChatMessageResponse
+)
 
-router = APIRouter(prefix="/api/v1/chat", tags=["chat-sessions"])
+# Use prefix without trailing slash
+router = APIRouter(
+    prefix="/api/v1/chat",
+    tags=["chat-sessions"]
+)
 
-class SessionCreate(BaseModel):
-    title: Optional[str] = "New Chat"
-
-class SessionUpdate(BaseModel):
-    title: str
-
+# ============ MODELS ============
 class SessionPinUpdate(BaseModel):
     pinned: bool
 
-@router.post("/sessions")
-async def create_session(
-    data: SessionCreate,
-    user_id: int = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
-):
-    """Create a new chat session."""
-    try:
-        session = ChatSession(
-            user_id=user_id,
-            title=data.title or "New Chat",
-            created_at=datetime.utcnow()
-        )
-        db.add(session)
-        await db.commit()
-        await db.refresh(session)
-        return {"id": session.id, "title": session.title}
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}")
+# ============ ENDPOINTS ============
 
 @router.get("/sessions")
 async def list_sessions(
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all chat sessions for the user."""
+    """List all chat sessions for the current user"""
     try:
-        # Get sessions with message count
-        stmt = select(ChatSession).where(ChatSession.user_id == user_id).order_by(ChatSession.created_at.desc())
+        from sqlalchemy import select
+        stmt = select(ChatSession).where(ChatSession.user_id == current_user.id).order_by(ChatSession.pinned.desc(), ChatSession.created_at.desc())
         result = await db.execute(stmt)
         sessions = result.scalars().all()
         
-        # Get message counts for each session
         session_list = []
-        for s in sessions:
-            msg_count_stmt = select(func.count(ChatMessage.id)).where(ChatMessage.session_id == s.id)
-            msg_count = await db.execute(msg_count_stmt)
+        for session in sessions:
+            from sqlalchemy import func, select
+            count_stmt = select(func.count()).select_from(ChatMessage).where(ChatMessage.session_id == session.id)
+            count_result = await db.execute(count_stmt)
+            message_count = count_result.scalar() or 0
+            
             session_list.append({
-                "id": s.id,
-                "title": s.title,
-                "created_at": s.created_at.isoformat(),
-                "updated_at": s.created_at.isoformat(),
-                "message_count": msg_count.scalar_one() or 0
+                "id": session.id,
+                "title": session.title,
+                "user_id": session.user_id,
+                "pinned": session.pinned or 0,
+                "created_at": session.created_at,
+                "updated_at": session.created_at,
+                "message_count": message_count
             })
         
         return session_list
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}")
+        print(f"❌ Error listing sessions: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error listing sessions: {str(e)}")
 
-@router.patch("/sessions/{session_id}")
-async def update_session(
-    session_id: int,
-    data: SessionUpdate,
-    user_id: int = Depends(get_current_user_id),
+@router.post("/sessions")
+async def create_session(
+    session_data: ChatSessionCreate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Update a chat session title."""
+    """Create a new chat session"""
     try:
-        stmt = select(ChatSession).where(
-            ChatSession.id == session_id,
-            ChatSession.user_id == user_id
-        )
-        result = await db.execute(stmt)
-        session = result.scalars().first()
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-        session.title = data.title
-        await db.commit()
-        return {"id": session.id, "title": session.title}
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update session: {str(e)}")
-
-@router.delete("/sessions/{session_id}")
-async def delete_session(
-    session_id: int,
-    user_id: int = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
-):
-    """Delete a chat session and all its messages."""
-    try:
-        # Delete messages first
-        stmt = delete(ChatMessage).where(ChatMessage.session_id == session_id)
-        await db.execute(stmt)
+        print(f"Creating session for user {current_user.id} with title: {session_data.title}")
         
-        # Delete session
-        stmt = delete(ChatSession).where(
-            ChatSession.id == session_id,
-            ChatSession.user_id == user_id
+        new_session = ChatSession(
+            title=session_data.title or "New Chat",
+            user_id=current_user.id,
+            pinned=0,
+            created_at=datetime.utcnow()
         )
-        result = await db.execute(stmt)
+        db.add(new_session)
         await db.commit()
+        await db.refresh(new_session)
         
-        if result.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Session not found")
-        return {"status": "deleted"}
+        print(f"✅ Session created with ID: {new_session.id}")
+        
+        return {
+            "id": new_session.id,
+            "title": new_session.title,
+            "user_id": new_session.user_id,
+            "pinned": new_session.pinned or 0,
+            "created_at": new_session.created_at,
+            "updated_at": new_session.created_at,
+            "message_count": 0
+        }
     except Exception as e:
+        print(f"❌ Error creating session: {e}")
+        import traceback
+        traceback.print_exc()
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}")
 
 @router.get("/sessions/{session_id}/messages")
 async def get_session_messages(
     session_id: int,
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all messages for a session."""
+    """Get all messages for a session"""
     try:
-        # Verify session belongs to user
-        stmt = select(ChatSession).where(
-            ChatSession.id == session_id,
-            ChatSession.user_id == user_id
-        )
+        from sqlalchemy import select
+        stmt = select(ChatSession).where(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
         result = await db.execute(stmt)
-        session = result.scalars().first()
+        session = result.scalar_one_or_none()
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
-        # Get messages
-        stmt = select(ChatMessage).where(
-            ChatMessage.session_id == session_id
-        ).order_by(ChatMessage.timestamp.asc())
+        stmt = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.timestamp.asc())
         result = await db.execute(stmt)
         messages = result.scalars().all()
         
         return {
-            "id": session.id,
+            "session_id": session_id,
             "title": session.title,
-            "messages": [
-                {
-                    "role": m.role,
-                    "content": m.content,
-                    "timestamp": m.timestamp.isoformat()
-                }
-                for m in messages
-            ]
+            "messages": [{
+                "id": m.id,
+                "role": m.role,
+                "content": m.content,
+                "timestamp": m.timestamp
+            } for m in messages]
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get messages: {str(e)}")
+        print(f"Error getting messages: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get messages")
+
+@router.patch("/sessions/{session_id}")
+async def update_session(
+    session_id: int,
+    session_data: ChatSessionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a chat session title"""
+    try:
+        from sqlalchemy import select
+        stmt = select(ChatSession).where(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+        result = await db.execute(stmt)
+        session = result.scalar_one_or_none()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session.title = session_data.title
+        await db.commit()
+        
+        return {"status": "success", "message": "Session updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating session: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update session")
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a chat session"""
+    try:
+        from sqlalchemy import select
+        stmt = select(ChatSession).where(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+        result = await db.execute(stmt)
+        session = result.scalar_one_or_none()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        await db.delete(session)
+        await db.commit()
+        
+        return {"status": "success", "message": "Session deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting session: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete session")
+
+@router.patch("/sessions/{session_id}/pin")
+async def pin_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Pin a session to the top of the list"""
+    try:
+        from sqlalchemy import select
+        stmt = select(ChatSession).where(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+        result = await db.execute(stmt)
+        session = result.scalar_one_or_none()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session.pinned = 1
+        await db.commit()
+        
+        return {"status": "success", "message": "Session pinned"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error pinning session: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to pin session")
+
+@router.patch("/sessions/{session_id}/unpin")
+async def unpin_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Unpin a session"""
+    try:
+        from sqlalchemy import select
+        stmt = select(ChatSession).where(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+        result = await db.execute(stmt)
+        session = result.scalar_one_or_none()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session.pinned = 0
+        await db.commit()
+        
+        return {"status": "success", "message": "Session unpinned"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error unpinning session: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to unpin session")

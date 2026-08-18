@@ -8,6 +8,7 @@ class ChatSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     title = Column(String, default="New Chat")
+    pinned = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")

@@ -790,3 +790,74 @@ style.textContent = `
 document.head.appendChild(style);
 
 console.log('✅ chat.js loaded - Chat functions available globally');
+// ============ SESSION SEARCH ============
+function searchSessions(query) {
+    const items = document.querySelectorAll('.session-item');
+    query = query.toLowerCase().trim();
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const title = item.querySelector('.session-title')?.textContent?.toLowerCase() || '';
+        const matches = title.includes(query);
+        item.style.display = matches ? 'flex' : 'none';
+        if (matches) visibleCount++;
+    });
+    
+    // Show "no results" message
+    const list = document.getElementById('session-list');
+    const noResults = document.getElementById('no-session-results');
+    if (visibleCount === 0 && !noResults) {
+        const msg = document.createElement('div');
+        msg.id = 'no-session-results';
+        msg.className = 'metric-label';
+        msg.style.cssText = 'padding: 10px; color: #64748b; text-align: center;';
+        msg.textContent = `No sessions found matching "${query}"`;
+        if (list) list.appendChild(msg);
+    } else if (noResults && visibleCount > 0) {
+        noResults.remove();
+    }
+}
+
+// ============ SESSION PINNING ============
+async function togglePinSession(sessionId) {
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/pin`, 
+            getFetchOptions('PATCH', { pinned: true })
+        );
+        if (res.ok) {
+            await loadSessions();
+            showToast('Session pinned! 📌', 'success');
+        } else {
+            showToast('Failed to pin session', 'error');
+        }
+    } catch (e) {
+        console.error('Error pinning session:', e);
+        showToast('Error pinning session', 'error');
+    }
+}
+
+async function toggleUnpinSession(sessionId) {
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/unpin`, 
+            getFetchOptions('PATCH')
+        );
+        if (res.ok) {
+            await loadSessions();
+            showToast('Session unpinned', 'info');
+        } else {
+            showToast('Failed to unpin session', 'error');
+        }
+    } catch (e) {
+        console.error('Error unpinning session:', e);
+        showToast('Error unpinning session', 'error');
+    }
+}
+
+// ============ QUICK PROMPTS ============
+function sendQuickPrompt(prompt) {
+    const input = document.getElementById('chat-input');
+    if (input) {
+        input.value = prompt;
+        sendChatMessageStream();
+    }
+}
