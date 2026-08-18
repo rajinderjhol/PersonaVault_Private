@@ -833,13 +833,253 @@ async def get_provider_stats(provider: str, user_id: int = Depends(require_admin
     """Return rate limit statistics for a given provider."""
     return await RateLimitService.get_stats(provider)
 
-# ============ HELPER FUNCTIONS ============
+# ============ INTELLIGENCE COMPRESSION ENDPOINTS ============
 
-_ollama_cache = {
-    "status": "unknown",
-    "last_check": 0,
-    "cache_ttl": 30
-}
+@router.post("/compression/compress")
+async def compress_intelligence(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Compress intelligence from a source."""
+    from app.services.intelligence_compressor import IntelligenceCompressor
+    
+    data = await request.json()
+    source_type = data.get("source_type")
+    source_data = data.get("data")
+    
+    if not source_type or not source_data:
+        raise HTTPException(status_code=400, detail="source_type and data required")
+    
+    compressor = IntelligenceCompressor()
+    result = await compressor.compress(source_type, source_data)
+    return result
+
+@router.get("/compression/stats")
+async def get_compression_stats(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get intelligence compression statistics."""
+    from app.services.intelligence_compressor import IntelligenceCompressor
+    
+    compressor = IntelligenceCompressor()
+    stats = await compressor.get_compression_stats()
+    return stats
+
+# ============ REINFORCEMENT ENDPOINTS ============
+
+@router.post("/reinforcement/reinforce")
+async def reinforce_pattern(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Reinforce a pattern based on outcome."""
+    from app.services.reinforcement_engine import ReinforcementEngine
+    from app.services.semantic_memory import SemanticMemory
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    
+    data = await request.json()
+    pattern_id = data.get("pattern_id")
+    outcome = data.get("outcome", "neutral")
+    confidence = data.get("confidence", 0.5)
+    
+    if not pattern_id:
+        raise HTTPException(status_code=400, detail="pattern_id required")
+    
+    repo = SQLSemanticPatternRepository(db)
+    semantic_memory = SemanticMemory(repo)
+    engine = ReinforcementEngine(semantic_memory)
+    result = await engine.reinforce_pattern(pattern_id, outcome, confidence)
+    return result
+
+@router.post("/reinforcement/decay")
+async def run_decay(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Run decay on unused patterns."""
+    from app.services.reinforcement_engine import ReinforcementEngine
+    from app.services.semantic_memory import SemanticMemory
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    
+    repo = SQLSemanticPatternRepository(db)
+    semantic_memory = SemanticMemory(repo)
+    engine = ReinforcementEngine(semantic_memory)
+    result = await engine.decay_unused_patterns()
+    return result
+
+@router.post("/reinforcement/batch")
+async def batch_reinforce(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Batch reinforce multiple patterns."""
+    from app.services.reinforcement_engine import ReinforcementEngine
+    from app.services.semantic_memory import SemanticMemory
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    
+    data = await request.json()
+    feedback_items = data.get("items", [])
+    
+    repo = SQLSemanticPatternRepository(db)
+    semantic_memory = SemanticMemory(repo)
+    engine = ReinforcementEngine(semantic_memory)
+    result = await engine.batch_reinforce(feedback_items)
+    return result
+
+@router.get("/reinforcement/stats")
+async def get_reinforcement_stats(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get reinforcement statistics."""
+    from app.services.reinforcement_engine import ReinforcementEngine
+    from app.services.semantic_memory import SemanticMemory
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    
+    repo = SQLSemanticPatternRepository(db)
+    semantic_memory = SemanticMemory(repo)
+    engine = ReinforcementEngine(semantic_memory)
+    stats = await engine.get_reinforcement_stats()
+    return stats
+
+
+
+@router.get("/tab/compression")
+async def get_compression_tab():
+    """Return the compression dashboard tab HTML."""
+    import os
+    from fastapi.responses import HTMLResponse
+    
+    templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+    html_path = os.path.join(templates_dir, "compression.html")
+    
+    if os.path.exists(html_path):
+        with open(html_path, "r") as f:
+            return HTMLResponse(content=f.read())
+    else:
+        return HTMLResponse(content="<h2 style='color: var(--accent);'>🧠 Intelligence Compression</h2><div class='card'><p style='color: #94a3b8;'>Loading...</p></div>")
+
+# ============ DOMAIN TRANSFER ENDPOINTS ============
+
+@router.post("/transfer/domain")
+async def transfer_patterns(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Transfer patterns from one domain to another."""
+    from app.services.domain_transfer import DomainTransfer
+    from app.services.semantic_memory import SemanticMemory
+    
+    data = await request.json()
+    source_domain = data.get("source_domain")
+    target_domain = data.get("target_domain")
+    limit = data.get("limit", 10)
+    
+    if not source_domain or not target_domain:
+        raise HTTPException(status_code=400, detail="source_domain and target_domain required")
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    semantic_memory = SemanticMemory(SQLSemanticPatternRepository(db))
+    transfer = DomainTransfer(semantic_memory)
+    result = await transfer.transfer_domain(source_domain, target_domain, limit)
+    return result
+
+@router.post("/transfer/all")
+async def transfer_all_domains(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Transfer patterns across all domain pairs."""
+    from app.services.domain_transfer import DomainTransfer
+    from app.services.semantic_memory import SemanticMemory
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    semantic_memory = SemanticMemory(SQLSemanticPatternRepository(db))
+    transfer = DomainTransfer(semantic_memory)
+    result = await transfer.transfer_all_domains()
+    return result
+
+@router.get("/transfer/stats")
+async def get_domain_stats(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get domain transfer statistics."""
+    from app.services.domain_transfer import DomainTransfer
+    from app.services.semantic_memory import SemanticMemory
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    semantic_memory = SemanticMemory(SQLSemanticPatternRepository(db))
+    transfer = DomainTransfer(semantic_memory)
+    stats = await transfer.get_domain_stats()
+    return stats
+
+
+# ============ COMPRESSION METRICS ENDPOINTS ============
+
+@router.get("/compression/metrics")
+async def get_compression_metrics(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get current compression metrics."""
+    from app.services.compression_metrics import CompressionMetrics
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    metrics = CompressionMetrics(db, SQLSemanticPatternRepository(db))
+    result = await metrics.get_current_metrics()
+    return result
+
+@router.get("/compression/timeline")
+async def get_compression_timeline(
+    days: int = 30,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get compression timeline for visualization."""
+    from app.services.compression_metrics import CompressionMetrics
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    metrics = CompressionMetrics(db, SQLSemanticPatternRepository(db))
+    result = await metrics.get_compression_timeline(days)
+    return result
+
+@router.get("/compression/breakdown")
+async def get_compression_breakdown(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get detailed compression breakdown."""
+    from app.services.compression_metrics import CompressionMetrics
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    metrics = CompressionMetrics(db, SQLSemanticPatternRepository(db))
+    result = await metrics.get_compression_breakdown()
+    return result
+
+@router.post("/compression/snapshot")
+async def take_compression_snapshot(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Take a snapshot of current compression metrics."""
+    from app.services.compression_metrics import CompressionMetrics
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    metrics = CompressionMetrics(db, SQLSemanticPatternRepository(db))
+    result = await metrics.take_snapshot()
+    return {
+        "timestamp": result.timestamp.isoformat(),
+        "compression_ratio": result.compression_ratio,
+        "patterns_count": result.patterns_count,
+        "active_patterns": result.active_patterns
+    }
+
 
 async def _check_ollama(request) -> bool:
     """Check Ollama service status with caching."""
@@ -1011,3 +1251,128 @@ async def _run_iot_simulation():
             await asyncio.sleep(5)
     except asyncio.CancelledError:
         pass
+
+@router.get("/decision/intelligence/stats")
+async def get_decision_intelligence_stats(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get decision intelligence stats with compression metrics."""
+    from app.models import BehaviourEvent, SemanticPattern
+    from app.services.compression_metrics import CompressionMetrics
+    from sqlalchemy import select, func, desc
+    
+    # Get total decisions (behaviour events)
+    total_stmt = select(func.count(BehaviourEvent.id))
+    total_result = await db.execute(total_stmt)
+    total_decisions = total_result.scalar_one() or 0
+    
+    # Get success rate
+    success_stmt = select(func.count(BehaviourEvent.id)).where(BehaviourEvent.outcome == "success")
+    success_result = await db.execute(success_stmt)
+    success_count = success_result.scalar_one() or 0
+    success_rate = (success_count / total_decisions * 100) if total_decisions > 0 else 0
+    
+    # Get average confidence
+    avg_stmt = select(func.avg(BehaviourEvent.confidence))
+    avg_result = await db.execute(avg_stmt)
+    avg_confidence = avg_result.scalar_one() or 0
+    
+    # Get patterns learned
+    patterns_stmt = select(func.count(SemanticPattern.id))
+    patterns_result = await db.execute(patterns_stmt)
+    patterns_learned = patterns_result.scalar_one() or 0
+    
+    # Get active patterns
+    active_stmt = select(func.count(SemanticPattern.id)).where(SemanticPattern.is_active == True)
+    active_result = await db.execute(active_stmt)
+    active_patterns = active_result.scalar_one() or 0
+    
+    # Get compression metrics
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    metrics = CompressionMetrics(db, SQLSemanticPatternRepository(db))
+    compression = await metrics.get_current_metrics()
+    
+    # Get recent decisions
+    recent_stmt = select(BehaviourEvent).order_by(desc(BehaviourEvent.timestamp)).limit(10)
+    recent_result = await db.execute(recent_stmt)
+    recent_decisions = recent_result.scalars().all()
+    
+    # Sample confidence history
+    confidence_history = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.78, 0.82, 0.85]
+    
+    return {
+        "total_decisions": total_decisions,
+        "success_rate": round(success_rate, 1),
+        "avg_confidence": round(avg_confidence * 100, 1),
+        "patterns_learned": patterns_learned,
+        "active_patterns": active_patterns,
+        "decisions": [
+            {
+                "type": d.event_type,
+                "query": d.reason[:100] + ("..." if len(d.reason) > 100 else ""),
+                "confidence": d.confidence,
+                "outcome": d.outcome,
+                "timestamp": d.timestamp.isoformat()
+            }
+            for d in recent_decisions
+        ],
+        "confidence_history": confidence_history,
+        "compression": {
+            "ratio": compression["compression_ratio"],
+            "target": 10000,
+            "progress": compression["progress_percent"],
+            "patterns_total": compression["patterns_count"]["total"],
+            "patterns_active": compression["patterns_count"]["active"]
+        }
+    }
+
+@router.post("/crystallization/run")
+async def run_crystallization(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Run crystallization on unconsolidated entries."""
+    from app.services.crystallization_service import CrystallizationService
+    from app.services.semantic_memory import SemanticMemory
+    
+    data = await request.json() if request.method == "POST" else {}
+    batch_size = data.get("batch_size", 10)
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    semantic_memory = SemanticMemory(SQLSemanticPatternRepository(db))
+    service = CrystallizationService(db, semantic_memory)
+    result = await service.run_crystallization(batch_size)
+    return result
+
+@router.get("/crystallization/stats")
+async def get_crystallization_stats(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get crystallization statistics."""
+    from app.services.crystallization_service import CrystallizationService
+    
+    service = CrystallizationService(db)
+    stats = await service.get_stats()
+    return stats
+
+@router.post("/documents/learn")
+async def learn_from_documents(
+    request: Request,
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Learn patterns from documents."""
+    from app.services.document_learning import DocumentLearning
+    from app.services.semantic_memory import SemanticMemory
+    
+    data = await request.json() if request.method == "POST" else {}
+    limit = data.get("limit", 50)
+    
+    from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+    semantic_memory = SemanticMemory(SQLSemanticPatternRepository(db))
+    learner = DocumentLearning(db, semantic_memory)
+    result = await learner.learn_from_all_documents(limit)
+    return result

@@ -40,6 +40,7 @@ class ExecutionStage:
             return (self.end_time - self.start_time).total_seconds() * 1000
         return 0
 
+
 class MultiAgentOrchestrator:
     """
     Parallel-optimized orchestration engine.
@@ -47,10 +48,15 @@ class MultiAgentOrchestrator:
     """
     
     def __init__(self, db_session, blackboard, agents: Dict[str, Any] = None):
+        from app.services.semantic_memory import SemanticMemory
+        from app.repositories.sqlalchemy.semantic_pattern import SQLSemanticPatternRepository
+        
         self.db = db_session
         self.blackboard = blackboard
         self.working_memory = WorkingMemory()
-        self.semantic_memory = SemanticMemory(db_session)
+        
+        repo = SQLSemanticPatternRepository(db_session)
+        self.semantic_memory = SemanticMemory(repo)
         
         # Agent status tracking
         self.active_tasks = 0
@@ -159,6 +165,9 @@ class MultiAgentOrchestrator:
             logger.info("⏱️ Stage 3: Starting generation")
             await self._broadcast_thought("Orchestrator", "🤖 Stage 3: Generation")
             
+            # Get instructions from plan if available
+            instructions = getattr(plan, 'instructions', [])
+            
             generation = await self.generator.generate(
                 query,
                 context=results if isinstance(results, list) else [],
@@ -166,7 +175,7 @@ class MultiAgentOrchestrator:
                 situational_awareness=situational_context if not isinstance(situational_context, Exception) else {},
                 persona=user_persona if not isinstance(user_persona, Exception) else None,
                 route=route if isinstance(route, dict) else {},
-                instructions=plan.instructions
+                instructions=instructions
             )
             
             response_text = generation.get("answer", "")
@@ -279,7 +288,7 @@ class MultiAgentOrchestrator:
             logger.info("Created HITL action request.")
         except Exception as e:
             logger.error(f"Failed to create HITL action: {e}")
-
+    
     async def _broadcast_agent_status(self):
         """Broadcast agent status via WebSocket."""
         try:
@@ -292,7 +301,7 @@ class MultiAgentOrchestrator:
             }))
         except Exception as e:
             logger.warning(f"Failed to broadcast agent status: {e}")
-
+    
     async def _broadcast_thought(self, agent: str, content: str):
         """Broadcast a thought from an agent."""
         try:
@@ -305,10 +314,6 @@ class MultiAgentOrchestrator:
             }))
         except Exception as e:
             logger.warning(f"Failed to broadcast thought: {e}")
-
-    # ============================================================
-    # HELPER METHODS
-    # ============================================================
     
     def _get_user_id(self, context: Dict[str, Any]) -> int:
         """Extract user_id from context."""
@@ -425,123 +430,23 @@ class MultiAgentOrchestrator:
             "learned": False,
             "error": str(error)
         }
-
-    # ============================================================
-    # HELPER METHODS
-    # ============================================================
     
-    def _get_user_id(self, context: Dict[str, Any]) -> int:
-        """Extract user_id from context."""
-        user_id = context.get("user_id")
-        if user_id is None:
-            return 1
-        if hasattr(user_id, 'id'):
-            return user_id.id
-        try:
-            return int(user_id)
-        except (ValueError, TypeError):
-            return 1
-    
-    async def _gather_awareness(self, user_id: int):
-        """Gather situational awareness."""
-        try:
-            async with self.db() as session:
-                return await self.awareness.get_contextual_awareness(user_id, session)
-        except Exception as e:
-            logger.error(f"Awareness gathering failed: {e}")
-            return {}
-    
-    async def _gather_persona(self, user_id: int):
-        """Gather user persona."""
-        try:
-            async with self.db() as session:
-                return await self.persona_profiler.get_or_create_profile(user_id, session=session)
-        except Exception as e:
-            logger.error(f"Persona gathering failed: {e}")
-            return None
-    
-    async def _reason(self, query: str, situational_context: Dict):
-        """Run reasoning agent."""
-        if not self.reasoner:
-            return None
-        try:
-            return await self.reasoner.analyze(query, {"situational_awareness": situational_context})
-        except Exception as e:
-            logger.error(f"Reasoning failed: {e}")
-            return None
-    
-    async def _validate(self, query: str, response: str, results: List):
-        """Run validation agent."""
-        if not self.validator:
-            return {"is_valid": True}
-        try:
-            return await self.validator.validate(query, results, response)
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return {"is_valid": True}
-    
-    async def _analyze_empathy(self, situational_context: Dict):
-        """Run empathy agent."""
-        if not self.empathy:
-            return {"tone": "neutral"}
-        try:
-            return await self.empathy.determine_tone(situational_context)
-        except Exception as e:
-            logger.error(f"Empathy analysis failed: {e}")
-            return {"tone": "neutral"}
-    
-    async def _store_episodic(self, query: str, plan, results, response_text, evaluation):
-        """Store episodic memory."""
-        try:
-            entry = EpisodicEntry(
-                query=query,
-                plan=plan,
-                results=results,
-                answer=response_text,
-                evaluation=evaluation,
-                timestamp=datetime.now(timezone.utc)
-            )
-            await self.episodic_memory.store(entry)
-        except Exception as e:
-            logger.error(f"Episodic storage failed: {e}")
-    
-    async def _graduate_patterns(self, query: str, evaluation):
-        """Graduate patterns to semantic memory."""
-        if not evaluation or evaluation.passed:
-            return
-        try:
-            await self.check_and_graduate_patterns(query, evaluation)
-        except Exception as e:
-            logger.error(f"Pattern graduation failed: {e}")
-    
-    async def _safe_gather(self, *tasks):
-        """Safely gather tasks without blocking."""
-        try:
-            await asyncio.gather(*tasks, return_exceptions=True)
-        except Exception as e:
-            logger.error(f"Background task error: {e}")
-    
-    def _build_thought_process(self) -> List[Dict]:
-        """Build thought process from execution stages."""
-        return [
-            {
-                "step": i + 1,
-                "label": stage.name,
-                "description": f"Completed in {stage.duration_ms:.0f}ms",
-                "status": "complete",
-                "duration": stage.duration_ms / 1000
-            }
-            for i, stage in enumerate(self._stages)
-        ]
-    
-    async def _handle_error(self, query: str, context: Dict, stage: str, error: Exception) -> Dict:
-        """Handle errors gracefully."""
-        logger.error(f"Error in {stage}: {error}")
-        return {
-            "answer": f"I encountered an error during {stage}. Please try again.",
-            "evaluation": {"passed": False, "feedback": f"Error in {stage}"},
-            "confidence": 0.0,
-            "reasoning": [],
-            "learned": False,
-            "error": str(error)
-        }
+    async def check_and_graduate_patterns(self, query: str, eval_res):
+        """Existing pattern graduation logic."""
+        if not eval_res.passed:
+            logger.info(f"Analyzing error pattern for graduation: {query[:50]}...")
+            recent_entries = await self.episodic_memory.get_recent(limit=10)
+            recent_failures = [
+                e for e in recent_entries
+                if not e.evaluation.passed and query.lower()[:15] in e.query.lower()
+            ]
+            if len(recent_failures) >= 2:
+                logger.info("Pattern graduated: Creating permanent constraint in Semantic Memory.")
+                await self._broadcast_thought("Semantic", "🎓 Graduating pattern to Layer 3 (Ice)!")
+                new_pattern = SemanticPattern(
+                    pattern_type="hallucination_prevention" if eval_res.faithfulness < 0.6 else "query_refinement",
+                    trigger=query,
+                    correction=eval_res.feedback or "Ensure factual grounding.",
+                    occurrence_count=len(recent_failures) + 1
+                )
+                await self.semantic_memory.add_pattern(new_pattern)
