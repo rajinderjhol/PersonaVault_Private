@@ -23,22 +23,25 @@ class SQLSemanticPatternRepository(SQLBaseRepository, ISemanticPatternRepository
     async def add(self, pattern: Any) -> SemanticPatternModel:
         session = await self._get_session()
         try:
-            data = pattern.dict() if hasattr(pattern, 'dict') else pattern
             db_pattern = SemanticPatternModel(
-                pattern_type=data.get('pattern_type'),
-                trigger=data.get('trigger'),
-                correction=data.get('correction'),
-                occurrence_count=data.get('occurrence_count', 1),
-                weight=data.get('weight', 0.7),
-                is_active=data.get('is_active', True)
+                pattern_type=getattr(pattern, 'pattern_type', 'general'),
+                trigger=getattr(pattern, 'trigger', ''),
+                correction=getattr(pattern, 'correction', ''),
+                occurrence_count=getattr(pattern, 'occurrence_count', 1),
+                weight=getattr(pattern, 'weight', 0.7),
+                is_active=getattr(pattern, 'is_active', True)
             )
+            # Handle extra_data if it exists
+            if hasattr(pattern, 'extra_data') and pattern.extra_data:
+                db_pattern.extra_data = pattern.extra_data
+            
             session.add(db_pattern)
             await session.commit()
             await session.refresh(db_pattern)
             return db_pattern
         except Exception as e:
             await session.rollback()
-            logger.error(f"SQLSemanticPatternRepository Add Error: {e}")
+            logger.error(f'SQLSemanticPatternRepository Add Error: {e}')
             raise
         finally:
             await self._close_session(session)

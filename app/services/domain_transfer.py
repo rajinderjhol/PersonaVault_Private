@@ -134,7 +134,7 @@ class DomainTransfer:
             Dict with transfer results
         """
         # Get patterns from source domain
-        patterns = await self.semantic_memory.get_all_patterns()
+        patterns = await self.semantic_memory.get_patterns()
         source_patterns = [
             p for p in patterns
             if p.pattern_type == source_domain or source_domain in (p.trigger or "")
@@ -237,7 +237,7 @@ class DomainTransfer:
         """
         Get domain transfer statistics.
         """
-        patterns = await self.semantic_memory.get_all_patterns()
+        patterns = await self.semantic_memory.get_patterns()
         
         # Count patterns by domain
         domain_counts = {}
