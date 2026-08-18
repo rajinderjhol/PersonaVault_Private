@@ -55,6 +55,9 @@ async def rbac_middleware(request: Request, call_next):
         session_id = request.cookies.get("session_id")
         if db and session_id:
             try:
+                # Log the session lookup
+                logger.info(f"RBAC: Searching for token: {session_id}")
+                
                 stmt = select(UserSession).where(
                     UserSession.session_token == session_id,
                     UserSession.is_active == True,
@@ -62,19 +65,25 @@ async def rbac_middleware(request: Request, call_next):
                 )
                 result = await db.execute(stmt)
                 session_record = result.scalars().first()
+                logger.info(f"RBAC: Session record found: {session_record is not None}")
+                
                 if session_record:
                     user_stmt = select(User).where(User.id == session_record.user_id)
                     user_result = await db.execute(user_stmt)
                     user = user_result.scalars().first()
-                    request.state.user = user # Populate request state
+                    request.state.user = user  # Populate request state
             except Exception as e:
                 logger.error(f"RBAC: Error validating session: {e}")
     
     # 3. Enforce Administrative Access
     is_admin_path = any(path.startswith(prefix) for prefix in ADMIN_PREFIXES)
+    if user:
+        logger.info(f"RBAC: Path: {path}, User role: {user.role}, Admin path: {is_admin_path}")
+    
     if is_admin_path:
         if not user or user.role != "admin":
-            logger.warning(f"RBAC DENIED: Unauthorized admin access attempt to {path} by {user.username if user else 'Anonymous'}")
+            username = user.username if user else 'Anonymous'
+            logger.warning(f"RBAC DENIED: Unauthorized admin access attempt to {path} by {username}")
             
             if path.startswith("/admin") and not path.startswith("/api"):
                 return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -89,14 +98,14 @@ async def rbac_middleware(request: Request, call_next):
             
     # 4. New Declarative Permission Check
     if user and not check_permission(user.role, path, org_id=getattr(user, "organization_id", None)):
-         logger.warning(f"RBAC DENIED: Unauthorized access to {path} by {user.username} with role {user.role}")
-         return JSONResponse(
-             status_code=status.HTTP_403_FORBIDDEN,
-             content={
-                 "detail": "Permission denied",
-                 "code": "PERM_002"
-             }
-         )
+        logger.warning(f"RBAC DENIED: Unauthorized access to {path} by {user.username} with role {user.role}")
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "detail": "Permission denied",
+                "code": "PERM_002"
+            }
+        )
 
     # 5. Global API Authentication Check
     if path.startswith("/api/v1") and not path.startswith("/api/v1/auth") and not user:

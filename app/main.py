@@ -86,6 +86,7 @@ from app.models import (
 )
 from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
+from app.services.rate_limit_service import rate_limit_service
 from app.services.task_service import init_scheduler
 
 # Password hashing for seeding
@@ -292,6 +293,7 @@ app.mount("/api/v1/admin/dashboard/static", StaticFiles(directory=static_dir), n
 
 # Attach global services to app state for specialized routers
 app.state.vector_service = vector_service
+app.state.rate_limit_service = rate_limit_service
 app.state.graph_service = graph_service
 app.state.iot_service = IoTService
 app.state.is_pulling_models = False
@@ -403,11 +405,13 @@ app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 # Modular Router Registration
 from app.api.v1.endpoints.chat_router import router as chat_router
 from app.api.v1.endpoints.chat_stream import router as chat_stream_router
+from app.api.v1.endpoints.chat_stream import router as chat_stream_router
 from app.api.v1.endpoints.chat_sessions import router as chat_sessions_router
 from app.api.v1.endpoints.intelligence import router as intelligence_router
 from app.api.v1.endpoints.mcp_tools import router as mcp_tools_router
 
 app.include_router(chat_router)
+app.include_router(chat_stream_router)
 app.include_router(chat_stream_router)
 app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
@@ -591,29 +595,60 @@ async def engine_health():
 
 # Detailed health check for administrators
 @app.get("/health/detailed")
-async def detailed_health(request: Request, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    # Use the existing admin_dashboard helper check for Ollama consistency
-    from app.api.v1.endpoints.admin_dashboard import _check_ollama
+async def detailed_health_check(
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Detailed health check for administrators."""
+    import time
     
-    active_sessions = (await db.execute(select(func.count(UserSession.id)))).scalar_one()
-    total_memories = (await db.execute(select(func.count(Memory.id)))).scalar_one()
-    pending_audits = (await db.execute(select(func.count(AuditLog.id)).where(AuditLog.status == "pending"))).scalar_one()
-    
-    return {
+    health_status = {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "services": {
-            "database": "connected",
-            "vector_store": "active",
-            "graph_store": "connected" if graph_service.driver else "disabled",
-            "ai_service": await _check_ollama(request)
-        },
-        "metrics": {
-            "active_sessions": active_sessions,
-            "total_memories": total_memories,
-            "pending_audits": pending_audits
-        }
+        "services": {},
+        "metrics": {}
     }
+    
+    # Check database
+    try:
+        await db.execute(text("SELECT 1"))
+        health_status["services"]["database"] = "connected"
+    except Exception as e:
+        health_status["services"]["database"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # Check Ollama
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get("http://localhost:11434/api/tags")
+            if response.status_code == 200:
+                health_status["services"]["ollama"] = "connected"
+            else:
+                health_status["services"]["ollama"] = f"error: {response.status_code}"
+    except Exception as e:
+        health_status["services"]["ollama"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # Check vector service
+    try:
+        if vector_service.index:
+            health_status["services"]["vector"] = f"healthy ({vector_service.index.ntotal} entries)"
+        else:
+            health_status["services"]["vector"] = "not initialized"
+    except Exception as e:
+        health_status["services"]["vector"] = f"error: {str(e)}"
+    
+    # Check WebSocket
+    try:
+        health_status["metrics"]["websocket_connections"] = len(manager.active_connections)
+    except:
+        pass
+    
+    # Get system metrics
+    health_status["metrics"]["active_sessions"] = (await db.execute(select(func.count(UserSession.id)))).scalar_one_or_zero() or 0
+    health_status["metrics"]["total_memories"] = (await db.execute(select(func.count(Memory.id)))).scalar_one_or_zero() or 0
+    
+    return health_status
 @app.get("/health")
 async def health_check():
     return {

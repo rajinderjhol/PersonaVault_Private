@@ -46,6 +46,7 @@ class RetrievalPlan(BaseModel):
     semantic_queries: List[str] = Field(default_factory=list)
     keyword_queries: List[str] = Field(default_factory=list)
     graph_traversals: List[str] = Field(default_factory=list)
+    instructions: List[str] = Field(default_factory=list)
     reasoning: str
     complexity_score: float = 0.5
 

@@ -28,6 +28,17 @@
         </div>
     </div>
 
+
+    <!-- Groq Rate Limits -->
+    <div class="card" style="margin-bottom:25px; border-top: 4px solid #f87171;">
+        <h3 style="margin-top:0; color:#f87171;">🚀 Groq Rate Limits</h3>
+        <div id="groq-stats-list" style="font-size: 13px; color: #94a3b8;">
+            <div class="metric-label">Checking limits...</div>
+        </div>
+        <button class="btn" style="background: #334155; margin-top: 10px;" onclick="fetchProviderStats("groq")">Refresh Stats</button>
+    </div>
+
+
     <div class="card" style="margin-bottom:25px; border-top: 4px solid #f472b6;">
         <h3 style="margin-top:0; color:#f472b6;">Configured Cloud Connections</h3>
         <div id="cloud-connections-list" style="display:flex; flex-direction:column; gap:12px;">
@@ -136,6 +147,38 @@ async function reloadApiKeys() {
 </script>
 
 <script>
+
+async function fetchProviderStats("groq") {
+    const list = document.getElementById("groq-stats-list");
+    if (!list) return;
+    
+    list.innerHTML = "<div class=\"metric-label\">Checking limits...</div>";
+    
+    try {
+        const res = await fetch("/api/v1/admin/dashboard/models/provider-stats/groq");
+        if (!res.ok) throw new Error("Failed to fetch Groq stats");
+        const data = await res.json();
+        
+        if (data.error) {
+            list.innerHTML = `<div style="color: #f87171;">⚠️ ${data.error}</div>`;
+        } else {
+            list.innerHTML = `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div><strong>Requests Left:</strong> ${data.remaining_requests || "N/A"}</div>
+                    <div><strong>Tokens Left:</strong> ${data.remaining_tokens || "N/A"}</div>
+                    <div><strong>Reset Requests:</strong> ${data.reset_requests || "N/A"}</div>
+                    <div><strong>Reset Tokens:</strong> ${data.reset_tokens || "N/A"}</div>
+                </div>
+                <div style="margin-top:8px; font-size: 11px;">Status: ${data.status}</div>
+            `;
+        }
+    } catch (e) {
+        console.error("Error fetching Groq stats:", e);
+        list.innerHTML = "<div style="color: #f87171;">Error loading stats</div>";
+    }
+}
+
+
 // ============ CLOUD CONNECTIONS MANAGEMENT ============
 
 async function fetchCloudConnections() {
@@ -275,6 +318,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const modelsTab = document.getElementById('models-tab');
     if (modelsTab) {
         setTimeout(fetchCloudConnections, 500);
+        setTimeout(fetchGroqStats, 500);
     }
 });
+</script>
+
+<script>
+// Override fetchCloudConnections to be more robust
+const originalFetchCloudConnections = window.fetchCloudConnections;
+window.fetchCloudConnections = async function() {
+    const list = document.getElementById('cloud-connections-list');
+    if (!list) {
+        console.warn('cloud-connections-list not found, retrying...');
+        setTimeout(() => {
+            if (typeof originalFetchCloudConnections === 'function') {
+                originalFetchCloudConnections();
+            }
+        }, 500);
+        return;
+    }
+    console.log('📋 Fetching cloud connections...');
+    return originalFetchCloudConnections.call(this);
+};
 </script>

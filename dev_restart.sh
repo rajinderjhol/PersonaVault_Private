@@ -158,6 +158,7 @@ conn.close()
 print('✅ Database tables verified.')
 "
 
+export DATABASE_URL="sqlite+aiosqlite:///./storage/memory_db/personavault.db"
 echo "🌱 Running comprehensive data seeding..."
 python3 scripts/seed_all_data.py
 python3 scripts/populate_test_data.py

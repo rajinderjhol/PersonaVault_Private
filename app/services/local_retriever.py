@@ -41,6 +41,10 @@ class LocalRetriever:
             # Score each memory
             scored = []
             for mem in memories:
+                # Skip chat episodes
+                if mem.title and ("Chat Episode" in mem.title or "Episode" in mem.title):
+                    continue
+                    
                 score = self._calculate_score(words, mem)
                 if score > 0:
                     scored.append({
@@ -64,6 +68,20 @@ class LocalRetriever:
         # Remove stopwords
         return [w for w in words if w not in self._stopwords and len(w) > 2]
     
+    def _get_variants(self, word: str) -> List[str]:
+        """Get word variants for matching (plural/singular)."""
+        variants = [word]
+        # Simple plural handling
+        if word.endswith('s') and not word.endswith('ss'):
+            variants.append(word[:-1])  # Remove 's'
+            if word.endswith('ies'):
+                variants.append(word[:-3] + 'y')
+        else:
+            variants.append(word + 's')  # Add 's'
+            if word.endswith('y'):
+                variants.append(word[:-1] + 'ies')
+        return list(set(variants))
+    
     def _calculate_score(self, query_words: List[str], memory: Memory) -> float:
         """Calculate relevance score for a memory."""
         content = (memory.content or "").lower()
@@ -73,16 +91,19 @@ class LocalRetriever:
         score = 0.0
         
         for word in query_words:
-            # Title matches are weighted higher
-            if word in title:
-                score += 3.0
-            # Tag matches are weighted high
-            if word in tags:
-                score += 2.0
-            # Content matches
-            if word in content:
-                # Count occurrences in content (up to 5)
-                count = min(content.count(word), 5)
-                score += count * 0.5
+            variants = self._get_variants(word)
+            
+            for variant in variants:
+                # Title matches are weighted higher
+                if variant in title:
+                    score += 3.0
+                # Tag matches are weighted high
+                if variant in tags:
+                    score += 2.0
+                # Content matches
+                if variant in content:
+                    # Count occurrences in content (up to 5)
+                    count = min(content.count(variant), 5)
+                    score += count * 0.5
         
         return score

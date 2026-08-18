@@ -149,3 +149,23 @@ PersonaVault has evolved into a full **Cognitive Decision Interface (CDI)** thro
 | **7** | Enterprise Polish | ✅ Complete |
 
 *Developed with high-speed "Leapfrog" methodology for next-generation organisational intelligence.*
+
+
+## 🆕 New Enhancements (2026)
+
+PersonaVault has been significantly upgraded with the following features:
+
+### ⚡ Streaming Responses
+Chat responses now stream token-by-token, providing a real-time experience instead of waiting for full generation.
+
+### 🎯 Decision Intelligence Dashboard
+A new dashboard providing full visibility into the system’s performance:
+- Track decision patterns and success rates
+- Visualize confidence trends over time
+- View pattern extraction feed
+
+### 🐝 Agent Swarm UI
+Real-time visualization of agent activity within the chat interface, providing transparency into the swarm’s reasoning process.
+
+### 🧠 Three-Layer Memory Integration
+Improved context-awareness by injecting relevant memories directly into the chat pipeline.

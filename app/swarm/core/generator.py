@@ -76,9 +76,10 @@ class GeneratorAgent:
         situational_awareness: Dict[str, Any] = None,
         persona: Any = None,
         response_tone: str = "neutral",
-        hitl_approved: bool = False
+        hitl_approved: bool = False,
+        instructions: List[str] = None
     ) -> Dict[str, Any]:
-        prompt = self._build_prompt(query, context, reasoning_insight, situational_awareness, persona)
+        prompt = self._build_prompt(query, context, reasoning_insight, situational_awareness, persona, instructions=instructions)
         
         result = None
         if route and "provider" in route:
@@ -240,10 +241,28 @@ class GeneratorAgent:
         reasoning_insight: Any = None,
         situational_awareness: Dict[str, Any] = None,
         response_tone: str = "neutral",
-        persona: Any = None
+        persona: Any = None,
+        instructions: List[str] = None
     ) -> str:
+        """Constructs a structured prompt for the LLM with memory context."""
         reasoning_str = f"\nREASONING INSIGHTS:\n{reasoning_insight}\n" if reasoning_insight else ""
         
+        # Format memory context
+        memory_context = ""
+        if context and len(context) > 0:
+            memory_context = "RELEVANT MEMORIES:\n"
+            for i, item in enumerate(context):
+                if hasattr(item, 'content'):
+                    content = item.content
+                elif isinstance(item, dict):
+                    content = item.get("content", "")
+                else:
+                    content = str(item)
+                
+                if content:
+                    memory_context += f"{i+1}. {content}\n"
+        
+        # Template (for document generation)
         template = ""
         if context and len(context) > 0:
             item = context[0]
@@ -258,6 +277,10 @@ class GeneratorAgent:
         writing_style = persona.writing_style if persona else "balanced"
         comm_style = persona.communication_style if persona else "casual"
         
+        instructions_str = ""
+        if instructions:
+            instructions_str = "\nAPPLIED PATTERNS / INSTRUCTIONS:\n" + "\n".join([f"- {i}" for i in instructions]) + "\n"
+
         prompt = f"""
 USER PERSONA:
 Writing Style: {writing_style}
@@ -267,14 +290,23 @@ Response Tone: {response_tone}
 CURRENT SITUATIONAL AWARENESS:
 {awareness_str}
 
-{reasoning_str}
+{memory_context}
 
-INSTRUCTIONS:
+{reasoning_str}
+{instructions_str}
+USER QUERY:
 {query}
+
 TEMPLATE:
 {template}
-Please generate a complete and professional document based on the instructions above.
-Replace any placeholders in the template with appropriate content.
+
+Instructions:
+- Use the RELEVANT MEMORIES as your primary source of truth.
+- If memories provide specific information, use it directly in your response.
+- If information is missing from memories, use your reasoning to provide general guidance.
+- Be concise, direct, and human-like in your response.
+- If the user asks about specific data and it's in the memories, reference it.
+- Format your response clearly with bullet points or numbered lists when helpful.
 """
         return prompt.strip()
     

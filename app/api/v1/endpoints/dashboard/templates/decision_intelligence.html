@@ -1,0 +1,140 @@
+
+<div id="decision-intelligence-tab">
+    <h2 style="color: var(--accent);">🎯 Decision Intelligence Dashboard</h2>
+    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">
+        Track decisions, outcomes, and how the system is improving over time.
+    </p>
+    
+    <!-- Key Metrics -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div class="card" style="border-top: 4px solid #38bdf8;">
+            <div class="metric-label">Total Decisions</div>
+            <div id="decision-total" class="metric-value" style="font-size: 28px; color: #38bdf8;">0</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #34d399;">
+            <div class="metric-label">Success Rate</div>
+            <div id="decision-success-rate" class="metric-value" style="font-size: 28px; color: #34d399;">0%</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #fbbf24;">
+            <div class="metric-label">Avg Confidence</div>
+            <div id="decision-avg-confidence" class="metric-value" style="font-size: 28px; color: #fbbf24;">0%</div>
+        </div>
+        <div class="card" style="border-top: 4px solid #a855f7;">
+            <div class="metric-label">Patterns Learned</div>
+            <div id="decision-patterns" class="metric-value" style="font-size: 28px; color: #a855f7;">0</div>
+        </div>
+    </div>
+    
+    <!-- Decision Timeline -->
+    <div class="card" style="border-top: 4px solid #38bdf8; margin-bottom: 20px;">
+        <h3 class="card-title">⏱️ Recent Decisions</h3>
+        <div id="decision-feed" style="max-height: 300px; overflow-y: auto;">
+            <div class="metric-label">No decisions recorded yet.</div>
+        </div>
+    </div>
+    
+    <!-- Confidence Trend -->
+    <div class="card" style="border-top: 4px solid #f472b6;">
+        <h3 class="card-title">📈 Confidence Trend</h3>
+        <canvas id="decision-confidence-chart" style="max-height: 200px; width: 100%;"></canvas>
+    </div>
+</div>
+
+<script>
+// ============ DECISION INTELLIGENCE DASHBOARD ============
+
+async function loadDecisionIntelligence() {
+    try {
+        const res = await fetch("/api/v1/decision/intelligence/stats");
+        if (!res.ok) throw new Error("Failed to fetch decision stats");
+        const data = await res.json();
+        
+        // Update metrics
+        document.getElementById("decision-total").textContent = data.total_decisions || 0;
+        document.getElementById("decision-success-rate").textContent = (data.success_rate || 0).toFixed(1) + "%";
+        document.getElementById("decision-avg-confidence").textContent = (data.avg_confidence || 0).toFixed(1) + "%";
+        document.getElementById("decision-patterns").textContent = data.patterns_learned || 0;
+        
+        // Update decision feed
+        const feed = document.getElementById("decision-feed");
+        if (data.decisions && data.decisions.length > 0) {
+            feed.innerHTML = data.decisions.map(function(d) {
+                let color = d.outcome === "success" ? "#34d399" : "#f87171";
+                return `<div style="padding: 10px; background: #020617; border-radius: 6px; margin-bottom: 6px; border-left: 3px solid ${color};">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #38bdf8; font-weight: 600;">${d.type || "Decision"}</span>
+                        <span style="color: #94a3b8; font-size: 11px;">${new Date(d.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8;">${d.query || "No query"}</div>
+                    <div style="display: flex; gap: 15px; margin-top: 4px;">
+                        <span style="font-size: 11px; color: ${d.confidence > 0.7 ? "#34d399" : "#fbbf24"};">Confidence: ${(d.confidence || 0).toFixed(2)}</span>
+                        <span style="font-size: 11px; color: ${d.outcome === "success" ? "#34d399" : "#f87171"};">Outcome: ${d.outcome || "unknown"}</span>
+                    </div>
+                </div>`;
+            }).join("");
+        } else {
+            feed.innerHTML = "<div class=\"metric-label\">No decisions recorded yet. Start chatting to build intelligence!</div>";
+        }
+        
+        // Render confidence chart
+        if (data.confidence_history && data.confidence_history.length > 0) {
+            renderDecisionChart(data.confidence_history);
+        }
+    } catch (e) {
+        console.error("Decision intelligence error:", e);
+        document.getElementById("decision-feed").innerHTML = "<div class=\"metric-label\" style=\"color: #f87171;\">Error loading decision data</div>";
+    }
+}
+
+function renderDecisionChart(history) {
+    const ctx = document.getElementById("decision-confidence-chart");
+    if (!ctx) return;
+    
+    if (window._decisionChart) {
+        window._decisionChart.destroy();
+    }
+    
+    window._decisionChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: history.map(function(_, i) { return (i + 1); }),
+            datasets: [{
+                label: "Confidence",
+                data: history,
+                borderColor: "#f472b6",
+                backgroundColor: "rgba(244, 114, 182, 0.1)",
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: history.map(function(c) { return c > 0.7 ? "#34d399" : c > 0.4 ? "#fbbf24" : "#f87171"; })
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { 
+                    labels: { color: "#94a3b8" }
+                }
+            },
+            scales: {
+                x: { 
+                    ticks: { color: "#64748b", maxTicksLimit: 10 },
+                    grid: { color: "#1e293b" }
+                },
+                y: {
+                    min: 0,
+                    max: 1,
+                    ticks: { 
+                        color: "#64748b", 
+                        callback: function(value) { return (value * 100) + "%"; } 
+                    },
+                    grid: { color: "#1e293b" }
+                }
+            }
+        }
+    });
+}
+
+// Load when tab is ready
+setTimeout(loadDecisionIntelligence, 500);
+</script>

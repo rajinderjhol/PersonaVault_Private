@@ -70,7 +70,8 @@
         </div>
         <div class="nav-group"><div class="nav-label">Cognitive Architecture</div>
             <div class="nav-item" data-tab="lattices" onclick="switchTab('lattices')">🕸️ Memory Lattices</div>
-            <div class="nav-item" data-tab="learning" onclick="switchTab('learning')">⚡ Graduation Logic</div>
+            <div class="nav-item" data-tab="learning" onclick="switchTab('learning')">⚙️ Learning Config</div>
+            <div class="nav-item" data-tab="learning-dashboard" onclick="switchTab('learning-dashboard')">📊 Learning Dashboard</div>
             <div class="nav-item" data-tab="agents" onclick="switchTab('agents')">🤖 Agent Orchestration</div>
         </div>
         <div class="nav-group"><div class="nav-label">Behaviour Packs</div>
@@ -159,8 +160,36 @@ async function loadTabContent(tabId) {
         if (!res.ok) throw new Error('Failed to load tab');
         var html = await res.text();
         container.innerHTML = html;
-        
-        // Initialize tab-specific functions
+            // Initialize tab-specific functions
+            
+            // Initialize tab-specific functions
+            if (tabId === 'models') {
+                console.log('📦 Models tab loaded, initializing...');
+                // Use requestAnimationFrame to ensure DOM is painted
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        if (typeof fetchInstalledModels === 'function') {
+                            fetchInstalledModels();
+                        }
+                        if (typeof fetchCloudConnections === 'function') {
+                            fetchCloudConnections();
+                        }
+                    }, 100);
+                });
+            }
+            
+            // Initialize tab-specific functions
+            if (tabId === 'models') {
+                console.log('📦 Models tab loaded, fetching installed models...');
+                // Wait for DOM to render then fetch models
+                setTimeout(() => {
+                    if (typeof fetchInstalledModels === 'function') {
+                        fetchInstalledModels();
+                    } else {
+                        console.warn('fetchInstalledModels not available');
+                    }
+                }, 100);
+            }
         if (tabId === 'chat') {
             // Chat functions are in chat.js - check if they loaded
             if (typeof loadSessions === 'function') {
@@ -233,6 +262,11 @@ function initWebSocket() {
     var url = protocol + '//' + window.location.host + '/api/v1/admin/dashboard/ws/' + clientId;
     
     var wsManager = new WebSocketManager({ url: url });
+    wsManager.onMessage(function(data) {
+        if (data.type === "agent_status") {
+            updateAgentStatusUI(data);
+        }
+    });
     window._wsManager = wsManager;
     
     wsManager.onConnect(function() {
@@ -387,3 +421,110 @@ console.log('✅ PersonaVault dashboard initialized');
 </script>
 </body>
 </html>
+
+
+<script>
+// ============ AGENT STATUS UI ============
+function updateAgentStatusUI(data) {
+    const container = document.getElementById("agent-status-container");
+    if (!container) return;
+    
+    // Show the container
+    container.style.display = "block";
+    
+    const agents = data.agent_activity || {};
+    const activeCount = Object.values(agents).filter(s => s === "active" || s === 1 || s === true).length;
+    
+    // Update active count
+    const countEl = document.getElementById("agent-active-count");
+    if (countEl) countEl.textContent = `${activeCount} active`;
+    
+    // Build agent grid
+    const grid = document.getElementById("agent-status-grid");
+    if (!grid) return;
+    
+    let html = "";
+    for (const [name, status] of Object.entries(agents)) {
+        const isActive = status === "active" || status === 1 || status === true;
+        const statusColor = isActive ? "#34d399" : "#64748b";
+        const bgColor = isActive ? "rgba(52, 211, 153, 0.1)" : "transparent";
+        const borderColor = isActive ? "#34d399" : "#1e293b";
+        
+        html += `
+            <div style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: ${bgColor}; border-radius: 4px; border: 1px solid ${borderColor};">
+                <span style="font-size: 10px; color: ${statusColor};">
+                    ${isActive ? "●" : "○"}
+                </span>
+                <span style="font-size: 11px; color: ${statusColor}; font-weight: ${isActive ? "600" : "400"};">
+                    ${name}
+                </span>
+                ${isActive ? `<span style="font-size: 8px; color: #34d399; margin-left: auto;">⚡</span>` : ``}
+            </div>
+        `;
+    }
+    grid.innerHTML = html || `<span style="color: #64748b; font-size: 11px;">No agents active</span>`;
+}
+
+</script>
+</body>
+</html>
+
+<script>
+// ============ FETCH INSTALLED MODELS ============
+async function fetchInstalledModels() {
+    const list = document.getElementById('models-list');
+    if (!list) {
+        console.warn('models-list element not found');
+        return;
+    }
+    
+    list.innerHTML = '<div class="metric-label">Loading models...</div>';
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/models', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!res.ok) {
+            if (res.status === 403) {
+                list.innerHTML = '<div class="metric-label" style="color: #f87171;">⚠️ Session expired. Please refresh the page.</div>';
+                return;
+            }
+            throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+        console.log('📦 Models API Response:', data);
+        
+        if (data.models && data.models.length > 0) {
+            const activeModel = data.active_model || 'tinydolphin';
+            list.innerHTML = data.models.map(m => {
+                const isActive = m.name === activeModel || m.name.split(':')[0] === activeModel.split(':')[0];
+                return `
+                    <div style="display:flex; justify-content:space-between; padding:12px; background:${isActive ? 'rgba(56, 189, 248, 0.05)' : '#020617'}; border-radius:8px; border:1px solid ${isActive ? '#38bdf8' : '#334155'}; align-items:center; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div>
+                                <div style="font-weight:700; color:${isActive ? '#38bdf8' : '#94a3b8'};">${m.name}</div>
+                                <div style="font-size:11px; color:#64748b;">Size: ${(m.size/(1024*1024*1024)).toFixed(2)} GB</div>
+                            </div>
+                            ${isActive ? '<span class="tag tag-success" style="font-size:9px; padding:2px 6px;">ACTIVE</span>' : ''}
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            ${!isActive ? `<button class="refresh-btn" style="color:#38bdf8;border-color:#38bdf8;padding:4px 10px;font-size:11px;" onclick="setActiveModel('${m.name}')">Use Model</button>` : ''}
+                            <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteModel('${m.name}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            list.innerHTML = '<div class="metric-label">No models installed. Pull a model to get started.</div>';
+        }
+    } catch (e) {
+        console.error('Error loading models:', e);
+        list.innerHTML = `<div class="metric-label" style="color:#f87171;">Error loading models: ${e.message}</div>`;
+    }
+}
+</script>

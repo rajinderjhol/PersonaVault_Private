@@ -56,8 +56,8 @@
 <!-- Input Area -->
 <div style="padding: 15px; border-top: 1px solid #1e293b; flex-shrink: 0;" class="input-area">
     <div style="display: flex; gap: 10px; align-items: center;">
-        <input type="text" id="chat-input" placeholder="Ask me anything..." class="input-field" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') sendChatMessage()">
-        <button class="btn" onclick="sendChatMessage()" id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+        <input type="text" id="chat-input" placeholder="Ask me anything..." class="input-field" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') sendChatMessageStream()">
+        <button class="btn" onclick="sendChatMessageStream()" id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
         <button class="btn" id="cancel-stream-btn" style="background: #7f1d1d; padding: 8px 12px; display: none;" onclick="cancelStreaming()">
             <i class="fas fa-stop"></i>
         </button>
@@ -360,44 +360,6 @@ function refreshSessions() { loadSessions(); }
 let currentEventSource = null;
 let streamingMessageId = null;
 
-async function sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const query = input?.value?.trim();
-    if (!query) return;
-    
-    // Close any existing stream
-    if (currentEventSource) {
-        currentEventSource.close();
-        currentEventSource = null;
-    }
-    
-    // Clear previous thought process
-    clearThoughtProcess();
-    
-    // Create session if none exists
-    if (!currentSessionId) {
-        const newId = await createNewSession();
-        if (!newId) {
-            showToast('Please wait for session to create', 'error');
-            return;
-        }
-    }
-    
-    const provider = document.getElementById('chat-provider-select')?.value || 'ollama';
-    
-    // Add user message
-    addMessage('user', query);
-    input.value = '';
-    
-    // Show thought process
-    const processContainer = document.getElementById('thought-process-container');
-    if (processContainer) processContainer.style.display = 'block';
-    const stepsContainer = document.getElementById('thought-steps');
-    if (stepsContainer) stepsContainer.style.display = 'block';
-    if(document.getElementById('thought-toggle-label')) document.getElementById('thought-toggle-label').textContent = 'Hide';
-    document.getElementById('cancel-stream-btn').style.display = 'block';
-    
-    // Create placeholder for AI response
     streamingMessageId = addMessage('ai', '...', true);
     let fullResponse = '';
     
@@ -550,3 +512,14 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Agent status will be rendered here -->
     </div>
 </div>
+
+    <!-- Agent Swarm Status -->
+    <div id="agent-status-container" style="display: none; margin-top: 8px; padding: 8px 12px; background: #020617; border-radius: 6px; border: 1px solid #1e293b;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="color: #94a3b8; font-size: 11px;">🐝 Agent Swarm</span>
+            <span id="agent-active-count" style="color: #34d399; font-size: 10px;">0 active</span>
+        </div>
+        <div id="agent-status-grid" style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <!-- Agent status will be rendered here -->
+        </div>
+    </div>

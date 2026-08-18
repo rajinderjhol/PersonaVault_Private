@@ -11,7 +11,7 @@ class RetrievalAgent:
     Executes the retrieval plan using hybrid search via repositories.
     """
     
-    def __init__(self, vector_repo: IVectorRepository, graph_repo: IGraphRepository):
+    def __init__(self, vector_repo: IVectorRepository = None, graph_repo: IGraphRepository = None):
         self.vector_repo = vector_repo
         self.graph_repo = graph_repo
         self.keyword_search = KeywordSearch()
@@ -19,17 +19,36 @@ class RetrievalAgent:
     async def hybrid_search(self, plan: RetrievalPlan, user_id: int) -> List[MemoryResult]:
         results = []
         
-        # 1. Semantic search (Vector Repository)
+        # 1. Use local retriever as primary (works without embeddings)
         if plan.semantic_queries:
+            try:
+                from app.services.local_retriever import LocalRetriever
+                retriever = LocalRetriever()
+                query = plan.semantic_queries[0]
+                logger.info(f"RetrievalAgent: Searching with local retriever: '{query}'")
+                local_results = await retriever.search(query, user_id, limit=20)
+                logger.info(f"RetrievalAgent: Local retriever found {len(local_results)} results")
+                for r in local_results:
+                    results.append(MemoryResult(
+                        content=r.get("content", ""),
+                        source="local",
+                        score=r.get("score", 0.5),
+                        metadata={"memory_id": r.get("id")}
+                    ))
+            except Exception as e:
+                logger.warning(f"Local retriever failed: {e}")
+        
+        # 2. Try semantic search (Vector Repository) as fallback
+        if plan.semantic_queries and not results:
             semantic_results = await self._semantic_search(plan.semantic_queries, user_id)
             results.extend(semantic_results)
         
-        # 2. Keyword search (BM25 - Still via service for now as it's an algorithm)
+        # 3. Keyword search (BM25)
         if plan.keyword_queries:
             keyword_results = await self._keyword_search(plan.keyword_queries, user_id)
             results.extend(keyword_results)
         
-        # 3. Graph traversal (Graph Repository)
+        # 4. Graph traversal (Graph Repository)
         if plan.graph_traversals:
             graph_results = await self._graph_search(plan.graph_traversals, user_id)
             results.extend(graph_results)
@@ -39,14 +58,15 @@ class RetrievalAgent:
     async def _semantic_search(self, queries: List[str], user_id: int) -> List[MemoryResult]:
         results = []
         for query in queries:
-            vectors = await self.vector_repo.search(query, user_id, limit=10)
-            for v in vectors:
-                results.append(MemoryResult(
-                    content=v.get("content", ""),
-                    source="semantic",
-                    score=v.get("score", 0.9),
-                    metadata={"memory_id": v.get("id")}
-                ))
+            if self.vector_repo:
+                vectors = await self.vector_repo.search(query, user_id, limit=10)
+                for v in vectors:
+                    results.append(MemoryResult(
+                        content=v.get("content", ""),
+                        source="semantic",
+                        score=v.get("score", 0.9),
+                        metadata={"memory_id": v.get("id")}
+                    ))
         return results
     
     async def _keyword_search(self, queries: List[str], user_id: int) -> List[MemoryResult]:
@@ -66,15 +86,16 @@ class RetrievalAgent:
     async def _graph_search(self, traversals: List[str], user_id: int) -> List[MemoryResult]:
         """Search using Graph traversal via repository."""
         results = []
-        for traversal in traversals:
-            nodes = self.graph_repo.execute_query(traversal)
-            for node in nodes:
-                results.append(MemoryResult(
-                    content=node.get("content", node.get("name", "")),
-                    source="graph",
-                    score=0.8,
-                    metadata={"memory_id": node.get("id")}
-                ))
+        if self.graph_repo:
+            for traversal in traversals:
+                nodes = self.graph_repo.execute_query(traversal)
+                for node in nodes:
+                    results.append(MemoryResult(
+                        content=node.get("content", node.get("name", "")),
+                        source="graph",
+                        score=0.8,
+                        metadata={"memory_id": node.get("id")}
+                    ))
         return results
     
     def _normalize_and_deduplicate(self, results: List[MemoryResult]) -> List[MemoryResult]:

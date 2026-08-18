@@ -479,3 +479,75 @@ function deleteCurrentSession() {
 }
 
 console.log('✅ chat.js loaded - Chat functions available globally');
+
+// ============ STREAMING CHAT ============
+async function sendChatMessageStream() {
+    console.log('📡 Streaming chat...');
+    
+    const input = document.getElementById('chat-input');
+    if (!input) {
+        console.warn('Chat input not found');
+        return;
+    }
+    
+    const query = input.value.trim();
+    if (!query) return;
+    
+    console.log('📤 Sending streaming chat message:', query);
+    
+    // Create session if none exists
+    if (!currentSessionId) {
+        const newId = await createNewSession();
+        if (!newId) {
+            showToast('Please wait for session to create', 'error');
+            return;
+        }
+    }
+    
+    const providerSelect = document.getElementById('chat-provider-select');
+    const provider = providerSelect ? providerSelect.value : 'ollama';
+    
+    // Add user message
+    addMessage('user', query);
+    input.value = '';
+    showTyping();
+    
+    try {
+        const res = await fetch('/api/v1/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: query,
+                provider: provider,
+                session_id: currentSessionId
+            })
+        });
+        
+        const data = await res.json();
+        hideTyping();
+        
+        if (res.ok && !data.error) {
+            let response = data.response || 'No response';
+            if (data.confidence) {
+                response += `\n\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
+            }
+            if (data.provider) {
+                response += `\n⚡ Provider: ${data.provider}`;
+            }
+            addMessage('ai', response);
+            
+            const statusEl = document.getElementById('primary-ai-provider-status-chat');
+            if (statusEl) {
+                statusEl.textContent = data.provider || provider;
+                statusEl.className = 'tag tag-success';
+            }
+            
+            loadSessions();
+        } else {
+            addMessage('ai', '❌ Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        hideTyping();
+        addMessage('ai', '❌ Network error: ' + e.message);
+    }
+}

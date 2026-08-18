@@ -1,107 +1,122 @@
+
 """
-Streaming Chat Endpoint with Server-Sent Events (SSE)
+Streaming Chat Endpoint
+Server-Sent Events for real-time token streaming
 """
+import asyncio
 import json
 import logging
-from typing import AsyncGenerator, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from typing import AsyncGenerator
+from fastapi import APIRouter, Depends, Request
+from sse_starlette.sse import EventSourceResponse
 
-from app.db.session import get_db
-from app.core.dependencies import get_current_user_id
-# Note: Assuming MultiAgentOrchestrator is available in app.swarm.orchestrator
-# If this import fails, we might need to adjust based on actual project structure.
-from app.swarm.orchestrator import MultiAgentOrchestrator
+from app.core.dependencies import get_current_user
+from app.models import User
 from app.services.intelligence_gateway import gateway
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat-stream"])
 
-class StreamChatRequest(BaseModel):
-    query: str
-    provider: Optional[str] = "ollama"
-    session_id: Optional[int] = None
-    stream: bool = True
-
 @router.post("/stream")
 async def stream_chat(
-    request: StreamChatRequest,
-    req: Request,
-    user_id: int = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
+    request: Request,
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Stream chat response with Server-Sent Events.
-    Sends tokens as they're generated with real-time thought process.
+    Stream chat response using Server-Sent Events.
+    Tokens are sent as they are generated.
     """
-    logger.info(f"📡 Streaming chat for user {user_id} with provider {request.provider}")
-    
-    # Get orchestrator from app state
-    orchestrator = req.app.state.orchestrator
-    
-    # Build provider chain
-    providers = ["ollama", "groq", "gemini"]
-    if request.provider in providers:
-        provider_chain = [request.provider] + [p for p in providers if p != request.provider]
-    else:
-        provider_chain = providers
-    
-    async def generate() -> AsyncGenerator[str, None]:
-        """Generate SSE stream with thoughts and tokens."""
-        try:
-            # Step 1: Planning
-            yield f"data: {json.dumps({'type': 'thought', 'step': 1, 'label': 'Planning', 'description': 'Analyzing query...', 'status': 'in-progress'})}\n\n"
-            
-            # Get context
-            context = {"user_id": user_id}
-            
-            # Step 2: Retrieval (parallel with planning)
-            yield f"data: {json.dumps({'type': 'thought', 'step': 2, 'label': 'Retrieval', 'description': 'Searching memories...', 'status': 'in-progress'})}\n\n"
-            
-            # Run the orchestrator pipeline
-            result = await orchestrator.run(request.query, context)
-            
-            # Step 3: Generation (streaming)
-            yield f"data: {json.dumps({'type': 'thought', 'step': 3, 'label': 'Generation', 'description': 'Synthesizing response...', 'status': 'in-progress'})}\n\n"
-            
-            # Get the response
-            full_response = result.get("answer", "No response generated")
-            confidence = result.get("confidence", 0.0)
-            evaluation = result.get("evaluation", {})
-            
-            # Stream tokens
-            words = full_response.split()
-            for i, word in enumerate(words):
-                # Send token
-                yield f"data: {json.dumps({'type': 'token', 'token': word + ' '})}\n\n"
+    try:
+        data = await request.json()
+        query = data.get("query", "")
+        provider = data.get("provider", "ollama")
+        
+        if not query:
+            return {"error": "Query is required"}
+        
+        logger.info(f"📡 Streaming chat for user {current_user.id} with provider {provider}")
+        
+        async def generate() -> AsyncGenerator[dict, None]:
+            """Generate SSE events for streaming."""
+            try:
+                # Send start event
+                yield {
+                    "event": "start",
+                    "data": json.dumps({
+                        "message": "Starting generation...",
+                        "provider": provider
+                    })
+                }
                 
-                # Send progress every 5 words
-                if i % 5 == 0:
-                    progress = min(100, int((i + 1) / len(words) * 100))
-                    yield f"data: {json.dumps({'type': 'progress', 'percent': progress})}\n\n"
-            
-            # Step 4: Evaluation
-            evaluation_desc = f'Quality: {evaluation.get("passed", True)}'
-            yield f'data: {json.dumps({"type": "thought", "step": 4, "label": "Evaluation", "description": evaluation_desc, "status": "complete"})}\n\n'
-            
-            # Step 5: Done
-            yield f'data: {json.dumps({"type": "done", "confidence": confidence, "provider": request.provider, "thought_process": result.get("thought_process", [])})}\n\n'
-            
-            logger.info(f"✅ Streaming complete for user {user_id}")
-            
-        except Exception as e:
-            logger.error(f"❌ Streaming error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
-    
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # Disable nginx buffering
-        }
-    )
+                # Use orchestrator for retrieval + generation
+                orchestrator = request.app.state.orchestrator
+                
+                # Run the orchestrator with streaming
+                result = await orchestrator.run(
+                    query, 
+                    {"user_id": current_user.id, "provider": provider}
+                )
+                
+                response_text = result.get("answer", "")
+                confidence = result.get("confidence", 0.0)
+                evaluation = result.get("evaluation", {})
+                thought_process = result.get("thought_process", [])
+                
+                # Send thought process as events
+                for step in thought_process:
+                    yield {
+                        "event": "thought",
+                        "data": json.dumps({
+                            "step": step.get("step", 0),
+                            "label": step.get("label", ""),
+                            "description": step.get("description", ""),
+                            "status": step.get("status", "complete"),
+                            "duration": step.get("duration", 0)
+                        })
+                    }
+                    await asyncio.sleep(0.05)
+                
+                # Stream tokens word by word
+                if response_text:
+                    words = response_text.split()
+                    total_words = len(words)
+                    
+                    for i, word in enumerate(words):
+                        progress = int((i + 1) / total_words * 100) if total_words > 0 else 0
+                        
+                        # Send token event
+                        yield {
+                            "event": "token",
+                            "data": json.dumps({
+                                "token": word + " ",
+                                "progress": progress
+                            })
+                        }
+                        # Small delay for visual effect
+                        await asyncio.sleep(0.015)
+                
+                # Send completion event
+                yield {
+                    "event": "complete",
+                    "data": json.dumps({
+                        "confidence": confidence,
+                        "evaluation": evaluation,
+                        "provider": provider,
+                        "total_tokens": len(response_text.split()),
+                        "total_time_ms": result.get("total_time_ms", 0)
+                    })
+                }
+                
+            except Exception as e:
+                logger.error(f"Streaming error: {e}", exc_info=True)
+                yield {
+                    "event": "error",
+                    "data": json.dumps({"error": str(e)})
+                }
+        
+        return EventSourceResponse(generate())
+        
+    except Exception as e:
+        logger.error(f"Stream endpoint error: {e}", exc_info=True)
+        return {"error": str(e)}

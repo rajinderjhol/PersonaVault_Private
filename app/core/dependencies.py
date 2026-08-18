@@ -37,6 +37,7 @@ async def get_current_user_role(request: Request):
 async def require_admin(request: Request):
     """Require admin role."""
     user = await get_current_user(request)
+    logger.info(f"DEP: User role: {user.role}, ROLE_ADMIN: {ROLE_ADMIN}")
     if user.role != ROLE_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
