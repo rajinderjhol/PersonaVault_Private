@@ -322,22 +322,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<script>
-// Override fetchCloudConnections to be more robust
-const originalFetchCloudConnections = window.fetchCloudConnections;
-window.fetchCloudConnections = async function() {
-    const list = document.getElementById('cloud-connections-list');
-    if (!list) {
-        console.warn('cloud-connections-list not found, retrying...');
-        setTimeout(() => {
-            if (typeof originalFetchCloudConnections === 'function') {
-                originalFetchCloudConnections();
-            }
-        }, 500);
-        return;
-    }
-    console.log('📋 Fetching cloud connections...');
-    return originalFetchCloudConnections.call(this);
-};
-</script>

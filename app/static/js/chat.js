@@ -2,10 +2,94 @@
 // CHAT FUNCTIONS - Complete chat UI
 // ============================================================
 
+// ============ FETCH HELPER ============
+function getFetchOptions(method = 'GET', body = null) {
+    const options = {
+        method: method,
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
+    return options;
+}
+
 let currentSessionId = null;
 let thoughtSteps = [];
 let thoughtTimer = null;
 let thoughtStartTime = null;
+
+// ============ THOUGHT PROCESS TOGGLE ============
+function toggleThoughtProcess() {
+    let container = document.getElementById('thought-process-container');
+    let toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
+    
+    // If no container found, create one
+    if (!container) {
+        const chatContainer = document.getElementById('chat-container') || document.body;
+        container = document.createElement('div');
+        container.id = 'thought-process-container';
+        container.style.cssText = 'margin-top: 10px; display: block;';
+        
+        const thoughtProcess = document.createElement('div');
+        thoughtProcess.id = 'thought-process';
+        thoughtProcess.style.cssText = 'max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 12px; color: #94a3b8;';
+        container.appendChild(thoughtProcess);
+        
+        const statusEl = document.createElement('div');
+        statusEl.id = 'thought-status';
+        statusEl.style.cssText = 'font-size: 11px; color: #64748b; margin-top: 4px;';
+        container.appendChild(statusEl);
+        
+        // Insert after chat messages
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages && chatMessages.parentElement) {
+            chatMessages.parentElement.insertBefore(container, chatMessages.nextSibling);
+        } else {
+            chatContainer.appendChild(container);
+        }
+        
+        // If toggle button doesn't exist, create one
+        if (!toggleBtn) {
+            toggleBtn = document.createElement('button');
+            toggleBtn.textContent = '▼ Hide Thought Process';
+            toggleBtn.setAttribute('onclick', 'toggleThoughtProcess()');
+            toggleBtn.style.cssText = 'margin: 5px 0; padding: 4px 12px; background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 12px;';
+            container.parentElement.insertBefore(toggleBtn, container);
+        }
+        return;
+    }
+    
+    // Ensure the toggle button is outside the container
+    if (toggleBtn && toggleBtn.parentElement === container) {
+        const parent = container.parentElement;
+        if (parent) {
+            const newBtn = document.createElement('button');
+            newBtn.textContent = container.style.display === 'none' ? '▶ Show Thought Process' : '▼ Hide Thought Process';
+            newBtn.setAttribute('onclick', 'toggleThoughtProcess()');
+            newBtn.style.cssText = 'margin: 5px 0; padding: 4px 12px; background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 12px;';
+            parent.insertBefore(newBtn, container);
+            toggleBtn.remove();
+            toggleBtn = newBtn;
+        }
+    }
+    
+    // Toggle the container visibility
+    if (container.style.display === 'none' || container.style.display === '') {
+        container.style.display = 'block';
+        if (toggleBtn) {
+            toggleBtn.textContent = '▼ Hide Thought Process';
+        }
+    } else {
+        container.style.display = 'none';
+        if (toggleBtn) {
+            toggleBtn.textContent = '▶ Show Thought Process';
+        }
+    }
+}
 
 // ============ SESSIONS ============
 async function loadSessions() {
@@ -13,7 +97,7 @@ async function loadSessions() {
     if (!list) return;
     
     try {
-        const res = await fetch('/api/v1/chat/sessions');
+        const res = await fetch('/api/v1/chat/sessions', getFetchOptions());
         if (!res.ok) throw new Error('Failed to load sessions');
         const sessions = await res.json();
         
@@ -48,13 +132,12 @@ async function loadSessions() {
     }
 }
 
+// ============ CREATE SESSION ============
 async function createNewSession() {
     try {
-        const res = await fetch('/api/v1/chat/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: 'New Chat' })
-        });
+        const res = await fetch('/api/v1/chat/sessions', 
+            getFetchOptions('POST', { title: 'New Chat' })
+        );
         const data = await res.json();
         if (res.ok) {
             currentSessionId = data.id;
@@ -77,10 +160,11 @@ async function createNewSession() {
     }
 }
 
+// ============ LOAD SESSION ============
 async function loadSession(sessionId) {
     currentSessionId = sessionId;
     try {
-        const res = await fetch('/api/v1/chat/sessions/' + sessionId + '/messages');
+        const res = await fetch('/api/v1/chat/sessions/' + sessionId + '/messages', getFetchOptions());
         if (!res.ok) throw new Error('Failed to load messages');
         const data = await res.json();
         
@@ -114,237 +198,103 @@ async function loadSession(sessionId) {
             container.scrollTop = container.scrollHeight;
         }
         await loadSessions();
-        clearThoughtProcess();
     } catch (e) {
         console.error('Error loading session:', e);
-        showToast('Error loading messages', 'error');
+        showToast('Error loading session', 'error');
     }
 }
 
-function refreshSessions() { loadSessions(); }
-
-// ============ THOUGHT PROCESS ============
-function toggleThoughtProcess() {
-    const container = document.getElementById('thought-steps');
-    const label = document.getElementById('thought-toggle-label');
-    if (!container) return;
-    
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        if (label) label.textContent = 'Hide';
-    } else {
-        container.style.display = 'none';
-        if (label) label.textContent = 'Show';
-    }
-}
-
-function addThoughtStep(step) {
-    const container = document.getElementById('thought-steps-container');
-    if (!container) return;
-    
-    // Remove placeholder if present
-    if (container.children.length === 1 && container.children[0].textContent.includes('No thought steps')) {
-        container.innerHTML = '';
-    }
-    
-    // Show the thought process container
-    const processContainer = document.getElementById('thought-process-container');
-    if (processContainer) processContainer.style.display = 'block';
-    
-    const stepsContainer = document.getElementById('thought-steps');
-    if (stepsContainer) stepsContainer.style.display = 'block';
-    
-    const label = document.getElementById('thought-toggle-label');
-    if (label) label.textContent = 'Hide';
-    
-    const div = document.createElement('div');
-    div.className = `thought-step ${step.status || 'pending'}`;
-    div.id = `thought-step-${step.step}`;
-    
-    const statusIcons = {
-        'in-progress': '⏳',
-        'complete': '✅',
-        'failed': '❌',
-        'pending': '⏸️'
-    };
-    
-    div.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #1e293b;">
-            <div>
-                <span style="font-weight: 600; color: #38bdf8;">
-                    ${statusIcons[step.status] || '⏳'} Step ${step.step}: ${step.label}
-                </span>
-                <span style="color: #64748b; font-size: 11px; margin-left: 8px;">
-                    ${step.duration ? step.duration.toFixed(2) + 's' : ''}
-                </span>
-            </div>
-            <span style="font-size: 10px; color: ${step.status === 'in-progress' ? '#fbbf24' : step.status === 'complete' ? '#34d399' : '#f87171'};">
-                ${step.status || 'pending'}
-            </span>
-        </div>
-        <div style="color: #94a3b8; font-size: 12px; padding-left: 20px; padding-bottom: 4px;">
-            ${step.description || ''}
-        </div>
-        ${step.data ? `<div style="color: #64748b; font-size: 10px; padding-left: 20px;">📊 ${JSON.stringify(step.data)}</div>` : ''}
-        ${step.error ? `<div style="color: #f87171; font-size: 11px; padding-left: 20px;">❌ ${step.error}</div>` : ''}
-    `;
-    
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-
-function updateThoughtStep(stepIndex, status, data) {
-    const el = document.getElementById(`thought-step-${stepIndex}`);
-    if (!el) return;
-    
-    el.className = `thought-step ${status}`;
-    const statusEl = el.querySelector('span:last-child');
-    if (statusEl) {
-        statusEl.textContent = status;
-        statusEl.style.color = status === 'in-progress' ? '#fbbf24' : status === 'complete' ? '#34d399' : '#f87171';
-    }
-}
-
-function startThoughtTimer() {
-    const timerEl = document.getElementById('thought-timer');
-    if (!timerEl) return;
-    thoughtStartTime = Date.now();
-    if (thoughtTimer) clearInterval(thoughtTimer);
-    thoughtTimer = setInterval(() => {
-        const elapsed = (Date.now() - thoughtStartTime) / 1000;
-        timerEl.textContent = `⏱️ ${elapsed.toFixed(1)}s`;
-    }, 100);
-}
-
-function stopThoughtTimer() {
-    if (thoughtTimer) {
-        clearInterval(thoughtTimer);
-        thoughtTimer = null;
-    }
-}
-
-function clearThoughtProcess() {
-    const container = document.getElementById('thought-steps-container');
-    if (container) {
-        container.innerHTML = '<div style="color: #64748b; font-style: italic; padding: 10px;">No thought steps yet. Send a message to see the AI\'s reasoning.</div>';
-    }
-    stopThoughtTimer();
-    const timerEl = document.getElementById('thought-timer');
-    if (timerEl) timerEl.textContent = '';
-    
-    // Hide the thought process container
-    const processContainer = document.getElementById('thought-process-container');
-    if (processContainer) processContainer.style.display = 'none';
-}
-
-// ============ PROVIDER SYNC ============
-async function syncChatProviderWithDashboard() {
-    try {
-        const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
-        if (!res.ok) throw new Error('Failed to fetch provider');
-        const data = await res.json();
-        const provider = data.primary_provider || 'ollama';
-        
-        const chatSelect = document.getElementById('chat-provider-select');
-        if (chatSelect) {
-            let found = false;
-            for (let option of chatSelect.options) {
-                if (option.value.toLowerCase() === provider.toLowerCase()) {
-                    chatSelect.value = option.value;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found && provider !== 'ollama') {
-                const newOption = document.createElement('option');
-                newOption.value = provider.toLowerCase();
-                newOption.textContent = `☁️ ${provider} (Cloud)`;
-                chatSelect.appendChild(newOption);
-                chatSelect.value = provider.toLowerCase();
-            }
-            const statusEl = document.getElementById('primary-ai-provider-status-chat');
-            if (statusEl) {
-                statusEl.textContent = provider;
-                statusEl.className = 'tag tag-info';
-            }
-        }
-        return provider;
-    } catch (e) {
-        console.error('Error syncing provider:', e);
-        const chatSelect = document.getElementById('chat-provider-select');
-        if (chatSelect) chatSelect.value = 'ollama';
-        return 'ollama';
-    }
-}
-
-// ============ SEND CHAT MESSAGE ============
-async function sendChatMessage() {
+// ============ SEND MESSAGE ============
+async function sendMessage() {
     const input = document.getElementById('chat-input');
     if (!input) return;
-    
     const query = input.value.trim();
     if (!query) return;
-    
-    console.log('📤 Sending chat message:', query);
-    
-    // Clear previous thought process
-    clearThoughtProcess();
-    
-    // Create session if none exists
-    if (!currentSessionId) {
-        const newId = await createNewSession();
-        if (!newId) {
-            showToast('Please wait for session to create', 'error');
+    input.value = '';
+    await sendChatMessage(query);
+}
+
+// ============ STREAMING CHAT (for dashboard) ============
+async function sendChatMessageStream() {
+    const input = document.getElementById('chat-input');
+    if (!input) {
+        const altInput = document.getElementById('message-input') || document.getElementById('input-message');
+        if (altInput) {
+            const message = altInput.value.trim();
+            if (!message) return;
+            altInput.value = '';
+            await sendChatMessage(message);
             return;
         }
+        console.error('Chat input not found');
+        return;
     }
     
-    const providerSelect = document.getElementById('chat-provider-select');
-    const provider = providerSelect ? providerSelect.value : 'ollama';
-    
-    // Add user message
-    addMessage('user', query);
+    const message = input.value.trim();
+    if (!message) return;
     input.value = '';
+    await sendChatMessage(message);
+}
+
+// ============ CORE CHAT FUNCTION ============
+async function sendChatMessage(query) {
+    const providerSelect = document.getElementById('chat-provider');
+    const provider = providerSelect ? providerSelect.value : 'groq';
     
-    // Show thought process
-    startThoughtTimer();
+    const container = document.getElementById('chat-messages');
+    if (container) {
+        container.innerHTML += `
+            <div class="message user" 
+                 style="padding: 12px; background: #1e293b; border: 1px solid #38bdf8; 
+                        border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
+                        margin-left: auto; white-space: pre-wrap; word-wrap: break-word;">
+                ${query}
+            </div>
+        `;
+        container.scrollTop = container.scrollHeight;
+    }
     
-    // Add initial thought step
-    addThoughtStep({
-        step: 1,
-        label: 'Understanding',
-        description: `Processing query: "${query}"`,
-        status: 'in-progress',
-        duration: 0
-    });
-    
-    // Show typing indicator
     showTyping();
+    startThoughtTimer();
+    addThoughtStep({ step: 1, label: 'Initializing', description: 'Processing your request...', status: 'active' });
     
     try {
-        const res = await fetch('/api/v1/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        const res = await fetch('/api/v1/chat', 
+            getFetchOptions('POST', {
                 query: query,
                 provider: provider,
                 session_id: currentSessionId,
                 track_thoughts: true
             })
-        });
+        );
+        
+        if (res.status === 401) {
+            hideTyping();
+            stopThoughtTimer();
+            showToast('Session expired. Please refresh the page.', 'error');
+            if (container) {
+                container.innerHTML += `
+                    <div class="message ai" 
+                         style="padding: 12px; background: #1a0f0f; border: 1px solid #f87171; 
+                                border-radius: 8px; margin-bottom: 10px; max-width: 85%;">
+                        ⚠️ Session expired. Please refresh the page to continue.
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        if (!res.ok) throw new Error('Failed to send message');
         
         const data = await res.json();
         hideTyping();
         stopThoughtTimer();
         
-        // Display thought process from response
         if (data.thought_process && data.thought_process.length > 0) {
-            // Update the first step
             const firstStep = data.thought_process[0];
             if (firstStep) {
                 updateThoughtStep(1, firstStep.status || 'complete', firstStep.data);
             }
-            // Add remaining steps
             for (let i = 1; i < data.thought_process.length; i++) {
                 const step = data.thought_process[i];
                 addThoughtStep({
@@ -353,101 +303,63 @@ async function sendChatMessage() {
                     description: step.description || '',
                     status: step.status || 'complete',
                     duration: step.duration || 0,
-                    data: step.data
+                    data: step.data || {}
                 });
             }
+            setTimeout(() => {
+                completeAllThoughtSteps();
+            }, 500);
         } else {
-            updateThoughtStep(1, 'complete', {});
+            setTimeout(() => {
+                completeAllThoughtSteps();
+            }, 300);
         }
         
-        if (res.ok && !data.error) {
-            // Show swarm agents
-            if (data.agent_status) {
-                showSwarmActivity(data.agent_status);
-            }
-            let response = data.response || 'No response';
-            if (data.confidence) {
-                response += `\n\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
-            }
-            if (data.provider) {
-                response += `\n⚡ Provider: ${data.provider}`;
-            }
-            addMessage('ai', response);
-            
-            const statusEl = document.getElementById('primary-ai-provider-status-chat');
-            if (statusEl) {
-                statusEl.textContent = data.provider || provider;
-                statusEl.className = 'tag tag-success';
-            }
-            
-            loadSessions();
-        } else {
-            addMessage('ai', '❌ Error: ' + (data.error || 'Unknown error'));
+        if (container && data.response) {
+            container.innerHTML += `
+                <div class="message ai" 
+                     style="padding: 12px; background: #0f172a; border: 1px solid #334155; 
+                            border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
+                            white-space: pre-wrap; word-wrap: break-word;">
+                    ${data.response}
+                    ${data.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${data.provider}</div>` : ''}
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
         }
+        
+        if (data.session_id) {
+            currentSessionId = data.session_id;
+            const idEl = document.getElementById('session-id-display');
+            if (idEl) idEl.textContent = '#' + data.session_id;
+            await loadSessions();
+        }
+        
     } catch (e) {
+        console.error('Chat error:', e);
         hideTyping();
         stopThoughtTimer();
-        addMessage('ai', '❌ Network error: ' + e.message);
-        updateThoughtStep(1, 'failed', { error: e.message });
+        if (container) {
+            container.innerHTML += `
+                <div class="message ai" 
+                     style="padding: 12px; background: #1a0f0f; border: 1px solid #f87171; 
+                            border-radius: 8px; margin-bottom: 10px; max-width: 85%;">
+                    ❌ Error: ${e.message || 'Failed to send message'}
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+        }
+        showToast('Error sending message', 'error');
     }
 }
 
-// ============ UI HELPERS ============
-function addMessage(type, content, isLoading = false) {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
+// ============ RENAME SESSION ============
+function renameSession(newTitle) {
+    if (!currentSessionId || !newTitle) return;
     
-    const div = document.createElement('div');
-    const id = isLoading ? 'loading-' + Date.now() : '';
-    if (id) div.id = id;
-    
-    div.className = `message ${type}`;
-    div.style.cssText = `
-        padding: 12px;
-        background: ${type === 'user' ? '#1e293b' : '#0f172a'};
-        border: 1px solid ${type === 'user' ? '#38bdf8' : '#334155'};
-        border-radius: 8px;
-        margin-bottom: 10px;
-        max-width: 85%;
-        ${type === 'user' ? 'margin-left: auto;' : ''}
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    `;
-    
-    div.textContent = content;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-    
-    return id;
-}
-
-function showTyping() {
-    const indicator = document.getElementById('typing-indicator');
-    if (indicator) indicator.style.display = 'block';
-}
-
-function hideTyping() {
-    const indicator = document.getElementById('typing-indicator');
-    if (indicator) indicator.style.display = 'none';
-}
-
-function clearChat() {
-    const container = document.getElementById('chat-messages');
-    if (container) {
-        container.innerHTML = '<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Chat cleared. Ask me anything!</div>';
-    }
-    clearThoughtProcess();
-}
-
-function renameSession() {
-    if (!currentSessionId) return;
-    const newTitle = prompt('Enter new session name:', document.getElementById('current-session-title')?.textContent || 'Chat');
-    if (!newTitle) return;
-    fetch('/api/v1/chat/sessions/' + currentSessionId, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle })
-    })
+    fetch('/api/v1/chat/sessions/' + currentSessionId, 
+        getFetchOptions('PATCH', { title: newTitle })
+    )
     .then(res => res.json())
     .then(() => {
         const titleEl = document.getElementById('current-session-title');
@@ -458,10 +370,14 @@ function renameSession() {
     .catch(() => showToast('Error renaming session', 'error'));
 }
 
+// ============ DELETE SESSION ============
 function deleteCurrentSession() {
     if (!currentSessionId) return;
     if (!confirm('Delete this session?')) return;
-    fetch('/api/v1/chat/sessions/' + currentSessionId, { method: 'DELETE' })
+    
+    fetch('/api/v1/chat/sessions/' + currentSessionId, 
+        getFetchOptions('DELETE')
+    )
     .then(() => {
         currentSessionId = null;
         const titleEl = document.getElementById('current-session-title');
@@ -478,76 +394,290 @@ function deleteCurrentSession() {
     .catch(() => showToast('Error deleting session', 'error'));
 }
 
-console.log('✅ chat.js loaded - Chat functions available globally');
+// ============ THOUGHT PROCESS UI ============
+function startThoughtTimer() {
+    thoughtStartTime = Date.now();
+    if (thoughtTimer) clearInterval(thoughtTimer);
+    thoughtTimer = setInterval(() => {
+        const elapsed = Math.round((Date.now() - thoughtStartTime) / 1000);
+        const statusEl = document.getElementById('thought-status');
+        if (statusEl) {
+            statusEl.textContent = `⏳ ${elapsed}s`;
+        }
+    }, 1000);
+}
 
-// ============ STREAMING CHAT ============
-async function sendChatMessageStream() {
-    console.log('📡 Streaming chat...');
-    
-    const input = document.getElementById('chat-input');
-    if (!input) {
-        console.warn('Chat input not found');
-        return;
+function stopThoughtTimer() {
+    if (thoughtTimer) {
+        clearInterval(thoughtTimer);
+        thoughtTimer = null;
     }
-    
-    const query = input.value.trim();
-    if (!query) return;
-    
-    console.log('📤 Sending streaming chat message:', query);
-    
-    // Create session if none exists
-    if (!currentSessionId) {
-        const newId = await createNewSession();
-        if (!newId) {
-            showToast('Please wait for session to create', 'error');
-            return;
-        }
-    }
-    
-    const providerSelect = document.getElementById('chat-provider-select');
-    const provider = providerSelect ? providerSelect.value : 'ollama';
-    
-    // Add user message
-    addMessage('user', query);
-    input.value = '';
-    showTyping();
-    
-    try {
-        const res = await fetch('/api/v1/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                query: query,
-                provider: provider,
-                session_id: currentSessionId
-            })
-        });
-        
-        const data = await res.json();
-        hideTyping();
-        
-        if (res.ok && !data.error) {
-            let response = data.response || 'No response';
-            if (data.confidence) {
-                response += `\n\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
-            }
-            if (data.provider) {
-                response += `\n⚡ Provider: ${data.provider}`;
-            }
-            addMessage('ai', response);
-            
-            const statusEl = document.getElementById('primary-ai-provider-status-chat');
-            if (statusEl) {
-                statusEl.textContent = data.provider || provider;
-                statusEl.className = 'tag tag-success';
-            }
-            
-            loadSessions();
-        } else {
-            addMessage('ai', '❌ Error: ' + (data.error || 'Unknown error'));
-        }
-    } catch (e) {
-        hideTyping();
-        addMessage('ai', '❌ Network error: ' + e.message);
+    const statusEl = document.getElementById('thought-status');
+    if (statusEl) {
+        const elapsed = Math.round((Date.now() - thoughtStartTime) / 1000);
+        statusEl.textContent = `✅ ${elapsed}s`;
     }
 }
+
+function addThoughtStep(step) {
+    // Ensure the thought process container exists
+    let container = document.getElementById('thought-process');
+    if (!container) {
+        // Create the container
+        let parentContainer = document.getElementById('thought-process-container');
+        if (!parentContainer) {
+            // Create the parent container too
+            const chatContainer = document.getElementById('chat-container') || document.body;
+            parentContainer = document.createElement('div');
+            parentContainer.id = 'thought-process-container';
+            parentContainer.style.cssText = 'margin-top: 10px; display: block;';
+            
+            container = document.createElement('div');
+            container.id = 'thought-process';
+            container.style.cssText = 'max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 12px; color: #94a3b8;';
+            parentContainer.appendChild(container);
+            
+            const statusEl = document.createElement('div');
+            statusEl.id = 'thought-status';
+            statusEl.style.cssText = 'font-size: 11px; color: #64748b; margin-top: 4px;';
+            parentContainer.appendChild(statusEl);
+            
+            // Insert after chat messages
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages && chatMessages.parentElement) {
+                chatMessages.parentElement.insertBefore(parentContainer, chatMessages.nextSibling);
+            } else {
+                chatContainer.appendChild(parentContainer);
+            }
+            
+            // Create toggle button if it doesn't exist
+            if (!document.querySelector('[onclick="toggleThoughtProcess()"]')) {
+                const toggleBtn = document.createElement('button');
+                toggleBtn.textContent = '▼ Hide Thought Process';
+                toggleBtn.setAttribute('onclick', 'toggleThoughtProcess()');
+                toggleBtn.style.cssText = 'margin: 5px 0; padding: 4px 12px; background: #1e293b; color: #f1f5f9; border: 1px solid #334155; border-radius: 4px; cursor: pointer; font-size: 12px;';
+                parentContainer.parentElement.insertBefore(toggleBtn, parentContainer);
+            }
+        } else {
+            container = document.getElementById('thought-process');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'thought-process';
+                container.style.cssText = 'max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 12px; color: #94a3b8;';
+                parentContainer.insertBefore(container, parentContainer.firstChild);
+            }
+        }
+    }
+    
+    const stepEl = document.createElement('div');
+    stepEl.className = 'thought-step';
+    stepEl.dataset.step = step.step;
+    stepEl.style.cssText = `
+        padding: 4px 8px;
+        margin-bottom: 3px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        background: ${step.status === 'active' ? '#1e293b' : '#0f172a'};
+        border-left: 3px solid ${step.status === 'active' ? '#38bdf8' : '#334155'};
+        opacity: ${step.status === 'active' ? 1 : 0.7};
+    `;
+    
+    const icon = step.status === 'active' ? '⟳' : '✓';
+    const iconColor = step.status === 'active' ? '#38bdf8' : '#22c55e';
+    
+    stepEl.innerHTML = `
+        <span style="color: ${iconColor}; font-weight: bold;">${icon}</span>
+        <span style="color: #f1f5f9; flex: 1;">${step.label}</span>
+        <span style="color: #64748b; font-size: 10px;">${step.duration ? step.duration + 's' : ''}</span>
+    `;
+    
+    container.appendChild(stepEl);
+    container.scrollTop = container.scrollHeight;
+    
+    // Show the container and update button
+    const parentContainer = document.getElementById('thought-process-container');
+    if (parentContainer) {
+        parentContainer.style.display = 'block';
+        const toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
+        if (toggleBtn) {
+            toggleBtn.textContent = '▼ Hide Thought Process';
+        }
+    }
+}
+
+function updateThoughtStep(stepNumber, status, data) {
+    const container = document.getElementById('thought-process');
+    if (!container) return;
+    
+    const steps = container.querySelectorAll('.thought-step');
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        if (step.dataset.step == stepNumber) {
+            step.style.borderLeftColor = status === 'complete' ? '#22c55e' : '#38bdf8';
+            step.style.opacity = status === 'complete' ? 0.7 : 1;
+            const icon = step.querySelector('span:first-child');
+            if (icon) {
+                icon.textContent = status === 'complete' ? '✓' : '⟳';
+                icon.style.color = status === 'complete' ? '#22c55e' : '#38bdf8';
+            }
+            break;
+        }
+    }
+}
+
+function completeAllThoughtSteps() {
+    const container = document.getElementById('thought-process');
+    if (!container) return;
+    
+    const steps = container.querySelectorAll('.thought-step');
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        step.style.borderLeftColor = '#22c55e';
+        step.style.opacity = 0.7;
+        const icon = step.querySelector('span:first-child');
+        if (icon) {
+            icon.textContent = '✓';
+            icon.style.color = '#22c55e';
+        }
+    }
+    stopThoughtTimer();
+}
+
+function clearThoughtProcess() {
+    const container = document.getElementById('thought-process');
+    if (container) {
+        container.innerHTML = '';
+    }
+    const statusEl = document.getElementById('thought-status');
+    if (statusEl) {
+        statusEl.textContent = '';
+    }
+    stopThoughtTimer();
+    
+    // Hide the container and update button
+    const parentContainer = document.getElementById('thought-process-container');
+    if (parentContainer) {
+        parentContainer.style.display = 'none';
+        const toggleBtn = document.querySelector('[onclick="toggleThoughtProcess()"]');
+        if (toggleBtn) {
+            toggleBtn.textContent = '▶ Show Thought Process';
+        }
+    }
+}
+
+// ============ TYPING INDICATOR ============
+function showTyping() {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+    const typingEl = document.createElement('div');
+    typingEl.id = 'typing-indicator';
+    typingEl.className = 'message ai';
+    typingEl.style.cssText = `
+        padding: 12px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        max-width: 85%;
+        color: #94a3b8;
+    `;
+    typingEl.innerHTML = '⏳ Thinking...';
+    container.appendChild(typingEl);
+    container.scrollTop = container.scrollHeight;
+}
+
+function hideTyping() {
+    const typingEl = document.getElementById('typing-indicator');
+    if (typingEl) {
+        typingEl.remove();
+    }
+}
+
+// ============ TOAST NOTIFICATIONS ============
+function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        `;
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        padding: 12px 20px;
+        border-radius: 8px;
+        background: ${type === 'error' ? '#991b1b' : type === 'success' ? '#14532d' : '#1e293b'};
+        color: #f1f5f9;
+        border: 1px solid ${type === 'error' ? '#f87171' : type === 'success' ? '#22c55e' : '#334155'};
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease;
+        min-width: 200px;
+        font-size: 14px;
+    `;
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ============ KEYBOARD SHORTCUTS ============
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('chat-input');
+    if (input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessageStream();
+            }
+        });
+    }
+    
+    loadSessions();
+    
+    if (!currentSessionId) {
+        setTimeout(() => {
+            createNewSession();
+        }, 500);
+    }
+});
+
+// ============ EXPOSE GLOBALLY ============
+window.sendChatMessageStream = sendChatMessageStream;
+window.sendMessage = sendMessage;
+window.loadSessions = loadSessions;
+window.loadSession = loadSession;
+window.createNewSession = createNewSession;
+window.renameSession = renameSession;
+window.deleteCurrentSession = deleteCurrentSession;
+window.showToast = showToast;
+window.toggleThoughtProcess = toggleThoughtProcess;
+window.clearThoughtProcess = clearThoughtProcess;
+
+// Add CSS animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
+
+console.log('✅ chat.js loaded - Chat functions available globally');

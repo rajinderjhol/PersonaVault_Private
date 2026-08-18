@@ -448,46 +448,10 @@ class IntelligenceGateway:
         await self.ensure_initialized()
         self.thought_tracker.add_step("Config", "Gateway initialized")
         
-        # ============ USE ORCHESTRATOR FOR RETRIEVAL ============
-        # Check if orchestrator is available in the state
-        orchestrator = getattr(state, 'orchestrator', None) if state else None
-        
-        if orchestrator:
-            self.thought_tracker.add_step("Orchestrator", "Using orchestrator for memory retrieval")
-            logger.info(f"🔄 Using orchestrator for query: {query}")
-            
-            try:
-                # Run the orchestrator with the query
-                result = await orchestrator.run(query, {"user_id": user_id_int, "provider": provider})
-                
-                response_text = result.get("answer", "No response generated")
-                confidence = result.get("confidence", 0.0)
-                thought_process = result.get("thought_process", [])
-                
-                final_result = {
-                    "response": response_text,
-                    "provider": provider,
-                    "confidence": confidence,
-                    "thought_process": thought_process,
-                    "total_time": result.get("total_time_ms", 0) / 1000
-                }
-                
-                self.thought_tracker.add_step("Complete", "Orchestrator processing complete")
-                return final_result
-                
-            except Exception as e:
-                logger.error(f"Orchestrator failed: {e}, falling back to direct provider")
-                import traceback
-                traceback.print_exc()
-                # Fall through to direct provider
-        else:
-            logger.warning("No orchestrator in state, using direct provider")
-        
-        # ============ FALLBACK: Direct provider call without retrieval ============
         context = "Context assembled."
-        logger.info(f"🔄 Chat using provider: {provider} (fallback)")
+        logger.info(f"🔄 Chat using provider: {provider}")
         
-        self.thought_tracker.add_step("Routing", f"Routing to provider: {provider} (fallback)")
+        self.thought_tracker.add_step("Routing", f"Routing to provider: {provider}")
         result = await self._call_with_fallback(provider, query, context)
         self.thought_tracker.add_step("Generation", "Response generated")
         
@@ -497,7 +461,9 @@ class IntelligenceGateway:
         final_result["total_time"] = self.thought_tracker.get_total_time()
         
         return final_result
-
+    
+    # ==================== PATTERN EXPLORE ====================
+    
     async def _pattern_explore(self, user_id: int) -> List[Dict]:
         return []
 

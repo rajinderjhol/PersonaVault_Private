@@ -76,10 +76,9 @@ class GeneratorAgent:
         situational_awareness: Dict[str, Any] = None,
         persona: Any = None,
         response_tone: str = "neutral",
-        hitl_approved: bool = False,
-        instructions: List[str] = None
+        hitl_approved: bool = False
     ) -> Dict[str, Any]:
-        prompt = self._build_prompt(query, context, reasoning_insight, situational_awareness, persona, instructions=instructions)
+        prompt = self._build_prompt(query, context, reasoning_insight, situational_awareness, persona)
         
         result = None
         if route and "provider" in route:
@@ -241,8 +240,7 @@ class GeneratorAgent:
         reasoning_insight: Any = None,
         situational_awareness: Dict[str, Any] = None,
         response_tone: str = "neutral",
-        persona: Any = None,
-        instructions: List[str] = None
+        persona: Any = None
     ) -> str:
         """Constructs a structured prompt for the LLM with memory context."""
         reasoning_str = f"\nREASONING INSIGHTS:\n{reasoning_insight}\n" if reasoning_insight else ""
@@ -277,10 +275,6 @@ class GeneratorAgent:
         writing_style = persona.writing_style if persona else "balanced"
         comm_style = persona.communication_style if persona else "casual"
         
-        instructions_str = ""
-        if instructions:
-            instructions_str = "\nAPPLIED PATTERNS / INSTRUCTIONS:\n" + "\n".join([f"- {i}" for i in instructions]) + "\n"
-
         prompt = f"""
 USER PERSONA:
 Writing Style: {writing_style}
@@ -293,7 +287,7 @@ CURRENT SITUATIONAL AWARENESS:
 {memory_context}
 
 {reasoning_str}
-{instructions_str}
+
 USER QUERY:
 {query}
 

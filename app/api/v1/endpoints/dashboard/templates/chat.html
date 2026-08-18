@@ -360,6 +360,44 @@ function refreshSessions() { loadSessions(); }
 let currentEventSource = null;
 let streamingMessageId = null;
 
+async function sendChatMessageStream() {
+    const input = document.getElementById('chat-input');
+    const query = input?.value?.trim();
+    if (!query) return;
+    
+    // Close any existing stream
+    if (currentEventSource) {
+        currentEventSource.close();
+        currentEventSource = null;
+    }
+    
+    // Clear previous thought process
+    clearThoughtProcess();
+    
+    // Create session if none exists
+    if (!currentSessionId) {
+        const newId = await createNewSession();
+        if (!newId) {
+            showToast('Please wait for session to create', 'error');
+            return;
+        }
+    }
+    
+    const provider = document.getElementById('chat-provider-select')?.value || 'ollama';
+    
+    // Add user message
+    addMessage('user', query);
+    input.value = '';
+    
+    // Show thought process
+    const processContainer = document.getElementById('thought-process-container');
+    if (processContainer) processContainer.style.display = 'block';
+    const stepsContainer = document.getElementById('thought-steps');
+    if (stepsContainer) stepsContainer.style.display = 'block';
+    if(document.getElementById('thought-toggle-label')) document.getElementById('thought-toggle-label').textContent = 'Hide';
+    document.getElementById('cancel-stream-btn').style.display = 'block';
+    
+    // Create placeholder for AI response
     streamingMessageId = addMessage('ai', '...', true);
     let fullResponse = '';
     
