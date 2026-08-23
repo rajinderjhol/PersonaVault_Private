@@ -1,10 +1,103 @@
 <div id="logs-tab">
     <h2 style="color: var(--accent);">📜 System Logs</h2>
-    <div class="card" style="height: calc(100vh - 250px); display:flex; flex-direction:column;">
-        <div class="flex-between" style="margin-bottom:10px;">
-            <h3 style="margin:0; color:#34d399;">Live Engine Logs</h3>
-            <button class="refresh-btn" onclick="document.getElementById('log-container').innerHTML = ''"><i class="fas fa-eraser"></i> Clear View</button>
+    
+    <!-- Log Controls -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <label style="color: #94a3b8; font-size: 12px;">Level:</label>
+                <select id="log-level-filter" style="padding: 4px 8px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; font-size: 12px;">
+                    <option value="all">All</option>
+                    <option value="ERROR">Error</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="INFO">Info</option>
+                    <option value="DEBUG">Debug</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <label style="color: #94a3b8; font-size: 12px;">Service:</label>
+                <select id="log-service-filter" style="padding: 4px 8px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; font-size: 12px;">
+                    <option value="all">All</option>
+                    <option value="api">API</option>
+                    <option value="swarm">Swarm</option>
+                    <option value="gateway">Gateway</option>
+                    <option value="database">Database</option>
+                </select>
+            </div>
+            <input type="text" id="log-search" placeholder="🔍 Search logs..." style="flex: 1; min-width: 150px; padding: 4px 10px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; font-size: 12px;">
+            <div style="display: flex; gap: 6px;">
+                <button class="btn btn-sm" onclick="pauseLogStream()" style="padding: 4px 12px; font-size: 11px; background: #1e293b;">⏸️ Pause</button>
+                <button class="btn btn-sm" onclick="exportLogs()" style="padding: 4px 12px; font-size: 11px; background: #1e293b;">📥 Export</button>
+                <button class="btn btn-sm" onclick="clearLogs()" style="padding: 4px 12px; font-size: 11px; background: #7f1d1d;">🗑️ Clear</button>
+            </div>
         </div>
-        <div id="log-container" class="log-container"></div>
+    </div>
+    
+    <!-- Log Container -->
+    <div class="card" style="height: 500px; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+        <div id="log-container" style="flex: 1; padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; background: #020617; white-space: pre-wrap; word-wrap: break-word;">
+            <div style="color: #64748b;">📡 Waiting for logs...</div>
+        </div>
     </div>
 </div>
+
+<script>
+let logPaused = false;
+let logBuffer = [];
+
+function pauseLogStream() {
+    logPaused = !logPaused;
+    const btn = document.querySelector('[onclick="pauseLogStream()"]');
+    btn.textContent = logPaused ? '▶️ Resume' : '⏸️ Pause';
+    if (logPaused && logSource) {
+        logSource.close();
+        logSource = null;
+    } else if (!logPaused) {
+        startLogStream();
+    }
+}
+
+function exportLogs() {
+    const logs = document.getElementById('log-container').textContent;
+    const blob = new Blob([logs], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `personavault_logs_${new Date().toISOString().slice(0,10)}.log`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📥 Logs exported', 'success');
+}
+
+function clearLogs() {
+    if (!confirm('Clear all logs from the display?')) return;
+    document.getElementById('log-container').innerHTML = '<div style="color: #64748b;">📡 Logs cleared...</div>';
+    showToast('🗑️ Logs cleared', 'info');
+}
+
+// Filter logs by level and search
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('log-level-filter').addEventListener('change', filterLogs);
+    document.getElementById('log-search').addEventListener('input', filterLogs);
+});
+
+function filterLogs() {
+    const level = document.getElementById('log-level-filter').value;
+    const search = document.getElementById('log-search').value.toLowerCase();
+    const lines = document.querySelectorAll('#log-container div:not(:first-child)');
+    
+    lines.forEach(line => {
+        const text = line.textContent.toLowerCase();
+        const matchesLevel = level === 'all' || text.includes(level.toLowerCase());
+        const matchesSearch = !search || text.includes(search);
+        line.style.display = (matchesLevel && matchesSearch) ? '' : 'none';
+    });
+}
+</script>
+
+<style>
+.btn-sm { padding: 4px 12px; font-size: 11px; border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+.btn-sm:hover { opacity: 0.8; }
+#log-container div { padding: 2px 0; border-bottom: 1px solid #0f172a; }
+#log-container div:hover { background: rgba(56, 189, 248, 0.05); }
+</style>

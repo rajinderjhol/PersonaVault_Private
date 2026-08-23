@@ -1,86 +1,3 @@
-<!-- Markdown rendering -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
-// ============ CHECK PROVIDER STATUS ============
-async function checkProviderStatus() {
-    try {
-        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
-        const data = await res.json();
-        const provider = data.primary_provider || "ollama";
-        
-        const statusEl = document.getElementById("primary-ai-provider-status-chat");
-        if (statusEl) {
-            statusEl.textContent = provider;
-            statusEl.className = "tag tag-info";
-        }
-        
-        // Also sync the dropdown
-        const chatSelect = document.getElementById("chat-provider-select");
-        if (chatSelect) chatSelect.value = provider;
-        
-        showToast("✅ Provider status updated", "success");
-    } catch (e) {
-        console.error("Error checking provider status:", e);
-        showToast("❌ Error checking provider status", "error");
-    }
-}
-
-</script>
-<!-- Syntax highlighting -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
-// ============ CHECK PROVIDER STATUS ============
-async function checkProviderStatus() {
-    try {
-        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
-        const data = await res.json();
-        const provider = data.primary_provider || "ollama";
-        
-        const statusEl = document.getElementById("primary-ai-provider-status-chat");
-        if (statusEl) {
-            statusEl.textContent = provider;
-            statusEl.className = "tag tag-info";
-        }
-        
-        // Also sync the dropdown
-        const chatSelect = document.getElementById("chat-provider-select");
-        if (chatSelect) chatSelect.value = provider;
-        
-        showToast("✅ Provider status updated", "success");
-    } catch (e) {
-        console.error("Error checking provider status:", e);
-        showToast("❌ Error checking provider status", "error");
-    }
-}
-
-</script>
-<!-- For code copy button -->
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js">
-// ============ CHECK PROVIDER STATUS ============
-async function checkProviderStatus() {
-    try {
-        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
-        const data = await res.json();
-        const provider = data.primary_provider || "ollama";
-        
-        const statusEl = document.getElementById("primary-ai-provider-status-chat");
-        if (statusEl) {
-            statusEl.textContent = provider;
-            statusEl.className = "tag tag-info";
-        }
-        
-        // Also sync the dropdown
-        const chatSelect = document.getElementById("chat-provider-select");
-        if (chatSelect) chatSelect.value = provider;
-        
-        showToast("✅ Provider status updated", "success");
-    } catch (e) {
-        console.error("Error checking provider status:", e);
-        showToast("❌ Error checking provider status", "error");
-    }
-}
-
-</script>
-
 <div id="chat-tab" style="padding: 20px; display: flex; flex-direction: column; height: calc(100vh - 120px);">
     <h2 style="color: var(--accent);">💬 PersonaVault Chat</h2>
     
@@ -89,44 +6,45 @@ async function checkProviderStatus() {
         <div style="width: 250px; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <span style="color: #94a3b8; font-size: 12px; font-weight: 600;">CHAT HISTORY</span>
-                <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="createNewSession()">
-                    <i class="fas fa-plus"></i> New
-                </button>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-sm" style="background: #1e293b;" onclick="createNewSession()">
+                        <i class="fas fa-plus"></i> New
+                    </button>
+                </div>
             </div>
-<div class="session-search" style="padding: 10px 10px 0 10px;">
-    <input type="text" id="session-search" placeholder="🔍 Search sessions..." onkeyup="searchSessions(this.value)" style="width: 100%; padding: 8px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; outline: none; font-size: 13px;">
-</div>
+            <div style="padding: 0 0 10px 0;">
+                <input type="text" id="session-search" placeholder="🔍 Search sessions..." onkeyup="searchSessions(this.value)" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; outline: none; font-size: 12px;">
+            </div>
             <div id="session-list" style="flex: 1; overflow-y: auto;">
                 <div class="metric-label">Loading sessions...</div>
             </div>
-            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1e293b;">
-                <button class="btn" style="width: 100%; padding: 6px; font-size: 11px; background: #1e293b;" onclick="refreshSessions()">
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1e293b; display: flex; gap: 6px;">
+                <button class="btn btn-sm" style="width: 100%; padding: 4px; font-size: 11px; background: #1e293b;" onclick="refreshSessions()">
                     <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button class="btn btn-sm" style="width: 100%; padding: 4px; font-size: 11px; background: #1e293b;" onclick="exportCurrentSession()">
+                    <i class="fas fa-download"></i>
                 </button>
             </div>
         </div>
         
         <!-- Right: Chat Area -->
         <div style="flex: 1; display: flex; flex-direction: column; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b; min-width: 0;">
-            <!-- Chat Header with Model Selector -->
+            <!-- Chat Header -->
             <div style="padding: 12px 15px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <span id="current-session-title" style="font-weight: 600; color: #f1f5f9;">New Chat</span>
                     <span id="session-id-display" style="font-size: 11px; color: #64748b; margin-left: 10px;"></span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <!-- Model Selector with sync from dashboard -->
-                    <select id="chat-provider-select" class="input-field" style="width: 180px; padding: 4px 8px; font-size: 11px; margin: 0; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; border-radius: 4px;" onchange="updatePrimaryAIProvider(this.value)">
-                        <option value="ollama">🖥️ Ollama (Local)</option>
-                        <option value="groq">☁️ Groq (Cloud)</option>
-                        <option value="gemini">☁️ Gemini (Cloud)</option>
+                    <select id="chat-provider-select" class="input-field provider-select" style="width: 160px; padding: 4px 8px; font-size: 11px; margin: 0; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; border-radius: 4px;">
+                        <option value="ollama">🖥️ Ollama</option>
+                        <option value="groq">☁️ Groq</option>
+                        <option value="gemini">☁️ Gemini</option>
                     </select>
-                    <button class="btn" style="padding: 4px 10px; font-size: 11px; background: #1e293b;" onclick="renameSession()">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn" style="padding: 4px 10px; font-size: 11px; background: #7f1d1d;" onclick="deleteCurrentSession()">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <button class="btn btn-sm" style="background: #1e293b;" onclick="renameSession()"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm" style="background: #7f1d1d;" onclick="deleteCurrentSession()"><i class="fas fa-trash"></i></button>
+                    <span id="chat-rate-limit" style="font-size: 10px; color: #64748b;"></span>
                 </div>
             </div>
             
@@ -139,542 +57,87 @@ async function checkProviderStatus() {
                 </div>
             </div>
             
-<!-- Input Area -->
-<div style="padding: 15px; border-top: 1px solid #1e293b; flex-shrink: 0;" class="input-area">
-    <div style="display: flex; gap: 10px; align-items: center;">
-<div class="suggested-prompts" style="padding: 8px 0; display: flex; gap: 8px; flex-wrap: wrap;">
-    <button onclick="sendQuickPrompt('Summarize this conversation')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; transition: all 0.2s;">📝 Summarize</button>
-    <button onclick="sendQuickPrompt('What are the key points?')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; transition: all 0.2s;">🎯 Key Points</button>
-    <button onclick="sendQuickPrompt('Generate action items')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; transition: all 0.2s;">✅ Actions</button>
-    <button onclick="sendQuickPrompt('Explain this in simple terms')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; transition: all 0.2s;">📖 Simplify</button>
-</div>
-        <input type="text" id="chat-input" placeholder="Ask me anything..." class="input-field" style="flex: 1; margin: 0;" onkeydown="if(event.key === 'Enter') sendChatMessageStream()">
-        <button class="btn" onclick="sendChatMessageStream()" id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
-        <button class="btn" id="cancel-stream-btn" style="background: #7f1d1d; padding: 8px 12px; display: none;" onclick="cancelStreaming()">
-            <i class="fas fa-stop"></i>
-        </button>
-    </div>
-    
-    <!-- Thought Process -->
-    <div id="thought-process-container" style="margin-top: 10px; border-top: 1px solid #1e293b; padding-top: 8px;">
-        <div onclick="toggleThoughtProcess()" style="cursor: pointer; color: #38bdf8; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
-            <span>
-                <i class="fas fa-brain"></i> 
-                <span id="thought-toggle-label">Show</span> thought process
-            </span>
-            <span id="thought-timer" style="color: #64748b; font-size: 11px;"></span>
-        </div>
-        <div id="thought-steps" style="display: none; margin-top: 8px; background: #020617; border-radius: 6px; padding: 10px; font-size: 12px; max-height: 250px; overflow-y: auto;">
-            <div id="thought-steps-container">
-                <div style="color: #64748b; font-style: italic;">No thought steps yet. Send a message to see the AI's reasoning.</div>
+            <!-- Input Area -->
+            <div style="padding: 15px; border-top: 1px solid #1e293b; flex-shrink: 0;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                    <button onclick="sendQuickPrompt('Summarize this conversation')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 3px 12px; border-radius: 16px; cursor: pointer; font-size: 11px; transition: all 0.2s;">📝 Summarize</button>
+                    <button onclick="sendQuickPrompt('What are the key points?')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 3px 12px; border-radius: 16px; cursor: pointer; font-size: 11px; transition: all 0.2s;">🎯 Key Points</button>
+                    <button onclick="sendQuickPrompt('Generate action items')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 3px 12px; border-radius: 16px; cursor: pointer; font-size: 11px; transition: all 0.2s;">✅ Actions</button>
+                    <button onclick="sendQuickPrompt('Explain this in simple terms')" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 3px 12px; border-radius: 16px; cursor: pointer; font-size: 11px; transition: all 0.2s;">📖 Simplify</button>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="chat-input" placeholder="Ask me anything..." class="input-field" style="flex: 1; margin: 0; padding: 10px 14px;" onkeydown="if(event.key === 'Enter') sendChatMessageStream()">
+                    <button class="btn" onclick="sendChatMessageStream()" id="send-chat-btn" style="background: #38bdf8; color: #0f172a; padding: 10px 16px;"><i class="fas fa-paper-plane"></i></button>
+                    <button class="btn" id="cancel-stream-btn" style="background: #7f1d1d; padding: 10px 14px; display: none;" onclick="cancelStreaming()"><i class="fas fa-stop"></i></button>
+                </div>
+                
+                <!-- Thought Process -->
+                <div id="thought-process-container" style="margin-top: 10px; border-top: 1px solid #1e293b; padding-top: 8px;">
+                    <div onclick="toggleThoughtProcess()" style="cursor: pointer; color: #38bdf8; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fas fa-brain"></i> <span id="thought-toggle-label">Show</span> thought process</span>
+                        <span id="thought-timer" style="color: #64748b; font-size: 11px;"></span>
+                    </div>
+                    <div id="thought-steps" style="display: none; margin-top: 8px; background: #020617; border-radius: 6px; padding: 10px; font-size: 12px; max-height: 200px; overflow-y: auto;">
+                        <div id="thought-steps-container"><div style="color: #64748b; font-style: italic;">No thought steps yet.</div></div>
+                    </div>
+                </div>
+                
+                <!-- Status Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e293b; flex-wrap: wrap; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="color: #94a3b8; font-size: 11px;">🔌 Provider:</span>
+                        <span id="primary-ai-provider-status-chat" class="tag tag-info">ollama</span>
+                        <span style="color: #94a3b8; font-size: 11px;">Files:</span>
+                        <span id="status-files" class="tag tag-info">0</span>
+                        <button class="btn btn-sm" style="background: #1e293b; padding: 2px 8px; font-size: 10px;" onclick="checkProviderStatus()"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="btn btn-sm" style="background: #1e293b; padding: 2px 8px; font-size: 10px;" onclick="clearChat()">Clear</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Status Bar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e293b;">
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span style="color: #94a3b8; font-size: 11px;">🔌 Connected Intelligence:</span>
-            <span id="primary-ai-provider-status-chat" class="tag tag-info">ollama</span>
-            <span style="color: #94a3b8; font-size: 11px;">Files:</span>
-            <span id="status-files" class="tag tag-info">0</span>
-            <button class="refresh-btn" style="padding: 2px 6px; font-size: 10px;" onclick="checkProviderStatus()">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-        <button class="btn" style="background: #1e293b; padding: 4px 10px; font-size: 11px;" onclick="clearChat()">Clear</button>
-    </div>
 </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.thought-step {
-    padding: 6px 0;
-    border-bottom: 1px solid #1e293b;
-    transition: all 0.3s ease;
-}
-.thought-step.in-progress { border-left: 3px solid #fbbf24; padding-left: 8px; }
-.thought-step.complete { border-left: 3px solid #34d399; padding-left: 8px; }
-.thought-step.failed { border-left: 3px solid #f87171; padding-left: 8px; }
-.thought-step .step-label { font-weight: 600; color: #38bdf8; }
-.thought-step .step-duration { color: #64748b; font-size: 11px; margin-left: 8px; }
-.thought-step .step-status { font-size: 10px; margin-left: 8px; }
-.thought-step .step-status.in-progress { color: #fbbf24; }
-.thought-step .step-status.complete { color: #34d399; }
-.thought-step .step-status.failed { color: #f87171; }
-.thought-toggle { cursor: pointer; color: #38bdf8; font-size: 12px; user-select: none; }
-.thought-toggle:hover { color: #7dd3fc; }
-</style>
 
 <script>
-// ============ THOUGHT PROCESS ============
-let thoughtTimer = null;
-let thoughtStartTime = null;
-
-function toggleThoughtProcess() {
-    const container = document.getElementById('thought-steps');
-    const label = document.getElementById('thought-toggle-label');
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        if (label) label.textContent = 'Hide';
-    } else {
-        container.style.display = 'none';
-        if (label) label.textContent = 'Show';
-    }
-}
-
-function addThoughtStep(step) {
-    const container = document.getElementById('thought-steps-container');
-    if (!container) return;
-    
-    if (container.children.length === 1 && container.children[0].textContent.includes('No thought steps')) {
-        container.innerHTML = '';
-    }
-    
-    const statusIcons = {
-        'in-progress': '⏳',
-        'complete': '✅',
-        'failed': '❌',
-        'pending': '⏸️'
-    };
-    
-    const div = document.createElement('div');
-    div.className = `thought-step ${step.status || 'pending'}`;
-    div.id = `thought-step-${step.step}`;
-    
-    div.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <span style="font-weight: 600; color: #38bdf8;">
-                    ${statusIcons[step.status] || '⏳'} Step ${step.step}: ${step.label}
-                </span>
-                <span style="color: #64748b; font-size: 11px; margin-left: 8px;">
-                    ${step.timestamp ? step.timestamp.toFixed(2) + 's' : ''}
-                </span>
-            </div>
-            <span style="font-size: 10px; color: ${step.status === 'in-progress' ? '#fbbf24' : step.status === 'complete' ? '#34d399' : '#f87171'};">
-                ${step.status || 'pending'}
-            </span>
-        </div>
-        <div style="color: #94a3b8; font-size: 11px; margin-left: 20px;">${step.description}</div>
-        ${step.data ? `<div style="color: #64748b; font-size: 10px; margin-left: 20px;">${JSON.stringify(step.data)}</div>` : ''}
-        ${step.error ? `<div style="color: #f87171; font-size: 11px; margin-left: 20px;">❌ ${step.error}</div>` : ''}
-    `;
-    
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-
-function updateThoughtStep(stepIndex, status, data) {
-    const el = document.getElementById(`thought-step-${stepIndex}`);
-    if (!el) return;
-    
-    el.className = `thought-step ${status}`;
-    const statusEl = el.querySelector('span:last-child');
-    if (statusEl) {
-        statusEl.textContent = status;
-        statusEl.style.color = status === 'in-progress' ? '#fbbf24' : status === 'complete' ? '#34d399' : '#f87171';
-    }
-    const iconEl = el.querySelector('span:first-child');
-    if (iconEl) {
-        const icons = { 'in-progress': '⏳', 'complete': '✅', 'failed': '❌' };
-        iconEl.innerHTML = iconEl.innerHTML.replace(/⏳|✅|❌|⏸️/, icons[status] || '⏳');
-    }
-}
-
-function startThoughtTimer() {
-    const timerEl = document.getElementById('thought-timer');
-    if (!timerEl) return;
-    thoughtStartTime = Date.now();
-    if (thoughtTimer) clearInterval(thoughtTimer);
-    thoughtTimer = setInterval(() => {
-        const elapsed = (Date.now() - thoughtStartTime) / 1000;
-        timerEl.textContent = `⏱️ ${elapsed.toFixed(1)}s`;
-    }, 100);
-}
-
-function stopThoughtTimer() {
-    if (thoughtTimer) {
-        clearInterval(thoughtTimer);
-        thoughtTimer = null;
-    }
-}
-
-function clearThoughtProcess() {
-    const container = document.getElementById('thought-steps-container');
-    if (container) {
-        container.innerHTML = '<div style="color: #64748b; font-style: italic;">No thought steps yet. Send a message to see the AI\'s reasoning.</div>';
-    }
-    stopThoughtTimer();
-    const timerEl = document.getElementById('thought-timer');
-    if (timerEl) timerEl.textContent = '';
-}
-
-// ============ PROVIDER SYNC ============
-async function syncChatProviderWithDashboard() {
-    try {
-        const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
-        if (!res.ok) throw new Error('Failed to fetch provider');
-        const data = await res.json();
-        const provider = data.primary_provider || 'ollama';
-        
-        const chatSelect = document.getElementById('chat-provider-select');
-        if (chatSelect) {
-            let found = false;
-            for (let option of chatSelect.options) {
-                if (option.value.toLowerCase() === provider.toLowerCase()) {
-                    chatSelect.value = option.value;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found && provider !== 'ollama') {
-                const newOption = document.createElement('option');
-                newOption.value = provider.toLowerCase();
-                newOption.textContent = `☁️ ${provider} (Cloud)`;
-                chatSelect.appendChild(newOption);
-                chatSelect.value = provider.toLowerCase();
-            }
-            const statusEl = document.getElementById('primary-ai-provider-status-chat');
-            if (statusEl) {
-                statusEl.textContent = provider;
-                statusEl.className = 'tag tag-info';
-            }
-        }
-        return provider;
-    } catch (e) {
-        console.error('Error syncing provider:', e);
-        const chatSelect = document.getElementById('chat-provider-select');
-        if (chatSelect) chatSelect.value = 'ollama';
-        return 'ollama';
-    }
-}
-
-// ============ SESSION MANAGEMENT ============
-let currentSessionId = null;
-
-async function loadSessions() {
-    const list = document.getElementById('session-list');
-    try {
-        const res = await fetch('/api/v1/chat/sessions');
-        if (!res.ok) throw new Error('Failed to load sessions');
-        const sessions = await res.json();
-        
-        if (sessions.length === 0) {
-            list.innerHTML = '<div class="metric-label" style="padding: 10px;">No saved chats. Start a new conversation!</div>';
-            return;
-        }
-        
-        list.innerHTML = sessions.map(s => `
-            <div class="session-item" 
-                 data-id="${s.id}" 
-                 onclick="loadSession(${s.id})"
-                 style="padding: 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; background: ${currentSessionId === s.id ? '#1e293b' : 'transparent'}; border: 1px solid ${currentSessionId === s.id ? '#38bdf8' : 'transparent'};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #f1f5f9; font-size: 13px; font-weight: ${currentSessionId === s.id ? '600' : '400'};">
-                        ${s.title || 'Untitled Chat'}
-                    </span>
-                    <span style="font-size: 10px; color: #64748b;">
-                        ${new Date(s.updated_at).toLocaleDateString()}
-                    </span>
-                </div>
-                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
-                    ${s.message_count || 0} messages
-                </div>
-            </div>
-        `).join('');
-    } catch (e) {
-        console.error('Error loading sessions:', e);
-        list.innerHTML = '<div class="metric-label" style="color: #f87171;">Error loading sessions</div>';
-    }
-}
-
-async function createNewSession() {
-    try {
-        const res = await fetch('/api/v1/chat/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: 'New Chat' })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            currentSessionId = data.id;
-            document.getElementById('current-session-title').textContent = 'New Chat';
-            document.getElementById('session-id-display').textContent = `#${data.id}`;
-            document.getElementById('chat-messages').innerHTML = 
-                '<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">New chat session started. Ask me anything!</div>';
-            await loadSessions();
-            clearThoughtProcess();
-            return data.id;
-        }
-    } catch (e) {
-        console.error('Error creating session:', e);
-        showToast('Error creating session', 'error');
-        return null;
-    }
-}
-
-async function loadSession(sessionId) {
-    currentSessionId = sessionId;
-    try {
-        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/messages`);
-        if (!res.ok) throw new Error('Failed to load messages');
-        const data = await res.json();
-        
-        document.getElementById('current-session-title').textContent = data.title || 'Chat';
-        document.getElementById('session-id-display').textContent = `#${sessionId}`;
-        
-        const container = document.getElementById('chat-messages');
-        if (data.messages && data.messages.length > 0) {
-            container.innerHTML = data.messages.map(m => `
-                <div class="message ${m.role}" style="padding: 12px; background: ${m.role === 'user' ? '#1e293b' : '#0f172a'}; border: 1px solid ${m.role === 'user' ? '#38bdf8' : '#334155'}; border-radius: 8px; margin-bottom: 10px; max-width: 85%; ${m.role === 'user' ? 'margin-left: auto;' : ''} white-space: pre-wrap; word-wrap: break-word;">
-                    ${m.content}
-                    ${m.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${m.provider}</div>` : ''}
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = '<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">No messages yet. Start the conversation!</div>';
-        }
-        container.scrollTop = container.scrollHeight;
-        await loadSessions();
-        clearThoughtProcess();
-    } catch (e) {
-        console.error('Error loading session:', e);
-        showToast('Error loading messages', 'error');
-    }
-}
-
-function refreshSessions() { loadSessions(); }
-
-// ============ STREAMING CHAT ============
-let currentEventSource = null;
-let streamingMessageId = null;
-
-async function sendChatMessageStream() {
-    const input = document.getElementById('chat-input');
-    const query = input?.value?.trim();
-    if (!query) return;
-    
-    // Close any existing stream
-    if (currentEventSource) {
-        currentEventSource.close();
-        currentEventSource = null;
-    }
-    
-    // Clear previous thought process
-    clearThoughtProcess();
-    
-    // Create session if none exists
+async function exportCurrentSession() {
     if (!currentSessionId) {
-        const newId = await createNewSession();
-        if (!newId) {
-            showToast('Please wait for session to create', 'error');
-            return;
-        }
+        showToast('No session selected', 'error');
+        return;
     }
-    
-    const provider = document.getElementById('chat-provider-select')?.value || 'ollama';
-    
-    // Add user message
-    addMessage('user', query);
-    input.value = '';
-    
-    // Show thought process
-    const processContainer = document.getElementById('thought-process-container');
-    if (processContainer) processContainer.style.display = 'block';
-    const stepsContainer = document.getElementById('thought-steps');
-    if (stepsContainer) stepsContainer.style.display = 'block';
-    if(document.getElementById('thought-toggle-label')) document.getElementById('thought-toggle-label').textContent = 'Hide';
-    document.getElementById('cancel-stream-btn').style.display = 'block';
-    
-    // Create placeholder for AI response
-    streamingMessageId = addMessage('ai', '...', true);
-    let fullResponse = '';
-    
-    startThoughtTimer();
-    
-    // Build URL with query params
-    const params = new URLSearchParams({
-        query: query,
-        provider: provider,
-        session_id: currentSessionId || '',
-        stream: 'true'
-    });
-    
-    // Use EventSource for streaming
-    const eventSource = new EventSource(`/api/v1/chat/stream?${params.toString()}`);
-    currentEventSource = eventSource;
-    
-    eventSource.onmessage = function(e) {
-        try {
-            const data = JSON.parse(e.data);
-            
-            switch (data.type) {
-                case 'thought':
-                    addThoughtStep({
-                        step: data.step,
-                        label: data.label,
-                        description: data.description,
-                        status: data.status || 'in-progress',
-                        timestamp: (Date.now() - thoughtStartTime) / 1000
-                    });
-                    break;
-                    
-                case 'token':
-                    fullResponse += data.token;
-                    updateMessage(streamingMessageId, fullResponse);
-                    break;
-                    
-                case 'progress':
-                    const progressEl = document.getElementById('stream-progress');
-                    if (progressEl) progressEl.textContent = data.percent + '%';
-                    const barEl = document.getElementById('stream-progress-bar');
-                    if(barEl) barEl.style.width = data.percent + '%';
-                    break;
-                    
-                case 'done':
-                    stopThoughtTimer();
-                    document.getElementById('cancel-stream-btn').style.display = 'none';
-                    
-                    let finalResponse = fullResponse;
-                    if (data.confidence) finalResponse += `\n\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
-                    if (data.provider) finalResponse += `\n⚡ Provider: ${data.provider}`;
-                    updateMessage(streamingMessageId, finalResponse);
-                    
-                    document.querySelectorAll('.thought-step.in-progress').forEach(el => {
-                        el.className = 'thought-step complete';
-                    });
-                    
-                    eventSource.close();
-                    currentEventSource = null;
-                    if (typeof showToast === 'function') showToast('✅ Response complete', 'success');
-                    break;
-                    
-                case 'error':
-                    stopThoughtTimer();
-                    document.getElementById('cancel-stream-btn').style.display = 'none';
-                    updateMessage(streamingMessageId, `❌ Error: ${data.error}`);
-                    eventSource.close();
-                    currentEventSource = null;
-                    if (typeof showToast === 'function') showToast('❌ Error: ' + data.error, 'error');
-                    break;
-            }
-        } catch (err) {
-            console.error('Error parsing SSE data:', err);
-        }
-    };
-    
-    eventSource.onerror = function(e) {
-        console.error('SSE error:', e);
-        if (!fullResponse) updateMessage(streamingMessageId, '❌ Connection error. Please try again.');
-        eventSource.close();
-        currentEventSource = null;
-        stopThoughtTimer();
-        document.getElementById('cancel-stream-btn').style.display = 'none';
-    };
-    
-    addProgressBar();
-}
-
-function addProgressBar() {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-    const existing = document.getElementById('stream-progress-container');
-    if (existing) existing.remove();
-    
-    const div = document.createElement('div');
-    div.id = 'stream-progress-container';
-    div.style.cssText = 'padding: 8px; margin-bottom: 10px; background: #020617; border-radius: 6px; border: 1px solid #1e293b;';
-    div.innerHTML = `
-        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 4px;">
-            <span>Generating...</span>
-            <span id="stream-progress">0%</span>
-        </div>
-        <div style="width: 100%; height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden;">
-            <div id="stream-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.3s ease;"></div>
-        </div>
-    `;
-    container.appendChild(div);
-}
-
-function updateMessage(messageId, content) {
-    const el = document.getElementById(messageId);
-    if (el) {
-        el.textContent = content;
-        const container = document.getElementById('chat-messages');
-        if (container) container.scrollTop = container.scrollHeight;
-    }
-}
-
-function cancelStreaming() {
-    if (currentEventSource) {
-        currentEventSource.close();
-        currentEventSource = null;
-        stopThoughtTimer();
-        document.getElementById('cancel-stream-btn').style.display = 'none';
-        if (typeof showToast === 'function') showToast('⏹️ Generation cancelled', 'info');
-    }
-}
-
-function clearChat() {
-    const container = document.getElementById('chat-messages');
-    if (container) {
-        container.innerHTML = '<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Chat cleared. Ask me anything!</div>';
-    }
-    clearThoughtProcess();
-}
-
-// ============ PROVIDER MANAGEMENT ============
-document.addEventListener('DOMContentLoaded', function() {
-    syncChatProviderWithDashboard();
-});
-
-// ============ CHECK PROVIDER STATUS ============
-async function checkProviderStatus() {
     try {
-        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
+        const res = await fetch(`/api/v1/chat/sessions/${currentSessionId}/messages`);
         const data = await res.json();
-        const provider = data.primary_provider || "ollama";
-        
-        const statusEl = document.getElementById("primary-ai-provider-status-chat");
-        if (statusEl) {
-            statusEl.textContent = provider;
-            statusEl.className = "tag tag-info";
-        }
-        
-        // Also sync the dropdown
-        const chatSelect = document.getElementById("chat-provider-select");
-        if (chatSelect) chatSelect.value = provider;
-        
-        showToast("✅ Provider status updated", "success");
+        let content = `# Chat Export\n`;
+        content += `Session: ${data.title || 'Untitled'}\n`;
+        content += `Date: ${new Date().toISOString()}\n\n`;
+        data.messages.forEach(m => {
+            content += `## ${m.role.toUpperCase()}\n${m.content}\n\n`;
+        });
+        const blob = new Blob([content], {type: 'text/markdown'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chat_${currentSessionId}_${new Date().toISOString().slice(0,10)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 Chat exported', 'success');
     } catch (e) {
-        console.error("Error checking provider status:", e);
-        showToast("❌ Error checking provider status", "error");
+        showToast('Error exporting chat', 'error');
     }
 }
 
+// Rate limit check
+setInterval(async () => {
+    try {
+        const res = await fetch('/api/v1/chat/rate-limit');
+        const data = await res.json();
+        const el = document.getElementById('chat-rate-limit');
+        if (el) {
+            el.textContent = `📊 ${data.remaining}/${data.limit}`;
+            el.style.color = data.remaining < 10 ? '#f87171' : '#64748b';
+        }
+    } catch(e) {}
+}, 30000);
 </script>
-
-<!-- Swarm Agent Activity -->
-<div id="swarm-activity" style="margin-top: 8px; padding: 8px; background: #020617; border-radius: 6px; border: 1px solid #1e293b; display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="color: #94a3b8; font-size: 11px;">🐝 Agent Swarm Activity</span>
-        <span id="swarm-active-tasks" style="color: #fbbf24; font-size: 10px;">0 active tasks</span>
-    </div>
-    <div id="agent-status-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 4px;">
-        <!-- Agent status will be rendered here -->
-    </div>
-</div>
-
-    <!-- Agent Swarm Status -->
-    <div id="agent-status-container" style="display: none; margin-top: 8px; padding: 8px 12px; background: #020617; border-radius: 6px; border: 1px solid #1e293b;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="color: #94a3b8; font-size: 11px;">🐝 Agent Swarm</span>
-            <span id="agent-active-count" style="color: #34d399; font-size: 10px;">0 active</span>
-        </div>
-        <div id="agent-status-grid" style="display: flex; flex-wrap: wrap; gap: 4px;">
-            <!-- Agent status will be rendered here -->
-        </div>
-    </div>
