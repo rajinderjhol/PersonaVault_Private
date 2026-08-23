@@ -205,3 +205,105 @@ async function deleteCloudConnection(name) {
 }
 
 console.log('✅ reload.js loaded - All cloud connection functions available');
+
+// ============ PROVIDER MANAGEMENT FUNCTIONS ============
+// These are defined globally so they work across all tabs
+
+window.showAddProvider = function() {
+    const modal = document.getElementById('add-provider-modal');
+    if (modal) {
+        modal.style.display = 'block';
+    } else {
+        console.warn('add-provider-modal not found - creating one');
+        // Create modal dynamically if it doesn't exist
+        const newModal = document.createElement('div');
+        newModal.id = 'add-provider-modal';
+        newModal.style.cssText = 'display:block; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; padding:40px; box-sizing:border-box;';
+        newModal.innerHTML = `
+            <div style="max-width:500px; margin:100px auto; background:#0f172a; padding:30px; border-radius:12px; border:1px solid #1e293b;">
+                <h3 style="color:#f1f5f9; margin-top:0;">➕ Add Cloud Provider</h3>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="color:#94a3b8; font-size:13px; display:block; margin-bottom:4px;">Provider Name</label>
+                    <input type="text" id="cloud-api-name" placeholder="e.g., openai, anthropic" style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #334155; border-radius:6px; color:#f1f5f9;">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="color:#94a3b8; font-size:13px; display:block; margin-bottom:4px;">Host URL</label>
+                    <input type="text" id="cloud-api-host" placeholder="https://api.example.com/v1" style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #334155; border-radius:6px; color:#f1f5f9;">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="color:#94a3b8; font-size:13px; display:block; margin-bottom:4px;">API Key</label>
+                    <input type="password" id="cloud-api-key" placeholder="sk-..." style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #334155; border-radius:6px; color:#f1f5f9;">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="color:#94a3b8; font-size:13px; display:block; margin-bottom:4px;">Default Model</label>
+                    <input type="text" id="cloud-api-model" placeholder="gpt-4, claude-3, etc." style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #334155; border-radius:6px; color:#f1f5f9;">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn" style="background:#34d399; color:#0f172a; flex:1;" onclick="saveCloudConfig()">💾 Save</button>
+                    <button class="btn" style="background:#1e293b; flex:1;" onclick="closeAddProvider()">Cancel</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(newModal);
+    }
+};
+
+window.closeAddProvider = function() {
+    const modal = document.getElementById('add-provider-modal');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('cloud-api-name').value = '';
+    document.getElementById('cloud-api-host').value = '';
+    document.getElementById('cloud-api-key').value = '';
+    document.getElementById('cloud-api-model').value = '';
+};
+
+window.reloadApiKeys = function() {
+    showToast('🔄 Reloading API keys from .env...', 'info');
+    fetch('/api/v1/admin/dashboard/config/reload-api-keys', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            showToast(data.message || '✅ API keys reloaded', 'success');
+            setTimeout(fetchCloudConnections, 500);
+        })
+        .catch(e => showToast('Error reloading API keys: ' + e.message, 'error'));
+};
+
+window.refreshBOM = function() {
+    showToast('📋 Refreshing Bill of Materials...', 'info');
+    if (typeof fetchCloudConnections === 'function') {
+        fetchCloudConnections();
+    }
+    if (typeof fetchInstalledModels === 'function') {
+        fetchInstalledModels();
+    }
+};
+
+window.saveCloudConfig = async function() {
+    const provider = document.getElementById('cloud-api-name').value;
+    const host = document.getElementById('cloud-api-host').value;
+    const api_key = document.getElementById('cloud-api-key').value;
+    const model = document.getElementById('cloud-api-model').value;
+    
+    if (!provider) {
+        showToast('Connection name is required', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider, host, api_key, model })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast(`Configuration for ${provider} saved`, 'success');
+        closeAddProvider();
+        if (typeof fetchCloudConnections === 'function') {
+            fetchCloudConnections();
+        }
+    } catch (e) {
+        showToast('Failed to save: ' + e.message, 'error');
+    }
+};
+
+console.log('✅ Provider management functions loaded globally');
