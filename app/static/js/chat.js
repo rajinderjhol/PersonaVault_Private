@@ -314,10 +314,66 @@ function clearThoughtProcess() {
 }
 
 function updateThoughtProcessUI(thoughtSteps) {
+    console.log("🧠 Updating thought process UI:", thoughtSteps);
     if (!thoughtSteps || !Array.isArray(thoughtSteps)) return;
+    
+    const container = document.getElementById('thought-steps-container');
+    if (!container) {
+        console.warn('Thought steps container not found');
+        return;
+    }
+    
+    // Clear existing content if this is a new set
+    if (thoughtSteps.length > 0 && thoughtSteps[0].step === 1) {
+        container.innerHTML = '';
+    }
+    
     thoughtSteps.forEach((step, index) => {
-        updateThoughtStep(index + 1, step.status || 'complete', step.data);
+        const stepNum = step.step || step.step_number || index + 1;
+        const label = step.label || step.description || 'Step';
+        const desc = step.description || '';
+        const status = step.status || 'complete';
+        const statusColor = status === 'complete' ? '#34d399' : status === 'in-progress' ? '#fbbf24' : '#f87171';
+        const statusIcon = status === 'complete' ? '✅' : status === 'in-progress' ? '⏳' : '❌';
+        
+        // Check if step already exists
+        const existing = container.querySelector(`[data-step="${stepNum}"]`);
+        if (existing) {
+            // Update existing step
+            const statusEl = existing.querySelector('.step-status');
+            if (statusEl) {
+                statusEl.textContent = status;
+                statusEl.style.color = statusColor;
+            }
+            return;
+        }
+        
+        const div = document.createElement('div');
+        div.setAttribute('data-step', stepNum);
+        div.style.cssText = 'padding: 8px 0; border-bottom: 1px solid #1e293b;';
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: #38bdf8;">
+                    ${statusIcon} Step ${stepNum}: ${label}
+                </span>
+                <span class="step-status" style="font-size: 10px; color: ${statusColor};">${status}</span>
+            </div>
+            ${desc ? `<div style="color: #94a3b8; font-size: 11px; margin-left: 24px; margin-top: 2px;">${desc}</div>` : ''}
+            ${step.data ? `<div style="color: #64748b; font-size: 10px; margin-left: 24px; margin-top: 2px;">${JSON.stringify(step.data)}</div>` : ''}
+        `;
+        container.appendChild(div);
     });
+    
+    // Auto-show thought process
+    const stepsContainer = document.getElementById('thought-steps');
+    if (stepsContainer && thoughtSteps.length > 0) {
+        stepsContainer.style.display = 'block';
+        const label = document.getElementById('thought-toggle-label');
+        if (label) label.textContent = 'Hide';
+    }
+    
+    // Store for later
+    window._lastThoughtProcess = thoughtSteps;
 }
 
 // ============ SESSION FUNCTIONS ============
@@ -934,9 +990,21 @@ async function sendChatMessage(query) {
         
                         if (data.thought) {
                             updateThoughtProcessUI([data.thought]);
+                            // Store for later display
+                            if (!window._lastThoughtProcess) window._lastThoughtProcess = [];
+                            window._lastThoughtProcess.push(data.thought);
                         }
                         if (data.thought_process) {
                             updateThoughtProcessUI(data.thought_process);
+                            // Store for later display
+                            window._lastThoughtProcess = data.thought_process;
+                            // Auto-show thought process if available
+                            const stepsContainer = document.getElementById('thought-steps');
+                            if (stepsContainer) {
+                                stepsContainer.style.display = 'block';
+                                const label = document.getElementById('thought-toggle-label');
+                                if (label) label.textContent = 'Hide';
+                            }
                         }
         
                         if (data.session_id) {
@@ -1201,3 +1269,361 @@ document.addEventListener('change', function(e) {
     }
 });
 console.log('✅ Provider sync function added');
+
+// ============ SESSION MANAGEMENT FUNCTIONS ============
+// These are added to chat.js for global access
+
+let currentSessionId = null;
+let currentSessionTitle = '';
+
+async function loadSessions() {
+    const container = document.getElementById('session-list');
+    if (!container) return;
+    
+    try {
+        const res = await fetch('/api/v1/chat/sessions');
+        if (!res.ok) throw new Error('Failed to load sessions');
+        const sessions = await res.json();
+        console.log('📋 Sessions loaded:', sessions);
+        
+        if (sessions.length === 0) {
+            container.innerHTML = `<div class="metric-label" style="padding: 20px; text-align: center; color: #64748b;">No sessions yet.<br>Click "New" to start chatting!</div>`;
+            return;
+        }
+        
+        container.innerHTML = sessions.map(s => {
+            const isActive = s.id === currentSessionId;
+            const msgCount = s.message_count || 0;
+            const title = s.title || 'Untitled Chat';
+            const date = new Date(s.updated_at || s.created_at).toLocaleDateString();
+            
+            return `
+                <div class="session-item" 
+                     data-id="${s.id}" 
+                     onclick="loadSession(${s.id})"
+                     style="padding: 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; 
+                            background: ${isActive ? 'rgba(56, 189, 248, 0.1)' : 'transparent'}; 
+                            border: 1px solid ${isActive ? '#38bdf8' : 'transparent'};
+                            transition: all 0.2s;
+                            ${isActive ? 'box-shadow: 0 0 20px rgba(56, 189, 248, 0.05);' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: ${isActive ? '#38bdf8' : '#f1f5f9'}; font-size: 13px; font-weight: ${isActive ? '600' : '400'};">
+                            ${title}
+                        </span>
+                        <span style="font-size: 10px; color: #64748b;">${date}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                        <span style="font-size: 10px; color: #64748b;">
+                            💬 ${msgCount} message${msgCount !== 1 ? 's' : ''}
+                        </span>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="event.stopPropagation(); renameSessionDirect(${s.id})" 
+                                    style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 10px;">
+                                ✏️
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteSession(${s.id})" 
+                                    style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 10px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading sessions:', e);
+        container.innerHTML = '<div style="color: #f87171; padding: 20px; text-align: center;">Error loading sessions</div>';
+    }
+}
+
+async function createNewSession() {
+    try {
+        const res = await fetch('/api/v1/chat/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: 'New Chat' })
+        });
+        if (!res.ok) throw new Error('Failed to create session');
+        const data = await res.json();
+        currentSessionId = data.id;
+        currentSessionTitle = data.title || 'New Chat';
+        updateSessionUI(data.id, currentSessionTitle);
+        clearChatMessages();
+        await loadSessions();
+        showToast('✅ New chat session created!', 'success');
+        return data.id;
+    } catch (e) {
+        console.error('Error creating session:', e);
+        showToast('Error creating session: ' + e.message, 'error');
+        return null;
+    }
+}
+
+async function loadSession(sessionId) {
+    currentSessionId = sessionId;
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/messages`);
+        if (!res.ok) throw new Error('Failed to load messages');
+        const data = await res.json();
+        currentSessionTitle = data.title || 'Chat';
+        updateSessionUI(sessionId, currentSessionTitle);
+        
+        const container = document.getElementById('chat-messages');
+        if (container) {
+            if (data.messages && data.messages.length > 0) {
+                container.innerHTML = data.messages.map(m => {
+                    const time = new Date(m.created_at || m.timestamp).toLocaleTimeString();
+                    return `
+                        <div class="message ${m.role}" 
+                             style="padding: 12px; background: ${m.role === 'user' ? '#1e293b' : '#0f172a'}; 
+                                    border: 1px solid ${m.role === 'user' ? '#38bdf8' : '#334155'}; 
+                                    border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
+                                    ${m.role === 'user' ? 'margin-left: auto;' : ''} 
+                                    white-space: pre-wrap; word-wrap: break-word;">
+                            ${m.content}
+                            ${m.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${m.provider}</div>` : ''}
+                            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">${time}</div>
+                        </div>
+                    `;
+                }).join('');
+                container.scrollTop = container.scrollHeight;
+            } else {
+                container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">
+                    👋 Continue your conversation here.
+                </div>`;
+            }
+        }
+        await loadSessions();
+        clearThoughtProcess();
+    } catch (e) {
+        console.error('Error loading session:', e);
+        showToast('Error loading session: ' + e.message, 'error');
+    }
+}
+
+function updateSessionUI(sessionId, title) {
+    const titleEl = document.getElementById('current-session-title');
+    if (titleEl) titleEl.textContent = title;
+    const idEl = document.getElementById('session-id-display');
+    if (idEl) idEl.textContent = `#${sessionId}`;
+}
+
+async function renameSession() {
+    if (!currentSessionId) {
+        showToast('No session selected', 'error');
+        return;
+    }
+    const newTitle = prompt('Enter new session name:', currentSessionTitle || 'Untitled Chat');
+    if (newTitle && newTitle.trim()) {
+        await renameSessionDirect(currentSessionId, newTitle.trim());
+    }
+}
+
+async function renameSessionDirect(sessionId, newTitle) {
+    if (!newTitle) {
+        const promptTitle = prompt('Enter new session name:', '');
+        if (!promptTitle) return;
+        newTitle = promptTitle;
+    }
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle })
+        });
+        if (!res.ok) throw new Error('Failed to rename session');
+        if (sessionId === currentSessionId) {
+            currentSessionTitle = newTitle;
+            const titleEl = document.getElementById('current-session-title');
+            if (titleEl) titleEl.textContent = newTitle;
+        }
+        await loadSessions();
+        showToast('✅ Session renamed!', 'success');
+    } catch (e) {
+        console.error('Error renaming session:', e);
+        showToast('Error renaming session: ' + e.message, 'error');
+    }
+}
+
+async function deleteCurrentSession() {
+    if (!currentSessionId) {
+        showToast('No session to delete', 'error');
+        return;
+    }
+    if (!confirm(`Delete "${currentSessionTitle}" and all its messages?`)) return;
+    await deleteSession(currentSessionId);
+}
+
+async function deleteSession(sessionId) {
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete session');
+        if (sessionId === currentSessionId) {
+            currentSessionId = null;
+            currentSessionTitle = '';
+            const titleEl = document.getElementById('current-session-title');
+            if (titleEl) titleEl.textContent = 'New Chat';
+            const idEl = document.getElementById('session-id-display');
+            if (idEl) idEl.textContent = '';
+            clearChatMessages();
+        }
+        await loadSessions();
+        showToast('🗑️ Session deleted', 'info');
+    } catch (e) {
+        console.error('Error deleting session:', e);
+        showToast('Error deleting session: ' + e.message, 'error');
+    }
+}
+
+function refreshSessions() {
+    loadSessions();
+}
+
+function searchSessions(query) {
+    const items = document.querySelectorAll('.session-item');
+    const searchTerm = query.toLowerCase().trim();
+    items.forEach(item => {
+        const title = item.querySelector('span:first-child')?.textContent?.toLowerCase() || '';
+        item.style.display = title.includes(searchTerm) ? 'flex' : 'none';
+    });
+}
+
+async function exportCurrentSession() {
+    if (!currentSessionId) {
+        showToast('No session selected', 'error');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${currentSessionId}/messages`);
+        const data = await res.json();
+        let content = `# Chat Export\n`;
+        content += `Session: ${data.title || 'Untitled'}\n`;
+        content += `Date: ${new Date().toISOString()}\n\n`;
+        data.messages?.forEach(m => {
+            content += `## ${m.role.toUpperCase()}\n${m.content}\n\n`;
+        });
+        const blob = new Blob([content], {type: 'text/markdown'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chat_${currentSessionId}_${new Date().toISOString().slice(0,10)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 Chat exported!', 'success');
+    } catch (e) {
+        showToast('Error exporting chat: ' + e.message, 'error');
+    }
+}
+
+function clearChatMessages() {
+    const container = document.getElementById('chat-messages');
+    if (container) {
+        container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">
+            👋 Start a new conversation or select a session.
+        </div>`;
+    }
+}
+
+// Expose session functions globally
+window.loadSessions = loadSessions;
+window.createNewSession = createNewSession;
+window.loadSession = loadSession;
+window.renameSession = renameSession;
+window.deleteCurrentSession = deleteCurrentSession;
+window.deleteSession = deleteSession;
+window.refreshSessions = refreshSessions;
+window.searchSessions = searchSessions;
+window.exportCurrentSession = exportCurrentSession;
+window.renameSessionDirect = renameSessionDirect;
+
+console.log('✅ Chat session management functions loaded globally');
+
+// ============ THOUGHT PROCESS DISPLAY ============
+// Enhanced thought process functions for better UI
+
+// Main function to toggle thought process visibility
+window.toggleThoughtProcess = function() {
+    const container = document.getElementById('thought-steps');
+    const label = document.getElementById('thought-toggle-label');
+    if (!container) {
+        console.warn('Thought steps container not found');
+        return;
+    }
+    if (container.style.display === 'none' || container.style.display === '') {
+        container.style.display = 'block';
+        if (label) label.textContent = 'Hide';
+        // Load thought process if not already loaded
+        const stepsContainer = document.getElementById('thought-steps-container');
+        if (stepsContainer && stepsContainer.children.length <= 1) {
+            // Try to get thought process from last response
+            const lastResponse = window._lastThoughtProcess;
+            if (lastResponse && lastResponse.length > 0) {
+                window.renderThoughtSteps(lastResponse);
+            }
+        }
+    } else {
+        container.style.display = 'none';
+        if (label) label.textContent = 'Show';
+    }
+};
+
+// Render thought steps from API response
+window.renderThoughtSteps = function(thoughtProcess) {
+    const container = document.getElementById('thought-steps-container');
+    if (!container) return;
+    
+    if (!thoughtProcess || thoughtProcess.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-style: italic;">No thought steps available for this response.</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    thoughtProcess.forEach((step, index) => {
+        const div = document.createElement('div');
+        div.className = 'thought-step';
+        div.style.cssText = 'padding: 8px 0; border-bottom: 1px solid #1e293b;';
+        
+        const stepNum = step.step || step.step_number || index + 1;
+        const label = step.label || step.description || 'Step';
+        const desc = step.description || '';
+        const status = step.status || 'complete';
+        const statusColor = status === 'complete' ? '#34d399' : status === 'in-progress' ? '#fbbf24' : '#f87171';
+        const statusIcon = status === 'complete' ? '✅' : status === 'in-progress' ? '⏳' : '❌';
+        
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: #38bdf8;">
+                    ${statusIcon} Step ${stepNum}: ${label}
+                </span>
+                <span style="font-size: 10px; color: ${statusColor};">${status}</span>
+            </div>
+            ${desc ? `<div style="color: #94a3b8; font-size: 11px; margin-left: 24px; margin-top: 2px;">${desc}</div>` : ''}
+            ${step.data ? `<div style="color: #64748b; font-size: 10px; margin-left: 24px; margin-top: 2px;">${JSON.stringify(step.data)}</div>` : ''}
+        `;
+        container.appendChild(div);
+    });
+    
+    // Show the thought process container
+    const stepsContainer = document.getElementById('thought-steps');
+    if (stepsContainer) {
+        stepsContainer.style.display = 'block';
+        const label = document.getElementById('thought-toggle-label');
+        if (label) label.textContent = 'Hide';
+    }
+};
+
+// Override the message handler to capture thought process
+const originalSendMessage = window.sendChatMessageStream;
+if (originalSendMessage) {
+    window.sendChatMessageStream = async function() {
+        const result = await originalSendMessage.apply(this, arguments);
+        // Check if thought process exists in the response
+        const thoughtProcess = window._lastThoughtProcess;
+        if (thoughtProcess && thoughtProcess.length > 0) {
+            console.log('🧠 Thought process captured:', thoughtProcess);
+        }
+        return result;
+    };
+}
+
+console.log('✅ Thought process display functions loaded');
