@@ -172,6 +172,7 @@ echo "✅ Data seeding and pack installation complete."
 # ============================================================
 export OLLAMA_HOST=http://localhost:11434
 export PYTHONUNBUFFERED=1
+export PYTHONPATH=.
 
 echo "🚀 Igniting Intelligence Gateway..."
 nohup python3 -m uvicorn app.main:app \

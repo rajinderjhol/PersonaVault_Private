@@ -12,7 +12,7 @@ from app.db.session import SessionLocal
 from app.models import (
     User, Organization, Memory, IoTDevice, IoTData, 
     EpisodicEntry, SemanticPattern, MedicalAlert, 
-    UserPersona, PendingAction
+    UserPersona, PendingAction, EvidenceBlock, DecisionEvidenceLink, BehaviourEvent
 )
 
 # Sample chat interactions to simulate past behavior for the Crystallization Engine
@@ -167,10 +167,36 @@ async def populate():
         await db.flush()
         print("✅ Added 1 Pending Action for HITL Dashboard Testing")
 
+        # 8. Evidence Pipeline Testing Data
+        stmt = select(BehaviourEvent).limit(1)
+        decision = (await db.execute(stmt)).scalars().first()
+        
+        if decision:
+            evidence = (await db.execute(select(EvidenceBlock))).scalars().first()
+            if not evidence:
+                evidence = EvidenceBlock(
+                    block_id="ev_demo_seed_001",
+                    content="Dummy clinical evidence for demonstration purposes.",
+                    content_hash="hash_demo_001",
+                    source="demo_doc.pdf",
+                    source_type="pdf",
+                    is_qualified=True,
+                    quality_score=0.9
+                )
+                db.add(evidence)
+                await db.flush()
+                
+                link = DecisionEvidenceLink(
+                    decision_id=decision.id,
+                    evidence_id=evidence.id,
+                    confidence=1.0,
+                    reasoning="Seeded for dashboard demonstration."
+                )
+                db.add(link)
+                await db.flush()
+                print("✅ Seeded Evidence Pipeline test data")
+
         await db.commit()
-        print("\n✨ PersonaVault is now fully populated for testing!")
-        print("➜ Run your dashboard to see pending HITL actions.")
-        print("➜ Monitor logs to see the Consolidation Task process the new episodic entries.")
 
 if __name__ == "__main__":
     sys.path.append(os.getcwd())

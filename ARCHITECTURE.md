@@ -238,10 +238,26 @@ PersonaVault implements a multi-layered safety strategy:
 
 Administrators can manage these rules via the **Visual Rule Editor** in the Admin Dashboard, which supports keyword triggers and direct JSON source editing.
 
-### Standardized Intelligence (MCP)
-PersonaVault utilizes the **Model Context Protocol (MCP)** to decouple the AI's cognitive reasoning from its data sources and tools.
-*   **PersonaVault as MCP Server**: Exposes crystallized memories (Layer 3) to external models.
-*   **Agents as MCP Clients**: Allows the swarm to utilize third-party tools (APIs, Local DBs) via a unified interface.
+## The MCP Interoperability Substrate
+
+PersonaVault utilizes the **Model Context Protocol (MCP)** as the primary, standardized interface for all AI-to-System communication. This elevates MCP from a simple plugin mechanism to our core interoperability substrate:
+
+*   **PersonaVault as MCP Server:** By exposing the system state (Semantic Patterns, Constitution, Blackboard) via MCP, any external LLM or agent can securely query our institutional intelligence without custom integration effort.
+*   **PersonaVault as MCP Client:** Our agents leverage MCP to dynamically consume third-party tools and APIs. This decoupling ensures that PersonaVault remains model-neutral and tool-agnostic, allowing us to swap models or tools at runtime without altering the core DOS architecture.
+
+This standardized approach is critical to our "provider-agnostic" strategy, enabling a plug-and-play ecosystem for clinical AI models.
+
+## Provenance Substrate: Verifiable Action Protocol (VAP)
+
+While the `DecisionObject` represents the logical reasoning and context of a decision, the **Verifiable Action Protocol (VAP)** is the physical substrate that provides cryptographic integrity.
+
+Every consequential decision processed by PersonaVault is serialized into a **VAP Receipt**. This receipt provides a tamper-evident record binding:
+1.  **Logical Context:** The `DecisionObject` itself (Objective, Evidence, Policies).
+2.  **Model Provenance:** Identity of the models/agents used.
+3.  **Human Override Proof:** Cryptographic signature of human intervention.
+4.  **Integrity Anchor:** A SHA-256 leaf hash anchored via Merkle Tree roots to ensure long-term auditability.
+
+By binding our Decision Objects to VAP Receipts, PersonaVault moves from "trusting our logs" to **independently verifiable evidence**, satisfying the most stringent regulatory requirements for clinical and financial AI.
 
 ## Data Layer
 

@@ -27,7 +27,7 @@ from passlib.context import CryptContext
 # Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock
+    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion
 )
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
@@ -407,6 +407,9 @@ app.include_router(execution_mode_router)
 app.include_router(automation.router, prefix="/api/v1")
 app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
+from app.api.v1.endpoints.ingestion import router as ingestion_router
+app.include_router(ingestion_router)
+
 # Modular Router Registration
 from app.api.v1.endpoints.chat_router import router as chat_router
 from app.api.v1.endpoints.chat_stream import router as chat_stream_router
@@ -422,6 +425,7 @@ app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
 app.include_router(mcp_tools_router)
 
+app.include_router(ingestion_router)
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
 

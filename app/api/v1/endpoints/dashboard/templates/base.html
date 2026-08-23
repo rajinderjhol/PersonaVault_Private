@@ -160,6 +160,7 @@
                 <div class="nav-item" data-tab="timeline" onclick="switchTab('timeline')">⏱️ Decision Timeline</div>
                 <div class="nav-item" data-tab="replay" onclick="switchTab('replay')">🔄 Decision Replay</div>
                 <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">📈 Trend Analysis</div>
+                <div class="nav-item" data-tab="evidence" onclick="switchTab('evidence')">📋 Evidence Pipeline</div>
             </div>
             <div class="nav-group"><div class="nav-label">Enterprise & Safety</div>
                 <div class="nav-item" data-tab="governance" onclick="switchTab('governance')">⚖️ Governance & Audit</div>
@@ -468,7 +469,18 @@
                     if (el) el.classList.add('active');
                     currentTab = tabId;
                     isInitialLoad = false;
+                    
+                    // 1. Inject HTML
                     container.innerHTML = html;
+                    
+                    // 2. Find and execute script tags manually
+                    const scripts = container.getElementsByTagName('script');
+                    for (let script of scripts) {
+                        const newScript = document.createElement('script');
+                        newScript.text = script.text;
+                        document.body.appendChild(newScript).parentNode.removeChild(newScript);
+                    }
+                    
                     refreshTabContent(tabId);
                 } else {
                     container.innerHTML = '<div style="text-align:center; padding:50px; color:#f87171;">Error loading tab</div>';
@@ -709,6 +721,15 @@
             else if (tabId === 'timeline') listEvents();
             else if (tabId === 'replay') resetReplayUI();
             else if (tabId === 'lattices') fetchMetrics();
+            else if (tabId === 'evidence') {
+                setTimeout(() => {
+                    if (typeof window.loadEvidenceStats === 'function') {
+                        window.loadEvidenceStats();
+                    } else {
+                        console.error("loadEvidenceStats not defined on window after delay");
+                    }
+                }, 300);
+            }
             else if (tabId === 'learning') fetchLearningConfig();
             else if (tabId === 'chat') {
                 loadIntelligenceStatus();

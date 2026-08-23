@@ -173,6 +173,9 @@ async function loadSessions() {
 }
 
 async function createNewSession() {
+    // Only proceed if the chat tab is currently active in the DOM
+    if (!document.getElementById('chat-container')) return;
+    
     try {
         const res = await fetch('/api/v1/chat/sessions', {
             method: 'POST',
@@ -186,11 +189,11 @@ async function createNewSession() {
         updateSessionUI(data.id, currentSessionTitle);
         clearChat();
         await loadSessions();
-        showToast('✅ New chat session created!', 'success');
+        if (typeof showToast === 'function') showToast('✅ New chat session created!', 'success');
         return data.id;
     } catch (e) {
         console.error('Error creating session:', e);
-        showToast('Error creating session: ' + e.message, 'error');
+        if (typeof showToast === 'function') showToast('Error creating session: ' + e.message, 'error');
         return null;
     }
 }
@@ -238,8 +241,11 @@ async function loadSession(sessionId) {
 }
 
 function updateSessionUI(sessionId, title) {
-    document.getElementById('current-session-title').textContent = title;
-    document.getElementById('session-id-display').textContent = `#${sessionId}`;
+    const titleEl = document.getElementById('current-session-title');
+    const idEl = document.getElementById('session-id-display');
+    
+    if (titleEl) titleEl.textContent = title;
+    if (idEl) idEl.textContent = sessionId ? `#${sessionId}` : '';
 }
 
 async function renameSession() {
