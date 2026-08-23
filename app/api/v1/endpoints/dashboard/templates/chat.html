@@ -3,48 +3,58 @@
     
     <div style="display: flex; gap: 20px; flex: 1; min-height: 0;">
         <!-- Left: Sessions List -->
-        <div style="width: 250px; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0;">
+        <div style="width: 280px; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <span style="color: #94a3b8; font-size: 12px; font-weight: 600;">CHAT HISTORY</span>
-                <div style="display: flex; gap: 6px;">
-                    <button class="btn btn-sm" style="background: #1e293b;" onclick="createNewSession()">
-                        <i class="fas fa-plus"></i> New
-                    </button>
-                </div>
+                <button class="btn btn-sm" style="background: #38bdf8; color: #0f172a; padding: 4px 12px;" onclick="createNewSession()">
+                    <i class="fas fa-plus"></i> New
+                </button>
             </div>
+            
             <div style="padding: 0 0 10px 0;">
-                <input type="text" id="session-search" placeholder="🔍 Search sessions..." onkeyup="searchSessions(this.value)" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; outline: none; font-size: 12px;">
+                <input type="text" id="session-search" placeholder="🔍 Search sessions..." 
+                       onkeyup="searchSessions(this.value)" 
+                       style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; outline: none; font-size: 12px;">
             </div>
-            <div id="session-list" style="flex: 1; overflow-y: auto;">
-                <div class="metric-label">Loading sessions...</div>
+            
+            <div id="session-list" style="flex: 1; overflow-y: auto; min-height: 0;">
+                <div class="metric-label" style="padding: 20px; text-align: center;">Loading sessions...</div>
             </div>
+            
             <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1e293b; display: flex; gap: 6px;">
-                <button class="btn btn-sm" style="width: 100%; padding: 4px; font-size: 11px; background: #1e293b;" onclick="refreshSessions()">
+                <button class="btn btn-sm" style="flex: 1; padding: 4px; font-size: 11px; background: #1e293b;" onclick="refreshSessions()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <button class="btn btn-sm" style="width: 100%; padding: 4px; font-size: 11px; background: #1e293b;" onclick="exportCurrentSession()">
-                    <i class="fas fa-download"></i>
+                <button class="btn btn-sm" style="flex: 1; padding: 4px; font-size: 11px; background: #1e293b;" onclick="exportAllSessions()">
+                    <i class="fas fa-download"></i> Export All
                 </button>
             </div>
         </div>
         
         <!-- Right: Chat Area -->
         <div style="flex: 1; display: flex; flex-direction: column; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b; min-width: 0;">
-            <!-- Chat Header -->
+            <!-- Chat Header with Session Controls -->
             <div style="padding: 12px 15px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
-                <div>
-                    <span id="current-session-title" style="font-weight: 600; color: #f1f5f9;">New Chat</span>
-                    <span id="session-id-display" style="font-size: 11px; color: #64748b; margin-left: 10px;"></span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="current-session-title" style="font-weight: 600; color: #f1f5f9; font-size: 15px;">New Chat</span>
+                    <span id="session-id-display" style="font-size: 11px; color: #64748b;"></span>
+                    <span id="session-message-count" style="font-size: 11px; color: #64748b;"></span>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <select id="chat-provider-select" class="input-field provider-select" style="width: 160px; padding: 4px 8px; font-size: 11px; margin: 0; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; border-radius: 4px;">
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <select id="chat-provider-select" class="input-field provider-select" style="width: 140px; padding: 4px 8px; font-size: 11px; margin: 0; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; border-radius: 4px;">
                         <option value="ollama">🖥️ Ollama</option>
                         <option value="groq">☁️ Groq</option>
                         <option value="gemini">☁️ Gemini</option>
                     </select>
-                    <button class="btn btn-sm" style="background: #1e293b;" onclick="renameSession()"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm" style="background: #7f1d1d;" onclick="deleteCurrentSession()"><i class="fas fa-trash"></i></button>
-                    <span id="chat-rate-limit" style="font-size: 10px; color: #64748b;"></span>
+                    <button class="btn btn-sm" style="background: #1e293b; padding: 4px 8px;" onclick="renameSession()" title="Rename Session">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm" style="background: #7f1d1d; padding: 4px 8px;" onclick="deleteCurrentSession()" title="Delete Session">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-sm" style="background: #1e293b; padding: 4px 8px;" onclick="exportCurrentSession()" title="Export Session">
+                        <i class="fas fa-download"></i>
+                    </button>
                 </div>
             </div>
             
@@ -52,7 +62,6 @@
             <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 15px; min-height: 0;">
                 <div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">
                     👋 Welcome to PersonaVault!<br><br>
-                    I can answer questions using your stored memories, local files, and connected databases.<br>
                     Create a new chat session or select an existing one to get started.
                 </div>
             </div>
@@ -91,9 +100,7 @@
                         <span id="status-files" class="tag tag-info">0</span>
                         <button class="btn btn-sm" style="background: #1e293b; padding: 2px 8px; font-size: 10px;" onclick="checkProviderStatus()"><i class="fas fa-sync-alt"></i></button>
                     </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="btn btn-sm" style="background: #1e293b; padding: 2px 8px; font-size: 10px;" onclick="clearChat()">Clear</button>
-                    </div>
+                    <button class="btn btn-sm" style="background: #1e293b; padding: 2px 8px; font-size: 10px;" onclick="clearChat()">Clear</button>
                 </div>
             </div>
         </div>
@@ -101,6 +108,217 @@
 </div>
 
 <script>
+// ============ SESSION MANAGEMENT ============
+let currentSessionId = null;
+let currentSessionTitle = '';
+
+async function loadSessions() {
+    const container = document.getElementById('session-list');
+    if (!container) return;
+    
+    try {
+        const res = await fetch('/api/v1/chat/sessions');
+        if (!res.ok) throw new Error('Failed to load sessions');
+        const sessions = await res.json();
+        console.log('📋 Sessions loaded:', sessions);
+        
+        if (sessions.length === 0) {
+            container.innerHTML = `<div class="metric-label" style="padding: 20px; text-align: center; color: #64748b;">No sessions yet.<br>Click "New" to start chatting!</div>`;
+            return;
+        }
+        
+        container.innerHTML = sessions.map(s => {
+            const isActive = s.id === currentSessionId;
+            const msgCount = s.message_count || 0;
+            const title = s.title || 'Untitled Chat';
+            const date = new Date(s.updated_at || s.created_at).toLocaleDateString();
+            
+            return `
+                <div class="session-item" 
+                     data-id="${s.id}" 
+                     onclick="loadSession(${s.id})"
+                     style="padding: 10px; margin-bottom: 6px; border-radius: 6px; cursor: pointer; 
+                            background: ${isActive ? 'rgba(56, 189, 248, 0.1)' : 'transparent'}; 
+                            border: 1px solid ${isActive ? '#38bdf8' : 'transparent'};
+                            transition: all 0.2s;
+                            ${isActive ? 'box-shadow: 0 0 20px rgba(56, 189, 248, 0.05);' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: ${isActive ? '#38bdf8' : '#f1f5f9'}; font-size: 13px; font-weight: ${isActive ? '600' : '400'};">
+                            ${title}
+                        </span>
+                        <span style="font-size: 10px; color: #64748b;">${date}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                        <span style="font-size: 10px; color: #64748b;">
+                            💬 ${msgCount} message${msgCount !== 1 ? 's' : ''}
+                        </span>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="event.stopPropagation(); renameSessionDirect(${s.id})" 
+                                    style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 10px;">
+                                ✏️
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteSession(${s.id})" 
+                                    style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 10px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading sessions:', e);
+        container.innerHTML = '<div style="color: #f87171; padding: 20px; text-align: center;">Error loading sessions</div>';
+    }
+}
+
+async function createNewSession() {
+    try {
+        const res = await fetch('/api/v1/chat/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: 'New Chat' })
+        });
+        if (!res.ok) throw new Error('Failed to create session');
+        const data = await res.json();
+        currentSessionId = data.id;
+        currentSessionTitle = data.title || 'New Chat';
+        updateSessionUI(data.id, currentSessionTitle);
+        clearChat();
+        await loadSessions();
+        showToast('✅ New chat session created!', 'success');
+        return data.id;
+    } catch (e) {
+        console.error('Error creating session:', e);
+        showToast('Error creating session: ' + e.message, 'error');
+        return null;
+    }
+}
+
+async function loadSession(sessionId) {
+    currentSessionId = sessionId;
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}/messages`);
+        if (!res.ok) throw new Error('Failed to load messages');
+        const data = await res.json();
+        currentSessionTitle = data.title || 'Chat';
+        updateSessionUI(sessionId, currentSessionTitle);
+        
+        const container = document.getElementById('chat-messages');
+        if (container) {
+            if (data.messages && data.messages.length > 0) {
+                container.innerHTML = data.messages.map(m => {
+                    const time = new Date(m.created_at || m.timestamp).toLocaleTimeString();
+                    return `
+                        <div class="message ${m.role}" 
+                             style="padding: 12px; background: ${m.role === 'user' ? '#1e293b' : '#0f172a'}; 
+                                    border: 1px solid ${m.role === 'user' ? '#38bdf8' : '#334155'}; 
+                                    border-radius: 8px; margin-bottom: 10px; max-width: 85%; 
+                                    ${m.role === 'user' ? 'margin-left: auto;' : ''} 
+                                    white-space: pre-wrap; word-wrap: break-word;">
+                            ${m.content}
+                            ${m.provider ? `<div style="font-size: 10px; color: #64748b; margin-top: 4px;">⚡ ${m.provider}</div>` : ''}
+                            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">${time}</div>
+                        </div>
+                    `;
+                }).join('');
+                container.scrollTop = container.scrollHeight;
+            } else {
+                container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">
+                    👋 Continue your conversation here.
+                </div>`;
+            }
+        }
+        await loadSessions();
+        clearThoughtProcess();
+    } catch (e) {
+        console.error('Error loading session:', e);
+        showToast('Error loading session: ' + e.message, 'error');
+    }
+}
+
+function updateSessionUI(sessionId, title) {
+    document.getElementById('current-session-title').textContent = title;
+    document.getElementById('session-id-display').textContent = `#${sessionId}`;
+}
+
+async function renameSession() {
+    if (!currentSessionId) {
+        showToast('No session selected', 'error');
+        return;
+    }
+    const newTitle = prompt('Enter new session name:', currentSessionTitle || 'Untitled Chat');
+    if (newTitle && newTitle.trim()) {
+        await renameSessionDirect(currentSessionId, newTitle.trim());
+    }
+}
+
+async function renameSessionDirect(sessionId, newTitle) {
+    if (!newTitle) {
+        const promptTitle = prompt('Enter new session name:', '');
+        if (!promptTitle) return;
+        newTitle = promptTitle;
+    }
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle })
+        });
+        if (!res.ok) throw new Error('Failed to rename session');
+        if (sessionId === currentSessionId) {
+            currentSessionTitle = newTitle;
+            document.getElementById('current-session-title').textContent = newTitle;
+        }
+        await loadSessions();
+        showToast('✅ Session renamed!', 'success');
+    } catch (e) {
+        console.error('Error renaming session:', e);
+        showToast('Error renaming session: ' + e.message, 'error');
+    }
+}
+
+async function deleteCurrentSession() {
+    if (!currentSessionId) {
+        showToast('No session to delete', 'error');
+        return;
+    }
+    if (!confirm(`Delete "${currentSessionTitle}" and all its messages?`)) return;
+    await deleteSession(currentSessionId);
+}
+
+async function deleteSession(sessionId) {
+    try {
+        const res = await fetch(`/api/v1/chat/sessions/${sessionId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete session');
+        if (sessionId === currentSessionId) {
+            currentSessionId = null;
+            currentSessionTitle = '';
+            document.getElementById('current-session-title').textContent = 'New Chat';
+            document.getElementById('session-id-display').textContent = '';
+            clearChat();
+        }
+        await loadSessions();
+        showToast('🗑️ Session deleted', 'info');
+    } catch (e) {
+        console.error('Error deleting session:', e);
+        showToast('Error deleting session: ' + e.message, 'error');
+    }
+}
+
+function refreshSessions() {
+    loadSessions();
+}
+
+function searchSessions(query) {
+    const items = document.querySelectorAll('.session-item');
+    const searchTerm = query.toLowerCase().trim();
+    items.forEach(item => {
+        const title = item.querySelector('span:first-child')?.textContent?.toLowerCase() || '';
+        item.style.display = title.includes(searchTerm) ? 'flex' : 'none';
+    });
+}
+
 async function exportCurrentSession() {
     if (!currentSessionId) {
         showToast('No session selected', 'error');
@@ -122,22 +340,80 @@ async function exportCurrentSession() {
         a.download = `chat_${currentSessionId}_${new Date().toISOString().slice(0,10)}.md`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast('📥 Chat exported', 'success');
+        showToast('📥 Chat exported!', 'success');
     } catch (e) {
-        showToast('Error exporting chat', 'error');
+        showToast('Error exporting chat: ' + e.message, 'error');
     }
 }
 
-// Rate limit check
-setInterval(async () => {
+async function exportAllSessions() {
     try {
-        const res = await fetch('/api/v1/chat/rate-limit');
-        const data = await res.json();
-        const el = document.getElementById('chat-rate-limit');
-        if (el) {
-            el.textContent = `📊 ${data.remaining}/${data.limit}`;
-            el.style.color = data.remaining < 10 ? '#f87171' : '#64748b';
+        const res = await fetch('/api/v1/chat/sessions');
+        const sessions = await res.json();
+        if (sessions.length === 0) {
+            showToast('No sessions to export', 'error');
+            return;
         }
-    } catch(e) {}
-}, 30000);
+        let content = '# PersonaVault Chat Export\n';
+        content += `Date: ${new Date().toISOString()}\n`;
+        content += `Total Sessions: ${sessions.length}\n\n`;
+        for (const s of sessions) {
+            const msgRes = await fetch(`/api/v1/chat/sessions/${s.id}/messages`);
+            const msgs = await msgRes.json();
+            content += `## Session: ${s.title || 'Untitled'}\n`;
+            content += `Messages: ${msgs.messages?.length || 0}\n\n`;
+            msgs.messages?.forEach(m => {
+                content += `### ${m.role.toUpperCase()}\n${m.content}\n\n`;
+            });
+            content += '---\n\n';
+        }
+        const blob = new Blob([content], {type: 'text/markdown'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `all_chats_${new Date().toISOString().slice(0,10)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 All sessions exported!', 'success');
+    } catch (e) {
+        showToast('Error exporting sessions: ' + e.message, 'error');
+    }
+}
+
+function clearChat() {
+    const container = document.getElementById('chat-messages');
+    if (container) {
+        container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">
+            👋 Start a new conversation or select a session.
+        </div>`;
+    }
+}
+
+// Initialize chat when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Load sessions
+    setTimeout(loadSessions, 300);
+    // Load provider
+    loadProviderIntoUI();
+    // If no session is selected, create one automatically
+    if (!currentSessionId) {
+        setTimeout(createNewSession, 500);
+    }
+});
+
+// Make functions globally accessible
+window.loadSessions = loadSessions;
+window.createNewSession = createNewSession;
+window.loadSession = loadSession;
+window.renameSession = renameSession;
+window.deleteCurrentSession = deleteCurrentSession;
+window.refreshSessions = refreshSessions;
+window.searchSessions = searchSessions;
+window.exportCurrentSession = exportCurrentSession;
+window.exportAllSessions = exportAllSessions;
+window.clearChat = clearChat;
+window.renameSessionDirect = renameSessionDirect;
+window.deleteSession = deleteSession;
+
+console.log('✅ Chat session management loaded');
 </script>
