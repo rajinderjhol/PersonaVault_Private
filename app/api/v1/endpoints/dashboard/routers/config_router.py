@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
@@ -5,7 +6,7 @@ import logging
 
 from app.core.dependencies import require_admin
 from app.db.session import get_db
-from app.models import SystemConfig
+from app.models.system_config import SystemConfig
 from app.services.intelligence_gateway import gateway
 
 logger = logging.getLogger(__name__)
@@ -115,14 +116,19 @@ async def update_ai_provider_settings(
 @router.get("/ai-providers/cloud")
 async def list_cloud_providers(db: AsyncSession = Depends(get_db)):
     """List all configured cloud AI providers."""
+    import logging
+    logger = logging.getLogger(__name__)
     # Updated to look at the ai_providers JSON config
     stmt = select(SystemConfig).where(SystemConfig.key == "ai_providers")
     config = (await db.execute(stmt)).scalars().first()
+    logger.info(f"🔍 list_cloud_providers: config found: {config}")
     if not config:
+        logger.info("🔍 list_cloud_providers: No config found")
         return []
     
     try:
         data = json.loads(config.value)
+        logger.info(f"🔍 list_cloud_providers: data: {data}")
         providers = []
         for name, settings in data.items():
             if name == "ollama": continue
@@ -133,8 +139,10 @@ async def list_cloud_providers(db: AsyncSession = Depends(get_db)):
                 "model": settings.get("model", ""),
                 "api_key": settings.get("api_key", "")
             })
+        logger.info(f"🔍 list_cloud_providers: returning {len(providers)} providers")
         return providers
-    except:
+    except Exception as e:
+        logger.error(f"🔍 list_cloud_providers: error: {e}")
         return []
 
 

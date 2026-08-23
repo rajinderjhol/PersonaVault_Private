@@ -1,146 +1,248 @@
 <div id="models-tab">
     <h2 style="color: var(--accent);">📦 Model Management</h2>
     
-    <!-- ============================================================
-         PRIMARY PROVIDER
-         ============================================================ -->
-    <div class="card" style="margin-bottom:20px; border-top: 3px solid #34d399;">
-        <h3 style="margin-top:0; color:#34d399; font-size:14px;">🎯 Primary AI Provider</h3>
-        <p style="color: #94a3b8; font-size: 12px;">Select the default AI provider for all system queries.</p>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <select id="primary-ai-provider-select" class="input-field" style="margin:0; flex:1; min-width:150px;" onchange="updatePrimaryAIProvider(this.value)">
-                <option value="ollama">🔒 Ollama (Local)</option>
-                <option value="groq">⚡ Groq (Cloud)</option>
-                <option value="gemini">🧠 Gemini (Cloud)</option>
-                <option value="deepseek">🚀 DeepSeek (Cloud)</option>
+    <!-- Primary AI Provider -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 class="card-title">🎯 Primary AI Provider</h3>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">Select the default AI provider for all system queries.</p>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <select id="primary-ai-provider-select" class="provider-select" style="padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9; min-width: 180px;">
+                <option value="ollama">⚡ Ollama (Local)</option>
+                <option value="groq">☁️ Groq (Cloud)</option>
+                <option value="gemini">☁️ Gemini (Cloud)</option>
+                <option value="deepseek">☁️ DeepSeek (Cloud)</option>
             </select>
-            <span id="primary-ai-provider-status" class="tag tag-info" style="font-size:11px;">Loading...</span>
+            <span id="primary-ai-provider-status" class="tag tag-info">ollama</span>
+            <button class="refresh-btn" onclick="fetchPrimaryAIProvider()"><i class="fas fa-sync-alt"></i></button>
         </div>
     </div>
-
-    <!-- ============================================================
-         PROVIDER STATS
-         ============================================================ -->
-    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
-        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">📊 Provider Status</h3>
-        <div id="provider-stats-container">
-            <div class="metric-label">Loading stats...</div>
-        </div>
-        <button class="refresh-btn" style="margin-top:8px; font-size:11px;" onclick="refreshAllProviderStats()">
-            <i class="fas fa-sync-alt"></i> Refresh Stats
-        </button>
-    </div>
-
-    <!-- ============================================================
-         AI PROVIDERS TABLE
-         ============================================================ -->
-    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
-        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">🔌 AI Providers</h3>
-        <p style="color: #94a3b8; font-size: 12px;">Manage all AI providers. Click <strong style="color:#38bdf8;">Edit</strong> to update model, host, or API key.</p>
-        
-        <div style="overflow-x:auto; margin-top:12px;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    
+    <!-- AI Providers -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 class="card-title">🔌 AI Providers</h3>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">Manage all AI providers. Click Edit to update model, host, or API key.</p>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
-                    <tr style="border-bottom:2px solid #334155;">
-                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Provider</th>
-                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Model</th>
-                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Status</th>
-                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Actions</th>
+                    <tr style="border-bottom: 1px solid #1e293b;">
+                        <th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Provider</th>
+                        <th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Model</th>
+                        <th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Status</th>
+                        <th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="providers-table-body">
-                    <tr><td colspan="4" style="padding:20px; text-align:center; color:#64748b;">Loading providers...</td></tr>
+                <tbody id="cloud-connections-list">
+                    <tr><td colspan="4" style="padding: 20px; text-align: center; color: #64748b;">Loading providers...</td></tr>
                 </tbody>
             </table>
         </div>
-        
-        <!-- Edit/Add Form -->
-        <div id="provider-form-container" style="display:none; margin-top:16px; background:#020617; border:1px solid #334155; border-radius:6px; padding:14px;">
-            <h4 id="provider-form-title" style="color:#fbbf24; margin:0 0 10px 0; font-size:13px;">✏️ Edit Provider</h4>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-                <input type="text" id="provider-name" placeholder="Provider Name" class="input-field" style="flex:1; min-width:100px; background:#0f172a; font-size:12px;" readonly>
-                <input type="text" id="provider-host" placeholder="API Host" class="input-field" style="flex:2; min-width:180px; background:#0f172a; font-size:12px;">
-                <input type="password" id="provider-api-key" placeholder="API Key (optional)" class="input-field" style="flex:1.5; min-width:120px; background:#0f172a; font-size:12px;">
-                <input type="text" id="provider-model" placeholder="Model ID" class="input-field" style="flex:1; min-width:100px; background:#0f172a; font-size:12px;">
-            </div>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn" style="background:#34d399; color:#0f172a; font-size:12px; padding:4px 12px;" onclick="saveProviderConfig()">💾 Save</button>
-                <button class="btn" style="background:#64748b; font-size:12px; padding:4px 12px;" onclick="cancelProviderEdit()">Cancel</button>
-                <button class="btn" style="background:#6366f1; font-size:12px; padding:4px 12px;" onclick="testProviderConnection()">🔌 Test</button>
-            </div>
-            <div id="edit-status" style="margin-top:6px; font-size:11px; color:#94a3b8;"></div>
+        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn" style="background: #38bdf8; color: #0f172a;" onclick="showAddProvider()">➕ Add Provider</button>
+            <button class="btn" style="background: #1e293b;" onclick="reloadApiKeys()">🔄 Reload API Keys</button>
+            <button class="btn" style="background: #1e293b;" onclick="refreshBOM()">📋 Refresh BOM</button>
         </div>
-        
-        <button class="btn" style="background:#a855f7; font-size:12px; padding:4px 14px; margin-top:10px;" onclick="showAddProviderForm()">
-            <i class="fas fa-plus"></i> Add Provider
-        </button>
     </div>
-
-    <!-- ============================================================
-         RELOAD API KEYS
-         ============================================================ -->
-    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
-        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">🔄 Reload API Keys</h3>
-        <p style="color: #94a3b8; font-size: 12px;">Load API keys from .env file into the database.</p>
+    
+    <!-- Add Provider Modal -->
+    <div id="add-provider-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; padding: 40px; box-sizing: border-box;">
+        <div style="max-width: 500px; margin: 100px auto; background: #0f172a; padding: 30px; border-radius: 12px; border: 1px solid #1e293b;">
+            <h3 style="color: #f1f5f9; margin-top: 0;">➕ Add Cloud Provider</h3>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Provider Name</label>
+                <input type="text" id="cloud-api-name" placeholder="e.g., openai, anthropic" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9;">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Host URL</label>
+                <input type="text" id="cloud-api-host" placeholder="https://api.example.com/v1" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9;">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">API Key</label>
+                <input type="password" id="cloud-api-key" placeholder="sk-..." style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9;">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Default Model</label>
+                <input type="text" id="cloud-api-model" placeholder="gpt-4, claude-3, etc." style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="background: #34d399; color: #0f172a; flex: 1;" onclick="saveCloudConfig()">💾 Save</button>
+                <button class="btn" style="background: #1e293b; flex: 1;" onclick="closeAddProvider()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ollama Models -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 class="card-title">📦 Installed Ollama Models</h3>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">Manage your local Ollama models. 🛡️ Protected models cannot be deleted.</p>
+        <div id="models-list"></div>
+    </div>
+    
+    <!-- Pull New Model -->
+    <div class="card">
+        <h3 class="card-title">📥 Pull New Ollama Model</h3>
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button class="btn" onclick="reloadApiKeys()" style="background: #34d399; color: #0f172a; font-size:12px; padding:4px 14px;">
-                <i class="fas fa-sync-alt"></i> Reload from .env
-            </button>
-            <span id="reload-status" style="font-size: 11px; color: #94a3b8;"></span>
+            <input type="text" id="new-model-input" placeholder="e.g., llama3.2:3b" style="flex: 1; min-width: 200px; padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9;">
+            <button class="btn" onclick="triggerModelPull()" style="background: #38bdf8; color: #0f172a;">📥 Pull Model</button>
         </div>
-        <div id="reload-result" style="margin-top: 8px; display: none; padding: 8px; border-radius: 4px; border: 1px solid #334155; background: #020617; font-size: 11px; font-family: monospace; max-height:80px; overflow-y:auto;"></div>
-    </div>
-
-    <!-- ============================================================
-         AI BOM
-         ============================================================ -->
-    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
-        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">📋 AI Bill of Materials</h3>
-        <div id="ai-bom-container">
-            <div class="metric-label">Loading BOM...</div>
-        </div>
-        <button class="refresh-btn" style="margin-top:8px; font-size:11px;" onclick="refreshAIBOM()">
-            <i class="fas fa-sync-alt"></i> Refresh BOM
-        </button>
-    </div>
-
-    <!-- ============================================================
-         PULL NEW MODEL
-         ============================================================ -->
-    <div class="card" style="margin-bottom:20px; border-top: 3px solid #38bdf8;">
-        <h3 style="margin-top:0; color:#38bdf8; font-size:14px;">📥 Pull New Ollama Model</h3>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <input type="text" id="new-model-input" placeholder="e.g. llama3.2:3b" class="input-field" style="flex:2; min-width:180px; font-size:12px;">
-            <button class="btn" onclick="triggerModelPull()" style="background:#38bdf8; color:#0f172a; font-size:12px; padding:4px 14px;">
-                <i class="fas fa-download"></i> Pull Model
-            </button>
-        </div>
-        <div id="pull-progress-container" style="display:none; margin-top:10px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <span id="pull-status-label" style="font-size:11px; color:#94a3b8;">Initializing...</span>
-                <span id="pull-percentage" style="font-size:11px; color:#38bdf8; font-weight:600;">0%</span>
+        <div id="pull-progress-container" style="display: none; margin-top: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span id="pull-status-label" style="color: #94a3b8; font-size: 13px;">Pulling...</span>
+                <span id="pull-percentage" style="color: #f1f5f9; font-size: 13px;">0%</span>
             </div>
-            <div style="width:100%; height:4px; background:#1e293b; border-radius:2px; overflow:hidden; border:1px solid #334155;">
-                <div id="pull-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.3s ease;"></div>
+            <div style="width: 100%; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden;">
+                <div id="pull-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #34d399); transition: width 0.3s;"></div>
             </div>
-        </div>
-        <div id="pull-status" style="margin-top:6px; font-family:monospace; font-size:10px; color:#64748b; white-space:pre-wrap; max-height:50px; overflow-y:auto; border-radius:4px; padding:4px; background:rgba(15, 23, 42, 0.5); display:none;"></div>
-    </div>
-
-    <!-- ============================================================
-         INSTALLED MODELS
-         ============================================================ -->
-    <div class="card" style="border-top: 3px solid #64748b;">
-        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">📦 Installed Ollama Models</h3>
-        <p style="color: #94a3b8; font-size: 12px;">
-            Manage your local Ollama models. <span style="color:#fbbf24;">🛡️ Protected</span> models cannot be deleted.
-        </p>
-        <div id="models-list" style="display:flex; flex-direction:column; gap:6px;">
-            <div class="metric-label">Loading models...</div>
-        </div>
-        <div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="refresh-btn" onclick="fetchModels()" style="font-size:11px;"><i class="fas fa-sync-alt"></i> Refresh</button>
-            <span id="model-count" style="font-size:11px; color:#64748b; align-self:center;"></span>
+            <div id="pull-status" style="margin-top: 8px; color: #94a3b8; font-size: 12px; max-height: 100px; overflow-y: auto;"></div>
         </div>
     </div>
 </div>
+
+<script>
+// ============ FETCH CLOUD CONNECTIONS ============
+async function fetchCloudConnections() {
+    const list = document.getElementById('cloud-connections-list');
+    if (!list) {
+        console.warn('cloud-connections-list not found');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
+        if (!res.ok) throw new Error('Failed to fetch cloud connections');
+        const data = await res.json();
+        console.log('📋 Cloud connections:', data);
+        
+        if (data && data.length > 0) {
+            let html = '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><thead><tr style="border-bottom: 1px solid #1e293b;"><th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Provider</th><th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Model</th><th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Status</th><th style="text-align: left; padding: 10px 8px; color: #94a3b8;">Actions</th></tr></thead><tbody>';
+            
+            data.forEach(p => {
+                const isActive = p.enabled !== false;
+                html += `
+                    <tr style="border-bottom: 1px solid #1e293b;">
+                        <td style="padding: 10px 8px;">
+                            <span style="font-weight: 600; color: #f1f5f9;">${p.name}</span>
+                            ${p.name === 'groq' ? ' <span class="tag tag-info">Primary</span>' : ''}
+                        </td>
+                        <td style="padding: 10px 8px; color: #94a3b8;">${p.model || 'Default'}</td>
+                        <td style="padding: 10px 8px;">
+                            <span class="tag ${isActive ? 'tag-success' : 'tag-danger'}">${isActive ? '✅ Active' : '⏸️ Disabled'}</span>
+                        </td>
+                        <td style="padding: 10px 8px;">
+                            <button class="btn btn-sm" style="background: #1e293b; padding: 2px 10px; font-size: 10px;" onclick="fetchAIProviderSettings('${p.name}')">✏️ Edit</button>
+                            <button class="btn btn-sm" style="background: #f87171; padding: 2px 10px; font-size: 10px;" onclick="deleteCloudConfig('${p.name}')">🗑️ Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = '<div class="metric-label" style="padding: 20px; text-align: center; color: #64748b;">No cloud connections configured. Add one using the form above.</div>';
+        }
+    } catch (e) {
+        console.error('Error fetching cloud connections:', e);
+        list.innerHTML = '<div style="color: #f87171; padding: 20px; text-align: center;">Error loading providers: ' + e.message + '</div>';
+    }
+}
+
+// Also need fetchAIProviderSettings and deleteCloudConfig
+async function fetchAIProviderSettings(provider) {
+    try {
+        const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider-settings/${provider}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        document.getElementById('cloud-api-name').value = provider;
+        document.getElementById('cloud-api-host').value = data.host || '';
+        document.getElementById('cloud-api-key').value = data.api_key || '';
+        document.getElementById('cloud-api-model').value = data.model || '';
+        
+        showAddProvider();
+        showToast(`Loaded settings for ${provider}`, 'info');
+    } catch (e) {
+        console.error('Error fetching settings:', e);
+        showToast('Failed to load settings: ' + e.message, 'error');
+    }
+}
+
+async function deleteCloudConfig(provider) {
+    if (!confirm(`Delete connection "${provider}"? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider/${provider}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast(`Deleted ${provider}`, 'info');
+        fetchCloudConnections();
+    } catch (e) {
+        console.error('Error deleting connection:', e);
+        showToast('Failed to delete: ' + e.message, 'error');
+    }
+}
+
+async function saveCloudConfig() {
+    const provider = document.getElementById('cloud-api-name').value;
+    const host = document.getElementById('cloud-api-host').value;
+    const api_key = document.getElementById('cloud-api-key').value;
+    const model = document.getElementById('cloud-api-model').value;
+    
+    if (!provider) {
+        showToast('Connection name is required', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider, host, api_key, model })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast(`Configuration for ${provider} saved`, 'success');
+        closeAddProvider();
+        fetchCloudConnections();
+    } catch (e) {
+        showToast('Failed to save: ' + e.message, 'error');
+    }
+}
+
+window.fetchCloudConnections = fetchCloudConnections;
+window.fetchAIProviderSettings = fetchAIProviderSettings;
+window.deleteCloudConfig = deleteCloudConfig;
+window.saveCloudConfig = saveCloudConfig;
+
+function showAddProvider() {
+    document.getElementById('add-provider-modal').style.display = 'block';
+}
+function closeAddProvider() {
+    document.getElementById('add-provider-modal').style.display = 'none';
+    document.getElementById('cloud-api-name').value = '';
+    document.getElementById('cloud-api-host').value = '';
+    document.getElementById('cloud-api-key').value = '';
+    document.getElementById('cloud-api-model').value = '';
+}
+function reloadApiKeys() {
+    showToast('🔄 Reloading API keys from .env...', 'info');
+    fetch('/api/v1/admin/dashboard/config/reload-api-keys', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            showToast(data.message || '✅ API keys reloaded', 'success');
+            fetchCloudConnections();
+        })
+        .catch(e => showToast('Error reloading API keys', 'error'));
+}
+function refreshBOM() {
+    showToast('📋 Refreshing Bill of Materials...', 'info');
+    fetchCloudConnections();
+    fetchInstalledModels();
+}
+</script>
+
+<style>
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.btn:hover { opacity: 0.8; transform: translateY(-1px); }
+.form-group label { color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px; }
+.tag { padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.tag-success { background: #065f46; color: #34d399; }
+.tag-info { background: #1e3a5f; color: #38bdf8; }
+.tag-danger { background: #7f1d1d; color: #f87171; }
+</style>

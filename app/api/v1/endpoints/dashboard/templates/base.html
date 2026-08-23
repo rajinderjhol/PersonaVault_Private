@@ -422,7 +422,7 @@
         async function triggerConsolidation() {
             try {
                 showToast('🔄 Running consolidation...', 'info');
-                const res = await fetch('/api/v1/admin/dashboard/learning/trigger', { method: 'POST' });
+                const res = await fetch('/api/v1/admin/dashboard/learning/consolidation/trigger', { method: 'POST' });
                 if (res.ok) {
                     showToast('✅ Consolidation triggered', 'success');
                     setTimeout(loadConsolidationStats, 2000);
@@ -1703,7 +1703,7 @@
         }
         async function triggerLearning() {
             try {
-                await fetch('/api/v1/admin/dashboard/learning/trigger', {method: 'POST'});
+                await fetch('/api/v1/admin/dashboard/learning/consolidation/trigger', {method: 'POST'});
                 showToast('Crystallization cycle triggered', 'success');
             } catch (e) { showToast('Error: ' + e.message, 'error'); }
         }
@@ -1931,5 +1931,16 @@
     <script src="/static/js/models.js" defer></script>
     <script src="/static/js/chat.js" defer></script>
 
+<!-- Global Error Handler -->
+<script>
+// Global error handling for dashboard
+window.addEventListener("error", function(e) {
+    if (e.target.tagName === "IMG") {
+        e.target.style.display = "none";
+        return;
+    }
+    console.error("Global error:", e.message);
+});
+</script>
 </body>
     </html>
