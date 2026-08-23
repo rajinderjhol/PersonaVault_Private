@@ -1,0 +1,24 @@
+<!-- Empty State Component -->
+<div class="empty-state" style="text-align: center; padding: 40px 20px;">
+    <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+    <h3 style="color: #f1f5f9; margin: 0 0 8px 0;" id="empty-title">No Data Available</h3>
+    <p style="color: #94a3b8; margin: 0 0 16px 0;" id="empty-description">There's nothing here yet. Start by creating your first item.</p>
+    <button class="btn btn-primary" onclick="location.reload()" style="display: none;" id="empty-action">🔄 Refresh</button>
+</div>
+
+<script>
+function showEmptyState(containerId, title, description, actionText, actionFn) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const emptyState = `
+        <div class="empty-state" style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+            <h3 style="color: #f1f5f9; margin: 0 0 8px 0;">${title || 'No Data Available'}</h3>
+            <p style="color: #94a3b8; margin: 0 0 16px 0;">${description || 'There\'s nothing here yet.'}</p>
+            ${actionText ? `<button class="btn btn-primary" onclick="(${actionFn || '() => location.reload()'})()" style="background: #38bdf8; color: #0f172a;">${actionText}</button>` : ''}
+        </div>
+    `;
+    container.innerHTML = emptyState;
+}
+</script>
