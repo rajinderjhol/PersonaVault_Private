@@ -210,39 +210,3 @@ window.fetchAIProviderSettings = fetchAIProviderSettings;
 window.deleteCloudConfig = deleteCloudConfig;
 window.saveCloudConfig = saveCloudConfig;
 
-function showAddProvider() {
-    document.getElementById('add-provider-modal').style.display = 'block';
-}
-function closeAddProvider() {
-    document.getElementById('add-provider-modal').style.display = 'none';
-    document.getElementById('cloud-api-name').value = '';
-    document.getElementById('cloud-api-host').value = '';
-    document.getElementById('cloud-api-key').value = '';
-    document.getElementById('cloud-api-model').value = '';
-}
-function reloadApiKeys() {
-    showToast('🔄 Reloading API keys from .env...', 'info');
-    fetch('/api/v1/admin/dashboard/config/reload-api-keys', {method: 'POST'})
-        .then(r => r.json())
-        .then(data => {
-            showToast(data.message || '✅ API keys reloaded', 'success');
-            fetchCloudConnections();
-        })
-        .catch(e => showToast('Error reloading API keys', 'error'));
-}
-function refreshBOM() {
-    showToast('📋 Refreshing Bill of Materials...', 'info');
-    fetchCloudConnections();
-    fetchInstalledModels();
-}
-</script>
-
-<style>
-.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-.btn:hover { opacity: 0.8; transform: translateY(-1px); }
-.form-group label { color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px; }
-.tag { padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.tag-success { background: #065f46; color: #34d399; }
-.tag-info { background: #1e3a5f; color: #38bdf8; }
-.tag-danger { background: #7f1d1d; color: #f87171; }
-</style>
