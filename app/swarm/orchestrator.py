@@ -47,14 +47,10 @@ class MultiAgentOrchestrator:
         try:
             from sqlalchemy import select
             from app.models.learning.behaviour_pack import BehaviourPack
+            from app.db.session import SessionLocal
             
-            if not self.db:
-                logger.warning("No database session available for loading packs")
-                self._packs_loaded = True
-                return
-            
-            # Create a session from the sessionmaker
-            async with self.db() as session:
+            # Create a new session directly
+            async with SessionLocal() as session:
                 # Directly query the database
                 stmt = select(BehaviourPack)
                 result = await session.execute(stmt)
