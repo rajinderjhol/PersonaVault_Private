@@ -6,437 +6,1930 @@
     <title>PersonaVault Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/websocket_manager.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; }
+        .stat-label { color: #94a3b8; }
+        .stat-value { color: #f1f5f9; font-weight: 600; }
+        .tag { padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .tag-success { background: #065f46; color: #34d399; }
+        .tag-warning { background: #78350f; color: #fbbf24; }
+        .tag-danger { background: #7f1d1d; color: #f87171; }
+        .tag-info { background: #1e3a5f; color: #38bdf8; }
+        .mt-10 { margin-top: 10px; }
+        .pack-card { background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #38bdf8; }
+        .pack-name { font-weight: 700; color: #38bdf8; }
+        .pack-stats { color: #94a3b8; font-size: 12px; }
+        .replay-controls { display: flex; gap: 10px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+        #mermaid-graph-container { background: #020617; padding: 20px; border-radius: 8px; min-height: 200px; display: flex; justify-content: center; align-items: center; }
+        #thought-log { background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        #thought-log div { padding: 4px 0; border-bottom: 1px solid #1e293b; }
+        #thought-log .thought-agent { color: #38bdf8; font-weight: bold; }
+        #thought-log .thought-content { color: #f1f5f9; }
+    </style>
 </head>
 <body>
-
-<div id="toast-container" class="toast-container"></div>
-
-<header>
-    <h1>🛡️ PersonaVault System Control</h1>
-    <div style="display: flex; gap: 10px; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
-            <span id="ws-status" style="color: #f87171;">🔴 Disconnected</span>
-            <button class="refresh-btn" onclick="initWebSocket()" style="padding: 2px 8px; font-size: 10px;">
+    <div id="toast-container" class="toast-container"></div>
+    <header>
+        <h1>🛡️ PersonaVault System Control</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <span id="ws-status" style="color: #f87171;">🔴 Disconnected</span>
+                <button class="refresh-btn" onclick="wsManager?.reset(); initWebSocket();" style="padding: 2px 8px; font-size: 10px;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <button class="refresh-btn" onclick="refreshAll()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <button class="refresh-btn" style="color: #f87171; border-color: #f87171;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </header>
+    <!-- Unified Context Bar -->
+    <div id="context-bar" style="background: #0f172a; border-bottom: 1px solid #334155; padding: 8px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="color: #94a3b8; font-size: 12px;">🤖 Provider:</span>
+            <span id="context-provider" class="tag tag-info" style="font-size: 12px;">ollama</span>
+            <span style="color: #94a3b8; font-size: 12px;">📊 Domain:</span>
+            <span id="context-domain" class="tag tag-info" style="font-size: 12px;">All</span>
+            <span style="color: #94a3b8; font-size: 12px;">⚡ Status:</span>
+            <span id="context-status" class="tag tag-success" style="font-size: 12px;">✅ Operational</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="context-alerts" style="font-size: 12px; color: #94a3b8;">🔔 No alerts</span>
+            <button class="refresh-btn" style="padding: 2px 10px; font-size: 11px;" onclick="refreshContextBar()">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>
-        <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Refresh</button>
-        <button class="refresh-btn" style="color: #f87171; border-color: #f87171;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
-</header>
-
-<!-- Context Bar -->
-<div id="context-bar" style="background: #0f172a; border-bottom: 1px solid #334155; padding: 8px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <span style="color: #94a3b8; font-size: 12px;">🤖 Provider:</span>
-        <span id="context-provider" class="tag tag-info" style="font-size: 12px;">ollama</span>
-        <span style="color: #94a3b8; font-size: 12px;">📊 Domain:</span>
-        <span id="context-domain" class="tag tag-info" style="font-size: 12px;">All</span>
-        <span style="color: #94a3b8; font-size: 12px;">⚡ Status:</span>
-        <span id="context-status" class="tag tag-success" style="font-size: 12px;">✅ Operational</span>
+    <!-- Action Required Widget -->
+    <div id="action-required-widget" style="display: none; background: #1e293b; border: 1px solid #f87171; border-radius: 8px; padding: 15px; margin: 10px 20px 20px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0; color: #f87171;">
+                🚨 <span id="action-count">0</span> Pending Action<span id="action-plural">s</span> Require Your Attention
+            </h4>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn" style="padding: 4px 12px; font-size: 11px; background: #34d399; color: #0f172a;" onclick="approveAllActions()">
+                    <i class="fas fa-check-circle"></i> Approve All
+                </button>
+                <button class="btn" style="padding: 4px 12px; font-size: 11px; background: #f87171;" onclick="denyAllActions()">
+                    <i class="fas fa-times-circle"></i> Deny All
+                </button>
+                <button class="refresh-btn" style="padding: 4px 10px; font-size: 11px;" onclick="loadActions()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="refresh-btn" style="padding: 4px 10px; font-size: 11px;" onclick="document.getElementById('action-required-widget').style.display='none'; sessionStorage.setItem('action-widget-closed', 'true');">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="action-list" style="max-height: 200px; overflow-y: auto;">
+            <div class="metric-label">Loading actions...</div>
+        </div>
     </div>
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <span id="context-alerts" style="font-size: 12px; color: #94a3b8;">🔔 No alerts</span>
-        <button class="refresh-btn" style="padding: 2px 10px; font-size: 11px;" onclick="refreshContextBar()">
-            <i class="fas fa-sync-alt"></i>
+    <!-- Quick Action Bar -->
+    <div style="padding: 10px 20px; background: #0f172a; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px;">
+        <span style="color: #94a3b8; font-size: 12px;">⚡ Quick Actions:</span>
+        <button class="refresh-btn" style="padding: 2px 8px; font-size: 11px;" onclick="document.getElementById('quick-actions').style.display = document.getElementById('quick-actions').style.display === 'none' ? 'flex' : 'none'">Toggle Visibility</button>
+    </div>
+    <div id="quick-actions" style="display: flex; gap: 8px; padding: 10px 20px; background: #0f172a; border-bottom: 1px solid #1e293b; flex-wrap: wrap; align-items: center;">
+        <button class="quick-action-btn" onclick="quickAction('new_decision')" 
+                style="background: #1e293b; border: 1px solid #38bdf8; border-radius: 6px; padding: 4px 12px; color: #38bdf8; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-plus-circle"></i> New Decision
+        </button>
+        <button class="quick-action-btn" onclick="quickAction('refresh_data')" 
+                style="background: #1e293b; border: 1px solid #34d399; border-radius: 6px; padding: 4px 12px; color: #34d399; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-sync-alt"></i> Refresh Data
+        </button>
+        <button class="quick-action-btn" onclick="quickAction('export_report')" 
+                style="background: #1e293b; border: 1px solid #fbbf24; border-radius: 6px; padding: 4px 12px; color: #fbbf24; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-file-export"></i> Export Report
+        </button>
+        <button class="quick-action-btn" onclick="quickAction('clear_cache')" 
+                style="background: #1e293b; border: 1px solid #a855f7; border-radius: 6px; padding: 4px 12px; color: #a855f7; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-eraser"></i> Clear Cache
+        </button>
+        <button class="quick-action-btn" onclick="quickAction('quick_chat')" 
+                style="background: #1e293b; border: 1px solid #f472b6; border-radius: 6px; padding: 4px 12px; color: #f472b6; cursor: pointer; font-size: 12px;">
+            <i class="fas fa-comment"></i> Quick Chat
         </button>
     </div>
-</div>
-
-<!-- Action Required Widget -->
-<div id="action-required-widget" style="display: none; background: #1e293b; border: 1px solid #f87171; border-radius: 8px; padding: 15px; margin: 10px 20px 20px 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h4 style="margin: 0; color: #f87171;">🚨 <span id="action-count">0</span> Pending Action<span id="action-plural">s</span></h4>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn" style="padding: 4px 12px; font-size: 11px; background: #34d399; color: #0f172a;" onclick="approveAllActions()">Approve All</button>
-            <button class="btn" style="padding: 4px 12px; font-size: 11px; background: #f87171;" onclick="denyAllActions()">Deny All</button>
-            <button class="refresh-btn" style="padding: 4px 10px; font-size: 11px;" onclick="loadActions()">Refresh</button>
+    <div id="graph-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 40px; box-sizing: border-box;">
+        <button class="refresh-btn" style="position: absolute; top: 20px; right: 20px;" onclick="closeFullGraph()">Close ✕</button>
+        <div class="full-graph-wrapper">
+            <div id="full-graph-container"></div>
+            <div id="full-thought-log" style="background:#020617; border:1px solid #334155; border-radius:8px; padding:15px; font-family:monospace; font-size:14px; overflow-y:auto; color:#e2e8f0;"></div>
         </div>
     </div>
-    <div id="action-list" style="max-height: 200px; overflow-y: auto;">
-        <div class="metric-label">Loading actions...</div>
-    </div>
-</div>
-
-<div class="layout">
-    <nav class="sidebar">
-        <div class="nav-group"><div class="nav-label">Core</div>
-            <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 System Overview</div>
-            <div class="nav-item" data-tab="models" onclick="switchTab('models')">📦 Model Management</div>
-            <div class="nav-item" data-tab="logs" onclick="switchTab('logs')">📜 System Logs</div>
-            <div class="nav-item" data-tab="chat" onclick="switchTab('chat')">💬 PersonaVault Chat</div>
-        </div>
-        <div class="nav-group"><div class="nav-label">Cognitive Architecture</div>
-            <div class="nav-item" data-tab="lattices" onclick="switchTab('lattices')">🕸️ Memory Lattices</div>
-            <div class="nav-item" data-tab="learning" onclick="switchTab('learning')">⚙️ Learning Config</div>
-            <div class="nav-item" data-tab="learning-dashboard" onclick="switchTab('learning-dashboard')">📊 Learning Dashboard</div>
-            <div class="nav-item" data-tab="agents" onclick="switchTab('agents')">🤖 Agent Orchestration</div>
-        </div>
-        <div class="nav-group"><div class="nav-label">Behaviour Packs</div>
-            <div class="nav-item" data-tab="packs" onclick="switchTab('packs')">📦 Domain Intelligence</div>
-            <div class="nav-item" data-tab="mcp" onclick="switchTab('mcp')">🔌 MCP Registry</div>
-        </div>
-        <div class="nav-group"><div class="nav-label">Decision Intelligence</div>
-            <div class="nav-item" data-tab="timeline" onclick="switchTab('timeline')">⏱️ Decision Timeline</div>
-            <div class="nav-item" data-tab="replay" onclick="switchTab('replay')">🔄 Decision Replay</div>
-            <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">📈 Trend Analysis</div>
-        </div>
-        <div class="nav-group"><div class="nav-label">Enterprise & Safety</div>
-            <div class="nav-item" data-tab="governance" onclick="switchTab('governance')">⚖️ Governance & Audit</div>
-            <div class="nav-item" data-tab="security" onclick="switchTab('security')">🔐 Privacy Vault</div>
-        </div>
-        <div class="nav-group">
-            <div class="nav-label">🏥 USB Clinical Intelligence</div>
-            <div class="nav-item" data-tab="clinical-chat" onclick="switchTab('clinical-chat')">🏥 Clinical Gateway</div>
-            <div class="nav-item" data-tab="clinical" onclick="switchTab('clinical')">📋 Clinical Decisions</div>
-            <div class="nav-item" data-tab="clinical-audit" onclick="switchTab('clinical-audit')">📋 Clinical Audit</div>
-        </div>
-    </nav>
-    <main class="main-content" id="main-content">
-        <div id="tab-content-container">
-            <div style="text-align:center; padding:50px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-        </div>
-    </main>
-</div>
-
-<div id="graph-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 40px; box-sizing: border-box;">
-    <button class="refresh-btn" style="position: absolute; top: 20px; right: 20px;" onclick="document.getElementById('graph-modal').style.display='none'">Close ✕</button>
-    <div id="full-graph-container"></div>
-    <div id="full-thought-log" style="background:#020617; border:1px solid #334155; border-radius:8px; padding:15px; font-family:monospace; font-size:14px; overflow-y:auto; color:#e2e8f0;"></div>
-</div>
-
-<div id="details-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999;" onclick="if(event.target===this) closeModal()">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e293b; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; border: 1px solid #334155;">
-        <span onclick="closeModal()" style="float: right; cursor: pointer; color: #94a3b8; font-size: 24px;">×</span>
-        <h2 style="color: #38bdf8; margin-top: 0;" id="modal-title">Details</h2>
-        <div id="modal-body"></div>
-    </div>
-</div>
-
-<!-- External JS Files -->
-<script src="/static/js/websocket_manager.js"></script>
-<script src="/static/js/clinical.js" defer></script>
-<script src="/static/js/packs.js" defer></script>
-<script src="/static/js/hitl.js" defer></script>
-<script src="/static/js/chat.js" defer></script>
-    <script src="/static/js/reload.js" defer></script>
-
-<script>
-// ============================================================
-// GLOBAL FUNCTIONS - Available everywhere
-// ============================================================
-
-let currentTab = 'overview';
-
-// ============ SWITCH TAB ============
-function switchTab(tabId) {
-    console.log('🔄 Switching to tab:', tabId);
-    currentTab = tabId;
-    localStorage.setItem('active-tab', tabId);
-    
-    // Update nav items
-    document.querySelectorAll('.nav-item').forEach(function(el) {
-        el.classList.remove('active');
-        if (el.getAttribute('data-tab') === tabId) {
-            el.classList.add('active');
+    <script>
+        function openFullGraph() {
+            const container = document.getElementById('mermaid-graph-container');
+            const logContainer = document.getElementById('thought-log');
+            const fullGraph = document.getElementById('full-graph-container');
+            const fullLog = document.getElementById('full-thought-log');
+            const modal = document.getElementById('graph-modal');
+            fullGraph.innerHTML = container.innerHTML;
+            fullLog.innerHTML = logContainer.innerHTML;
+            modal.style.display = 'block';
         }
-    });
-    
-    // Load tab content
-    loadTabContent(tabId);
-}
-
-// ============ LOAD TAB CONTENT ============
-async function loadTabContent(tabId) {
-    var container = document.getElementById('tab-content-container');
-    if (!container) return;
-    
-    container.innerHTML = '<div style="text-align:center; padding:50px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-    
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/tab/' + tabId);
-        if (!res.ok) throw new Error('Failed to load tab');
-        var html = await res.text();
-        container.innerHTML = html;
+        function closeFullGraph() {
+            document.getElementById('graph-modal').style.display = 'none';
+        }
+    </script>
+    <div class="layout">
+        <nav class="sidebar">
+            <div class="nav-group"><div class="nav-label">Core</div>
+                <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 System Overview</div>
+                <div class="nav-item" data-tab="models" onclick="switchTab('models')">📦 Model Management</div>
+                <div class="nav-item" data-tab="logs" onclick="switchTab('logs')">📜 System Logs</div>
+                <div class="nav-item" data-tab="chat" onclick="switchTab('chat')">💬 PersonaVault Chat</div>
+            </div>
+            <div class="nav-group"><div class="nav-label">Cognitive Architecture</div>
+                <div class="nav-item" data-tab="lattices" onclick="switchTab('lattices')">🕸️ Memory Lattices</div>
+                <div class="nav-item" data-tab="learning_dashboard" onclick="switchTab('learning_dashboard')">📊 Learning Dashboard</div>
+                <div class="nav-item" data-tab="learning" onclick="switchTab('learning')">⚡ Graduation Logic</div>
+                <div class="nav-item" data-tab="agents" onclick="switchTab('agents')">🤖 Agent Orchestration</div>
+            </div>
+            <div class="nav-group"><div class="nav-label">Behaviour Packs</div>
+                <div class="nav-item" data-tab="packs" onclick="switchTab('packs')">📦 Domain Intelligence</div>
+                <div class="nav-item" data-tab="mcp" onclick="switchTab('mcp')">🔌 MCP Registry</div>
+            </div>
+            <div class="nav-group"><div class="nav-label">Decision Intelligence</div>
+                <div class="nav-item" data-tab="timeline" onclick="switchTab('timeline')">⏱️ Decision Timeline</div>
+                <div class="nav-item" data-tab="replay" onclick="switchTab('replay')">🔄 Decision Replay</div>
+                <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">📈 Trend Analysis</div>
+            </div>
+            <div class="nav-group"><div class="nav-label">Enterprise & Safety</div>
+                <div class="nav-item" data-tab="governance" onclick="switchTab('governance')">⚖️ Governance & Audit</div>
+                <div class="nav-item" data-tab="security" onclick="switchTab('security')">🔐 Privacy Vault</div>
+            </div>
+            <div class="nav-group">
+                <div class="nav-label">🏥 USB Clinical Intelligence</div>
+                <div class="nav-item" data-tab="clinical-chat" onclick="switchTab('clinical-chat')">🏥 Clinical Intelligence Gateway</div>
+                <div class="nav-item" data-tab="clinical" onclick="switchTab('clinical')">
+                    <i class="fas fa-heartbeat"></i> Clinical Decisions
+                </div>
+                <div class="nav-item" data-tab="clinical-audit" onclick="switchTab('clinical-audit')">
+                    <i class="fas fa-file-medical-alt"></i> Clinical Audit
+                </div>
+            </div>
+        </nav>
+        <main class="main-content" id="main-content">
+            <div id="tab-content-container"></div>
+        </main>
+    </div>
+    <div id="toast-container" class="toast-container"></div>
+    <div id="details-modal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation();">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 style="color: #38bdf8; margin-top: 0;" id="modal-title">Details</h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    <script>
         
-        // Initialize tab-specific functions
-        if (tabId === 'chat') {
-            // Chat functions are in chat.js - check if they loaded
-            if (typeof loadSessions === 'function') {
-                setTimeout(loadSessions, 100);
+        // ============ GLOBAL PROVIDER STATE ============
+        // Single source of truth for provider
+        window._currentProvider = null;
+        
+        // Get the current provider from server
+        window.getCurrentProvider = async function() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
+                if (res.ok) {
+                    const data = await res.json();
+                    window._currentProvider = data.primary_provider || 'ollama';
+                    return window._currentProvider;
+                }
+            } catch (e) {
+                console.warn('Failed to fetch provider:', e);
             }
-            // Attach enter key to chat input
-            var input = document.getElementById('chat-input');
-            if (input) {
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (typeof sendChatMessage === 'function') {
-                            sendChatMessage();
+            return window._currentProvider || 'ollama';
+        };
+        
+        // Set provider and sync all UI
+        window.setProvider = async function(provider) {
+            try {
+                // Update on server
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider: provider })
+                });
+                if (res.ok) {
+                    window._currentProvider = provider;
+                    // Sync all UI elements immediately
+                    syncAllUI(provider);
+                    showToast(`AI provider set to ${provider}`, 'success');
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error setting provider:', e);
+                showToast('Error updating provider', 'error');
+            }
+            return false;
+        };
+        
+        // Sync all UI elements
+        function syncAllUI(provider) {
+            // Update chat elements
+            const chatSelect = document.getElementById('chat-provider-select');
+            if (chatSelect) {
+                // Check if the option exists
+                let optionExists = false;
+                for (let opt of chatSelect.options) {
+                    if (opt.value === provider) {
+                        optionExists = true;
+                        break;
+                    }
+                }
+                if (!optionExists && provider !== 'ollama') {
+                    const opt = document.createElement('option');
+                    opt.value = provider;
+                    opt.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
+                    chatSelect.appendChild(opt);
+                }
+                chatSelect.value = provider;
+            }
+            
+            const chatStatus = document.getElementById('primary-ai-provider-status-chat');
+            if (chatStatus) {
+                chatStatus.textContent = provider;
+                chatStatus.className = 'tag tag-info';
+            }
+            
+            // Update models elements
+            const modelsSelect = document.getElementById('primary-ai-provider-select');
+            if (modelsSelect) {
+                modelsSelect.value = provider;
+            }
+            const modelsStatus = document.getElementById('primary-ai-provider-status');
+            if (modelsStatus) {
+                modelsStatus.textContent = provider;
+                modelsStatus.className = 'tag tag-info';
+            }
+            
+            // Update context bar
+            const contextProvider = document.getElementById('context-provider');
+            if (contextProvider) {
+                contextProvider.textContent = provider;
+            }
+            
+            console.log(`✅ UI synced to: ${provider}`);
+        }
+        
+        // Auto-sync when tab content loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            const provider = await window.getCurrentProvider();
+            setTimeout(() => syncAllUI(provider), 100);
+        });
+        
+        // Sync when tabs are switched
+        const originalPerformTabLoad = window.performTabLoad;
+        if (originalPerformTabLoad) {
+            window.performTabLoad = async function(tabId) {
+                await originalPerformTabLoad(tabId);
+                // Sync UI after tab loads
+                setTimeout(async () => {
+                    const provider = await window.getCurrentProvider();
+                    syncAllUI(provider);
+                }, 300);
+            };
+        }
+        
+        console.log('✅ Global provider state initialized');
+
+        // ============ WEBSOCKET MANAGER ============
+        let wsManager = null;
+        let wsConnected = false;
+        function initWebSocket() {
+            // Close existing connection
+            if (wsManager) {
+                wsManager.close();
+                wsManager = null;
+            }
+            const clientId = 'admin_' + Math.random().toString(36).substring(7);
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const url = `${protocol}//${window.location.host}/api/v1/admin/dashboard/ws/${clientId}`;
+            wsManager = new WebSocketManager({
+                url: url,
+                maxReconnectAttempts: 10,
+                baseDelay: 1000,
+                maxDelay: 30000
+            });
+            // Message handler
+            wsManager.onMessage((data, event) => {
+                try {
+                    // Handle different message types
+                    if (data.type === 'thought_stream') {
+                        appendThought(data.agent, data.content);
+                    } else if (data.type === 'iot_update' || data.type === 'metrics_update') {
+                        refreshTabContent(currentTab);
+                    } else if (data.type === 'agent_status') {
+                        updateAgentStatus(data);
+                    } else if (data.type === 'clinical_decision') {
+                        addClinicalEvent(data);
+                    } else {
+                        console.log('📩 WebSocket message:', data);
+                    }
+                } catch (err) {
+                    console.error('Message processing error:', err);
+                }
+            });
+            // Connection handler
+            wsManager.onConnect(() => {
+                wsConnected = true;
+                updateConnectionStatus('connected');
+                showToast('🔄 WebSocket connected', 'success');
+            });
+            // Disconnection handler
+            wsManager.onDisconnect((event) => {
+                wsConnected = false;
+                updateConnectionStatus('disconnected');
+                if (event.code !== 1000) {
+                    showToast('🔄 Connection lost. Reconnecting...', 'warning');
+                }
+            });
+            // Error handler
+            wsManager.onError((event) => {
+                console.error('WebSocket error:', event);
+                updateConnectionStatus('error');
+            });
+        }
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('ws-status');
+            if (!statusEl) return;
+            const statusMap = {
+                'connected': { text: '🟢 Connected', color: '#34d399' },
+                'connecting': { text: '🟡 Connecting', color: '#fbbf24' },
+                'disconnected': { text: '🔴 Disconnected', color: '#f87171' },
+                'error': { text: '🔴 Error', color: '#f87171' }
+            };
+            const info = statusMap[status] || statusMap['disconnected'];
+            statusEl.textContent = info.text;
+            statusEl.style.color = info.color;
+        }
+        function sendWebSocketMessage(data) {
+            if (wsManager && wsConnected) {
+                return wsManager.send(data);
+            }
+            console.warn('⚠️ WebSocket not connected, message not sent');
+            return false;
+        }
+        // Initialize WebSocket after page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initWebSocket, 500);
+        });
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (wsManager) {
+                wsManager.close(1000, 'Page unload');
+            }
+        });
+        // ============ CONSOLIDATION STATS ============
+        async function loadConsolidationStats() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/learning/consolidation/stats');
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const data = await res.json();
+                // Update stats
+                const totalEl = document.getElementById('consolidation-total');
+                const pendingEl = document.getElementById('consolidation-pending');
+                const patternsEl = document.getElementById('consolidation-patterns');
+                const rateEl = document.getElementById('consolidation-rate');
+                if (totalEl) totalEl.textContent = data.total_episodic_entries || 0;
+                if (pendingEl) pendingEl.textContent = data.pending_consolidation || 0;
+                if (patternsEl) patternsEl.textContent = data.total_patterns || 0;
+                if (rateEl) rateEl.textContent = data.consolidation_rate + '%';
+                // Update recent list
+                const recentEl = document.getElementById('consolidation-recent');
+                if (recentEl && data.recent_consolidated && data.recent_consolidated.length > 0) {
+                    recentEl.innerHTML = data.recent_consolidated.map(entry => `
+                        <div style="padding: 4px 0; border-bottom: 1px solid #1e293b; font-size: 12px; color: #94a3b8;">
+                            <span style="color: #38bdf8;">${entry.query}</span>
+                            <span style="float: right; color: #64748b;">${new Date(entry.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                    `).join('');
+                } else if (recentEl) {
+                    recentEl.innerHTML = '<div class="metric-label">No recent consolidations</div>';
+                }
+            } catch (e) {
+                console.error('Error loading consolidation stats:', e);
+            }
+        }
+        async function triggerConsolidation() {
+            try {
+                showToast('🔄 Running consolidation...', 'info');
+                const res = await fetch('/api/v1/admin/dashboard/learning/trigger', { method: 'POST' });
+                if (res.ok) {
+                    showToast('✅ Consolidation triggered', 'success');
+                    setTimeout(loadConsolidationStats, 2000);
+                } else {
+                    throw new Error('Failed to trigger consolidation');
+                }
+            } catch (e) {
+                showToast('❌ Error: ' + e.message, 'error');
+            }
+        }
+        // Load consolidation stats on overview tab
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add to refresh cycle
+            const originalRefresh = refreshTabContent;
+            refreshTabContent = function(tabId) {
+                originalRefresh(tabId);
+                if (tabId === 'overview') {
+                    loadConsolidationStats();
+                }
+            };
+        });
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+        let logSource = null, currentTab = null;
+        let isInitialLoad = true;
+        // ============ TAB SWITCHING ============
+        async function performTabLoad(tabId) {
+            // If we are already on this tab and it's not the first load, just refresh data
+            if (currentTab === tabId && !isInitialLoad) {
+                refreshTabContent(tabId);
+                return;
+            }
+            // Persist the active tab
+            localStorage.setItem('active-tab', tabId);
+            const container = document.getElementById('tab-content-container');
+            container.innerHTML = '<div style="text-align:center; padding:50px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/tab/${tabId}`);
+                if (res.ok) {
+                    const html = await res.text();
+                    // Update active state in UI
+                    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+                    const el = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+                    if (el) el.classList.add('active');
+                    currentTab = tabId;
+                    isInitialLoad = false;
+                    container.innerHTML = html;
+                    refreshTabContent(tabId);
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:50px; color:#f87171;">Error loading tab</div>';
+                }
+            } catch (e) {
+                container.innerHTML = `<div style="text-align:center; padding:50px; color:#f87171;">Error: ${e.message}</div>`;
+            }
+        }
+        function switchTab(tabId) {
+            if (currentTab !== tabId) {
+                performTabLoad(tabId);
+            } else {
+                refreshTabContent(tabId);
+            }
+        }
+        // ============ PRIMARY AI PROVIDER ============
+        // Global provider update function
+        window.updatePrimaryAIProvider = async function(provider) {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider })
+                });
+                if (res.ok) {
+                    console.log(`✅ Global provider updated to: ${provider}`);
+                    // Update all UI elements
+                    document.querySelectorAll('.provider-display, .provider-status').forEach(el => {
+                        el.textContent = provider;
+                    });
+                    // Update dropdowns
+                    document.querySelectorAll('.provider-select').forEach(sel => {
+                        if (sel.value !== provider) {
+                            sel.value = provider;
                         }
+                    });
+                    showToast(`AI provider set to ${provider}`, 'success');
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.error('Error updating provider:', e);
+                showToast('Error updating provider', 'error');
+                return false;
+            }
+        };
+        async function fetchPrimaryAIProvider() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                console.log("DEBUG: Primary AI Provider:", data);
+                // Update status on models tab
+                const statusEl = document.getElementById('primary-ai-provider-status');
+                if (statusEl) {
+                    statusEl.textContent = data.primary_provider || 'ollama';
+                    statusEl.className = 'tag tag-info';
+                }
+                // Update status on chat tab
+                const statusChatEl = document.getElementById('primary-ai-provider-status-chat');
+                if (statusChatEl) {
+                    statusChatEl.textContent = data.primary_provider || 'ollama';
+                    statusChatEl.className = 'tag tag-info';
+                }
+            } catch (e) {
+                console.error('Error fetching primary AI provider:', e);
+                ['primary-ai-provider-status', 'primary-ai-provider-status-chat'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = 'ollama';
+                        el.className = 'tag tag-info';
                     }
                 });
             }
         }
-        
-        if (typeof fetchPrimaryAIProvider === 'function') {
-            fetchPrimaryAIProvider();
+        async function updatePrimaryAIProvider(provider) {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider })
+                });
+                if (res.ok) {
+                    showToast(`Primary AI provider set to ${provider}`, 'success');
+                    fetchPrimaryAIProvider();
+                    fetchCloudConnections();
+                } else {
+                    throw new Error('Failed to update provider');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
         }
-        
-    } catch (e) {
-        container.innerHTML = '<div style="text-align:center; padding:50px; color:#f87171;">Error loading tab: ' + e.message + '</div>';
-    }
-}
-
-// ============ TOAST ============
-function showToast(message, type) {
-    type = type || 'info';
-    var container = document.getElementById('toast-container');
-    if (!container) return;
-    var toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    var icon = 'fa-info-circle';
-    if (type === 'success') icon = 'fa-check-circle';
-    else if (type === 'error') icon = 'fa-times-circle';
-    else if (type === 'warning') icon = 'fa-exclamation-triangle';
-    toast.innerHTML = '<i class="fas ' + icon + '"></i> <span>' + message + '</span>';
-    container.appendChild(toast);
-    setTimeout(function() {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(20px)';
-        setTimeout(function() { toast.remove(); }, 300);
-    }, 4000);
-}
-
-// ============ LOGOUT ============
-async function logout() {
-    await fetch('/api/v1/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
-}
-
-// ============ INIT WEBSOCKET ============
-function initWebSocket() {
-    if (typeof WebSocketManager === 'undefined') {
-        console.warn('WebSocketManager not loaded, retrying...');
-        setTimeout(initWebSocket, 1000);
-        return;
-    }
-    
-    if (window._wsManager) {
-        window._wsManager.close();
-        window._wsManager = null;
-    }
-    
-    var clientId = 'admin_' + Math.random().toString(36).substring(7);
-    var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var url = protocol + '//' + window.location.host + '/api/v1/admin/dashboard/ws/' + clientId;
-    
-    var wsManager = new WebSocketManager({ url: url });
-    wsManager.onMessage(function(data) {
-        if (data.type === "agent_status") {
-            updateAgentStatusUI(data);
+        async function updatePrimaryAIProviderChat(provider) {
+            await updatePrimaryAIProvider(provider);
         }
-    });
-    window._wsManager = wsManager;
-    
-    wsManager.onConnect(function() {
-        var statusEl = document.getElementById('ws-status');
-        if (statusEl) { statusEl.textContent = '🟢 Connected'; statusEl.style.color = '#34d399'; }
-        console.log('✅ WebSocket connected');
-    });
-    
-    wsManager.onDisconnect(function() {
-        var statusEl = document.getElementById('ws-status');
-        if (statusEl) { statusEl.textContent = '🔴 Disconnected'; statusEl.style.color = '#f87171'; }
-        console.log('🔌 WebSocket disconnected');
-    });
-}
-
-// ============ REFRESH CONTEXT BAR ============
-async function refreshContextBar() {
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
-        var data = await res.json();
-        var el = document.getElementById('context-provider');
-        if (el) el.textContent = data.primary_provider || 'ollama';
-    } catch (e) {
-        console.error('Context bar refresh error:', e);
-    }
-}
-
-// ============ PRIMARY AI PROVIDER ============
-async function fetchPrimaryAIProvider() {
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        var data = await res.json();
-        var el = document.getElementById('context-provider');
-        if (el) el.textContent = data.primary_provider || 'ollama';
-    } catch (e) {
-        console.error('Error fetching primary AI provider:', e);
-    }
-}
-
-// ============ LOAD ACTIONS ============
-async function loadActions() {
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/hitl/pending');
-        if (!res.ok) throw new Error('Failed to fetch actions');
-        var actions = await res.json();
-        if (!Array.isArray(actions)) throw new Error('Invalid response');
-        
-        var widget = document.getElementById('action-required-widget');
-        if (!widget) return;
-        
-        if (actions.length === 0) {
-            widget.style.display = 'none';
-            return;
+        async function fetchCloudConnections() {
+            const list = document.getElementById('cloud-connections-list');
+            const select = document.getElementById('primary-ai-provider-select');
+            const chatSelect = document.getElementById('primary-ai-provider-select-chat');
+            if (!list) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
+                const data = await res.json();
+                // Update List
+                if (data && data.length > 0) {
+                    list.innerHTML = data.map(p => `
+                        <div style="display:flex; justify-content:space-between; padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; align-items:center;">
+                            <div>
+                                <div style="font-weight:700;color:#f472b6;">${p.name}</div>
+                                <div style="font-size:11px;color:#64748b;">Host: ${p.host || 'Default'} | Model: ${p.model || 'Default'}</div>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="refresh-btn" style="padding:4px 10px;font-size:11px;" onclick="fetchAIProviderSettings('${p.name}')">Edit</button>
+                                <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteCloudConfig('${p.name}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="metric-label">No cloud connections configured.</div>';
+                }
+                // Update both dropdowns
+                const options = ['<option value="ollama">Ollama (Local)</option>'];
+                data.forEach(p => {
+                    options.push(`<option value="${p.name}">${p.name} (Cloud)</option>`);
+                });
+                const html = options.join('');
+                if (select) {
+                    const current = select.value;
+                    select.innerHTML = html;
+                    select.value = current || 'ollama';
+                }
+                if (chatSelect) {
+                    const current = chatSelect.value;
+                    chatSelect.innerHTML = html;
+                    chatSelect.value = current || 'ollama';
+                }
+            } catch (e) { console.error('Cloud fetch error:', e); }
         }
-        
-        widget.style.display = 'block';
-        document.getElementById('action-count').textContent = actions.length;
-        document.getElementById('action-plural').textContent = actions.length > 1 ? 's' : '';
-        
-        var list = document.getElementById('action-list');
-        var html = '';
-        for (var i = 0; i < actions.length; i++) {
-            var a = actions[i];
-            html += '<div style="padding: 10px; background: #0f172a; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #f87171; display: flex; justify-content: space-between; align-items: center;">';
-            html += '<div style="flex: 1;"><div style="font-weight: 600; color: #f1f5f9; font-size: 13px;">' + (a.agent_type || 'Unknown Agent');
-            html += '<span style="font-weight: 400; color: #94a3b8; font-size: 11px; margin-left: 8px;">' + new Date(a.timestamp).toLocaleTimeString() + '</span></div>';
-            html += '<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">' + (a.query || 'No description') + '</div></div>';
-            html += '<div style="display: flex; gap: 6px;">';
-            html += '<button class="btn" style="padding: 2px 10px; font-size: 10px; background: #34d399; color: #0f172a;" onclick="resolveAction(\'' + a.id + '\', \'approve\')">Approve</button>';
-            html += '<button class="btn" style="padding: 2px 10px; font-size: 10px; background: #f87171;" onclick="resolveAction(\'' + a.id + '\', \'deny\')">Deny</button>';
-            html += '<button class="btn" style="padding: 2px 10px; font-size: 10px; background: #334155;" onclick="showHitlDetails(\'' + a.id + '\')">Details</button>';
-            html += '</div></div>';
+        // ============ CLOUD CONNECTION MANAGEMENT ============
+        async function fetchAIProviderSettings(provider) {
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider-settings/${provider}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                document.getElementById('cloud-api-name').value = provider;
+                document.getElementById('cloud-api-host').value = data.host || '';
+                document.getElementById('cloud-api-key').value = data.api_key || '';
+                document.getElementById('cloud-api-model').value = data.model || '';
+                showToast(`Loaded settings for ${provider}`, 'info');
+            } catch (e) {
+                console.error('Error fetching settings:', e);
+                showToast('Failed to load settings: ' + e.message, 'error');
+            }
         }
-        list.innerHTML = html;
-    } catch (e) {
-        console.error('Actions load error:', e);
-    }
-}
-
-async function resolveAction(actionId, resolution) {
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/hitl/' + actionId + '/' + resolution, { method: 'POST' });
-        if (res.ok) {
-            showToast('✅ Action ' + resolution + 'd', 'success');
-            loadActions();
-            refreshContextBar();
-        } else {
-            showToast('❌ Failed to resolve action', 'error');
+        async function deleteCloudConfig(provider) {
+            if (!confirm(`Delete connection "${provider}"? This cannot be undone.`)) return;
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider/${provider}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                showToast(`Deleted ${provider}`, 'info');
+                fetchCloudConnections(); // Refresh the list
+            } catch (e) {
+                console.error('Error deleting connection:', e);
+                showToast('Failed to delete: ' + e.message, 'error');
+            }
         }
-    } catch (e) {
-        showToast('Error: ' + e.message, 'error');
-    }
-}
-
-async function approveAllActions() {
-    if (!confirm('Approve all pending actions?')) return;
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/hitl/approve-all', { method: 'POST' });
-        if (res.ok) { showToast('✅ All actions approved', 'success'); loadActions(); }
-    } catch (e) { showToast('Error: ' + e.message, 'error'); }
-}
-
-async function denyAllActions() {
-    if (!confirm('Deny all pending actions?')) return;
-    try {
-        var res = await fetch('/api/v1/admin/dashboard/hitl/deny-all', { method: 'POST' });
-        if (res.ok) { showToast('✅ All actions denied', 'success'); loadActions(); }
-    } catch (e) { showToast('Error: ' + e.message, 'error'); }
-}
-
-function showHitlDetails(id) {
-    var modal = document.getElementById('details-modal');
-    var body = document.getElementById('modal-body');
-    document.getElementById('modal-title').textContent = 'HITL Action Details';
-    modal.style.display = 'block';
-    body.innerHTML = '<div class="metric-label">Loading...</div>';
-    fetch('/api/v1/admin/dashboard/hitl/' + id + '/explain', { method: 'POST' })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            body.innerHTML = '<div style="background:#020617;padding:15px;border-radius:8px;">' + (data.explanation || 'No explanation available') + '</div>';
-            body.innerHTML += '<button class="btn" onclick="closeModal()" style="margin-top:10px;">Close</button>';
-        })
-        .catch(function() {
-            body.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading details</div>';
+        async function testCloudConnection() {
+            const provider = document.getElementById('cloud-api-name').value;
+            const host = document.getElementById('cloud-api-host').value;
+            const api_key = document.getElementById('cloud-api-key').value;
+            const model = document.getElementById('cloud-api-model').value;
+            if (!provider) {
+                showToast('Enter a connection name first', 'error');
+                return;
+            }
+            showToast(`Testing ${provider}...`, 'info');
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, host, api_key, model })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`✅ ${provider} connection successful!`, 'success');
+                } else {
+                    showToast(`❌ Connection failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                showToast('Error testing connection: ' + e.message, 'error');
+            }
+        }
+        async function saveCloudConfig() {
+            const provider = document.getElementById('cloud-api-name').value;
+            const host = document.getElementById('cloud-api-host').value;
+            const api_key = document.getElementById('cloud-api-key').value;
+            const model = document.getElementById('cloud-api-model').value;
+            if (!provider) {
+                showToast('Connection name is required', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, host, api_key, model })
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                showToast(`Configuration for ${provider} saved`, 'success');
+                // Clear the form
+                document.getElementById('cloud-api-name').value = '';
+                document.getElementById('cloud-api-host').value = '';
+                document.getElementById('cloud-api-key').value = '';
+                document.getElementById('cloud-api-model').value = '';
+                fetchCloudConnections(); // Refresh the list
+            } catch (e) {
+                showToast('Failed to save: ' + e.message, 'error');
+            }
+        }
+        function refreshTabContent(tabId) {
+            // Trigger specific initialization/refresh based on the tab
+            if (tabId === 'overview') fetchMetrics();
+            else if (tabId === 'models') {
+                fetchInstalledModels();
+                fetchCloudConnections();
+                fetchPrimaryAIProvider();
+            }
+            else if (tabId === 'logs') { if (!logSource) startLogStream(); }
+            else if (tabId === 'packs') fetchPacks();
+            else if (tabId === 'agents') fetchAgentStatus();
+            else if (tabId === 'mcp') fetchMcpRegistry();
+            else if (tabId === 'governance') fetchGovernanceLogs();
+            else if (tabId === 'security') fetchSecurityStatus();
+            else if (tabId === 'trends') fetchTrends();
+            else if (tabId === 'timeline') listEvents();
+            else if (tabId === 'replay') resetReplayUI();
+            else if (tabId === 'lattices') fetchMetrics();
+            else if (tabId === 'learning') fetchLearningConfig();
+            else if (tabId === 'chat') {
+                loadIntelligenceStatus();
+                fetchPrimaryAIProvider();
+                // Initialize chat after a short delay
+                setTimeout(function() {
+                    if (typeof loadSessions === 'function') {
+                        loadSessions();
+                    }
+                    if (typeof loadProviderIntoUI === 'function') {
+                        loadProviderIntoUI();
+                    }
+                    // Force the send button to work
+                    const sendBtn = document.getElementById('send-chat-btn');
+                    if (sendBtn) {
+                        sendBtn.onclick = function() {
+                            if (typeof sendChatMessageStream === 'function') {
+                                sendChatMessageStream();
+                            } else {
+                                console.error('sendChatMessageStream not available');
+                            }
+                        };
+                    }
+                }, 100);
+            }
+            else if (tabId === 'clinical-chat') loadIntelligenceStatus();
+            else if (tabId === 'clinical') loadClinicalDashboard();
+            else if (tabId === 'clinical-audit') {
+                document.getElementById('clinical-audit-results').innerHTML = 
+                    '<div class="metric-label">Enter search criteria to view clinical audit trail.</div>';
+            }
+        }
+        // ============ TOAST ============
+        function showToast(msg, type) {
+            type = type || 'info';
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info');
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(20px)'; setTimeout(() => toast.remove(), 300); }, 4000);
+        }
+        // ============ METRICS ============
+        async function fetchMetrics() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/metrics');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                updateMetricsGrid(data);
+                updatePlatformSummary(data);
+                updateLatticeCounts(data);
+                updateQuickStats(data);
+                const raw = document.getElementById('raw-metrics');
+                if (raw) raw.textContent = JSON.stringify(data, null, 2);
+            } catch (e) { console.error('Metrics error:', e); }
+        }
+        function updateQuickStats(data) {
+            const totalEvents = document.getElementById('stat-total-events');
+            if (totalEvents) totalEvents.textContent = data.memories?.total || 0;
+            // For Avg Confidence, assuming data might have it, or using placeholder
+            const avgConf = document.getElementById('stat-avg-confidence');
+            if (avgConf) avgConf.textContent = '90.5%'; 
+            // For Active Models
+            const activeModels = document.getElementById('stat-active-models');
+            if (activeModels) activeModels.textContent = '2'; // placeholder
+        }
+        function updateMetricsGrid(data) {
+            const grid = document.getElementById('metrics-grid');
+            if (!grid) return;
+            grid.innerHTML = `
+                <div class="card"><div class="metric-label">Users</div><div class="metric-value">${data.users?.total || 0}</div></div>
+                <div class="card"><div class="metric-label">Memories</div><div class="metric-value">${data.memories?.total || 0}</div></div>
+                <div class="card"><div class="metric-label">Ollama</div><div class="metric-value" style="font-size:20px;">${data.ai?.ollama_status || 'unknown'}</div></div>
+                <div class="card"><div class="metric-label">Vector Index</div><div class="metric-value">${data.system?.vector_index_size || 0}</div></div>
+                <div class="card"><div class="metric-label">Active Sessions</div><div class="metric-value">${data.sessions?.active || 0}</div></div>
+                <div class="card"><div class="metric-label">Active IoT</div><div class="metric-value">${data.iot?.active_count || 0}</div></div>
+            `;
+        }
+        function updatePlatformSummary(data) {
+            const domainCount = document.getElementById('domain-count');
+            const eventCount = document.getElementById('event-count');
+            const avgConf = document.getElementById('avg-confidence');
+            if (domainCount) domainCount.textContent = data.packs?.length || 0;
+            if (eventCount) eventCount.textContent = data.memories?.total || 0;
+            if (avgConf) avgConf.textContent = '90.5%';
+        }
+        function updateLatticeCounts(data) {
+            ['layer2-count', 'layer2-card-count'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = data.memories?.total || 0;
+            });
+            ['layer3-count', 'layer3-card-count'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = data.system?.vector_index_size || 0;
+            });
+            const l2 = data.memories?.total || 0, l3 = data.system?.vector_index_size || 0, total = (l2 + l3) || 1;
+            ['bar-l1', 'bar-l2', 'bar-l3'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === 'bar-l1') el.style.width = '10%';
+                    else if (id === 'bar-l2') el.style.width = ((l2 / total) * 90) + '%';
+                    else if (id === 'bar-l3') el.style.width = ((l3 / total) * 90) + '%';
+                }
+            });
+        }
+        function refreshAll() { switchTab(currentTab); }
+        // ============ MODELS ============
+        async function fetchInstalledModels() {
+            const list = document.getElementById('models-list');
+            if (!list) return;
+            list.innerHTML = '<div class="metric-label">Loading models...</div>';
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/models');
+                const data = await res.json();
+                console.log("DEBUG: Models API Response:", data);
+                const activeModel = data.active_model;
+                console.log("DEBUG: Active model from backend:", activeModel);
+                if (data.models && data.models.length > 0) {
+                    list.innerHTML = data.models.map(m => {
+                        const baseName = m.name.split(':')[0];
+                        const activeBase = activeModel ? activeModel.split(':')[0] : '';
+                        const isActive = baseName === activeBase;
+                        console.log(`DEBUG: Matching ${m.name} with ${activeModel}: ${isActive}`);
+                        return `
+                            <div style="display:flex; justify-content:space-between; padding:12px; background:${isActive ? 'rgba(56, 189, 248, 0.05)' : '#020617'}; border-radius:8px; border:1px solid ${isActive ? '#38bdf8' : '#334155'}; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div>
+                                        <div style="font-weight:700;color:${isActive ? '#38bdf8' : '#94a3b8'};">${m.name}</div>
+                                        <div style="font-size:11px;color:#64748b;">Size: ${(m.size/(1024*1024*1024)).toFixed(2)} GB</div>
+                                    </div>
+                                    ${isActive ? '<span class="tag tag-success" style="font-size:9px; padding:2px 6px;">ACTIVE</span>' : ''}
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    ${!isActive ? `<button class="refresh-btn" style="color:#38bdf8;border-color:#38bdf8;padding:4px 10px;font-size:11px;" onclick="setActiveModel('${m.name}')">Use Model</button>` : ''}
+                                    <button class="refresh-btn" style="color:#f87171;border-color:#f87171;padding:4px 10px;font-size:11px;" onclick="deleteModel('${m.name}')">Delete</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    list.innerHTML = '<div class="metric-label">No models installed</div>';
+                }
+            } catch (e) { 
+                console.error('Error loading models:', e);
+                list.innerHTML = '<div class="metric-label">Error loading models</div>'; 
+            }
+        }
+        async function setActiveModel(name) {
+            try {
+                showToast('Switching model to ' + name + '...', 'info');
+                const res = await fetch('/api/v1/admin/models/set-active', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: name })
+                });
+                if (res.ok) {
+                    showToast('Model switched to ' + name, 'success');
+                    fetchInstalledModels();
+                } else {
+                    throw new Error('Failed to switch model');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+        async function triggerModelPull() {
+            const input = document.getElementById('new-model-input');
+            const statusDiv = document.getElementById('pull-status');
+            const statusLabel = document.getElementById('pull-status-label');
+            const progressBar = document.getElementById('pull-progress-bar');
+            const progressPct = document.getElementById('pull-percentage');
+            const progressContainer = document.getElementById('pull-progress-container');
+            const name = input?.value?.trim();
+            if (!name) { showToast('Enter a model name', 'error'); return; }
+            // Reset UI
+            if (progressContainer) progressContainer.style.display = 'block';
+            if (statusDiv) { statusDiv.textContent = ''; statusDiv.style.display = 'none'; }
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressPct) progressPct.textContent = '0%';
+            if (statusLabel) statusLabel.textContent = 'Pulling ' + name + '...';
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/models/pull', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name})
+                });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || 'Failed to start pull');
+                }
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, {stream: true});
+                    // Process complete JSON objects in the buffer
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+                            if (data.status) {
+                                statusLabel.textContent = data.status;
+                                if (statusDiv) {
+                                    statusDiv.style.display = 'block';
+                                    statusDiv.textContent += data.status + '\n';
+                                    statusDiv.scrollTop = statusDiv.scrollHeight;
+                                }
+                            }
+                            if (data.total && data.completed) {
+                                const percent = Math.round((data.completed / data.total) * 100);
+                                if (progressBar) progressBar.style.width = percent + '%';
+                                if (progressPct) progressPct.textContent = percent + '%';
+                            }
+                            if (data.status === 'success') {
+                                showToast(name + ' pulled successfully', 'success');
+                                setTimeout(() => {
+                                    if (progressContainer) progressContainer.style.display = 'none';
+                                    fetchInstalledModels();
+                                }, 2000);
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse pull status chunk:', line, e);
+                        }
+                    }
+                }
+            } catch (e) {
+                if (statusLabel) statusLabel.textContent = '❌ Error: ' + e.message;
+                if (statusDiv) statusDiv.style.display = 'block';
+                showToast('Pull failed: ' + e.message, 'error');
+            }
+        }
+        async function deleteModel(name) {
+            if (!confirm('Delete ' + name + '?')) return;
+            try {
+                await fetch(`/api/v1/admin/dashboard/models/${name}`, {method: 'DELETE'});
+                showToast('Deleted ' + name, 'info');
+                fetchInstalledModels();
+            } catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
+        }
+        // ============ LOGS ============
+        function startLogStream() {
+            if (logSource) logSource.close();
+            const container = document.getElementById('log-container');
+            if (!container) return;
+            container.innerHTML = '';
+            logSource = new EventSource('/api/v1/admin/dashboard/logs/stream');
+            logSource.onmessage = function(e) {
+                const line = document.createElement('div');
+                line.textContent = e.data;
+                if (e.data.includes('ERROR')) line.style.color = '#f87171';
+                else if (e.data.includes('WARNING')) line.style.color = '#fbbf24';
+                else if (e.data.includes('INFO')) line.style.color = '#38bdf8';
+                container.appendChild(line);
+                container.scrollTop = container.scrollHeight;
+            };
+            logSource.onerror = function() {
+                container.innerHTML += '<div style="color:#f87171;">⚠️ Log stream disconnected. Reconnecting...</div>';
+                setTimeout(startLogStream, 3000);
+            };
+        }
+        // ============ PACKS ============
+        async function fetchPacks() {
+            const grid = document.getElementById('packs-grid');
+            if (!grid) return;
+            grid.innerHTML = '<div class="metric-label">Loading packs...</div>';
+            try {
+                const res = await fetch('/api/v1/packs/');
+                const data = await res.json();
+                // Handle both {packs: []} and [] formats
+                const packs = Array.isArray(data) ? data : (data.packs || []);
+                if (packs.length > 0) {
+                    grid.innerHTML = packs.map(p => `
+                        <div class="pack-card">
+                            <div style="display:flex;justify-content:space-between;">
+                                <span class="pack-name">${p.name}</span>
+                                <span class="tag ${p.is_active ? 'tag-success' : 'tag-danger'}">${p.is_active ? 'Active' : 'Inactive'}</span>
+                            </div>
+                            <div class="pack-stats">Domain: ${p.domain} | Version: ${p.version}</div>
+                            <div class="pack-stats" style="font-size:10px;color:#64748b;">${p.description ? p.description.slice(0,80)+'...' : ''}</div>
+                        </div>
+                    `).join('');
+                    if (document.getElementById('domain-count')) document.getElementById('domain-count').textContent = packs.length;
+                    const statDomains = document.getElementById('stat-domains');
+                    if (statDomains) statDomains.textContent = packs.length;
+                } else {
+                    grid.innerHTML = '<div class="metric-label">No packs installed</div>';
+                }
+            } catch (e) { grid.innerHTML = '<div class="metric-label">Error loading packs</div>'; }
+        }
+        async function installPack() {
+            const fileInput = document.getElementById('pack-file-input');
+            const status = document.getElementById('pack-install-status');
+            const file = fileInput?.files?.[0];
+            if (!file) { showToast('Select a YAML file', 'error'); return; }
+            status.textContent = 'Installing...';
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await fetch('/api/v1/packs/install', {method: 'POST', body: formData});
+                const data = await res.json();
+                if (res.ok) {
+                    status.textContent = '✅ ' + (data.message || 'Installed');
+                    showToast('Pack installed: ' + (data.name || ''), 'success');
+                    fetchPacks();
+                } else {
+                    status.textContent = '❌ ' + (data.detail || 'Error');
+                    showToast('Install failed', 'error');
+                }
+            } catch (e) {
+                status.textContent = '❌ ' + e.message;
+                showToast('Install failed', 'error');
+            }
+        }
+        // ============ DECISION REPLAY ============
+        let replayData = null, replayStep = 0, replayInterval = null, replaySpeedVal = 1, isReplaying = false;
+        function resetReplayUI() {
+            replayData = null;
+            replayStep = 0;
+            if (replayInterval) clearInterval(replayInterval);
+            isReplaying = false;
+        }
+        function setReplaySpeed(speed) {
+            replaySpeedVal = speed;
+            const label = document.getElementById('replay-speed-label');
+            if (label) label.textContent = `Speed: ${speed}x`;
+            if (isReplaying) {
+                clearInterval(replayInterval);
+                startReplayInterval();
+            }
+        }
+        function toggleReplayPlay() {
+            if (isReplaying) {
+                isReplaying = false;
+                clearInterval(replayInterval);
+                const btn = document.getElementById('btn-replay-control');
+                if (btn) btn.innerHTML = '<i class="fas fa-play"></i>';
+            } else {
+                if (!replayData) return;
+                isReplaying = true;
+                const btn = document.getElementById('btn-replay-control');
+                if (btn) btn.innerHTML = '<i class="fas fa-pause"></i>';
+                startReplayInterval();
+            }
+        }
+        function startReplayInterval() {
+            if (replayInterval) clearInterval(replayInterval);
+            replayInterval = setInterval(() => {
+                const steps = replayData?.timeline || [];
+                if (replayStep >= steps.length) {
+                    toggleReplayPlay();
+                    const btn = document.getElementById('btn-replay-control');
+                    if (btn) btn.innerHTML = '<i class="fas fa-redo"></i>';
+                    return;
+                }
+                renderReplayStep(replayStep);
+                replayStep++;
+            }, 800 / replaySpeedVal);
+        }
+        function renderReplayStep(stepIndex) {
+            const steps = document.querySelectorAll('.replay-step');
+            steps.forEach((el, i) => {
+                el.style.opacity = i <= stepIndex ? '1' : '0.3';
+                if (i === stepIndex) {
+                    el.style.background = 'rgba(56, 189, 248, 0.05)';
+                    el.style.borderLeft = '3px solid #38bdf8';
+                    el.style.paddingLeft = '12px';
+                } else {
+                    el.style.background = 'transparent';
+                    el.style.borderLeft = 'none';
+                    el.style.paddingLeft = '0';
+                }
+            });
+        }
+        async function startReplay() {
+            const id = document.getElementById('replay-event-id')?.value;
+            if (!id) { showToast('Enter an Event ID', 'error'); return; }
+            const container = document.getElementById('replay-container');
+            const timeline = document.getElementById('replay-timeline');
+            if (container) container.style.display = 'block';
+            if (timeline) timeline.innerHTML = '<div class="metric-label">Loading...</div>';
+            try {
+                const res = await fetch(`/api/v1/timeline/replay/${id}`);
+                const data = await res.json();
+                replayData = data;
+                replayStep = 0;
+                document.getElementById('replay-original-content').innerHTML = `
+                    <div style="padding:10px; background:#020617; border-radius:8px; margin-top:5px;">
+                        <div style="font-weight:700; color:#38bdf8;">${data.original_decision?.decision || 'Unknown'}</div>
+                        <div style="font-size:12px; color:#94a3b8;">Confidence: ${((data.original_decision?.confidence || 0) * 100).toFixed(0)}%</div>
+                    </div>`;
+                document.getElementById('replay-current-content').innerHTML = `
+                    <div style="padding:10px; background:#020617; border-radius:8px; margin-top:5px;">
+                        <div style="font-weight:700; color:${data.analysis?.would_decision_change ? '#f87171' : '#34d399'}">
+                            ${data.analysis?.would_decision_change ? '⚠️ Would Change' : '✅ Consistent'}
+                        </div>
+                    </div>`;
+                if (timeline) timeline.innerHTML = buildTimelineHTML(data.timeline || []);
+                document.getElementById('replay-raw').textContent = JSON.stringify(data, null, 2);
+                replayStep = 0;
+                isReplaying = true;
+                startReplayInterval();
+            } catch (e) { showToast('Replay failed', 'error'); }
+        }
+        function buildTimelineHTML(steps) {
+            const colors = { 'detection': '#38bdf8', 'policy_match': '#fbbf24', 'ai_recommendation': '#a855f7', 'decision': '#34d399', 'audit': '#f87171' };
+            return steps.map((step, index) => `
+                <div class="replay-step" data-step="${index}" style="opacity:0.3; transition: all 0.5s ease; padding:12px 0; border-bottom: 1px solid #1e293b;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:${colors[step.type] || '#94a3b8'};">${step.label}</div>
+                            <div style="font-size:12px; color:#94a3b8;">${step.description}</div>
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+        // ============ AGENTS ============
+        async function fetchAgentStatus(isAutoRefresh = false) {
+            try {
+                const [loadRes, empathyRes, bbRes, traceRes] = await Promise.all([
+                    fetch('/api/v1/admin/dashboard/cognitive-load'),
+                    fetch('/api/v1/admin/dashboard/empathy/status'),
+                    fetch('/api/v1/admin/dashboard/blackboard/snapshot'),
+                    fetch('/api/v1/admin/dashboard/swarm/negotiation-trace')
+                ]);
+                const load = await loadRes.json();
+                const empathy = await empathyRes.json();
+                const bb = await bbRes.json();
+                const trace = await traceRes.json();
+                // Update Load
+                const loadStats = document.getElementById('agent-load-stats');
+                if (loadStats) {
+                    let html = `<div class="stat-row"><span class="stat-label">Active Tasks</span><span class="stat-value">${load.active_tasks || 0}</span></div>`;
+                    Object.entries(load.agent_activity || {}).forEach(([name, status]) => {
+                        const isActive = status === 1 || status === 'active' || status === true;
+                        html += `<div class="stat-row"><span class="stat-label">${name}</span><span class="tag ${isActive ? 'tag-success' : ''}">${isActive ? 'ACTIVE' : 'IDLE'}</span></div>`;
+                    });
+                    loadStats.innerHTML = html;
+                }
+                // Update Empathy
+                const empStats = document.getElementById('empathy-stats');
+                if (empStats) {
+                    empStats.innerHTML = `
+                        <div class="stat-row"><span class="stat-label">Mood</span><span class="stat-value">${empathy.mood || 'Calm'}</span></div>
+                        <div class="stat-row"><span class="stat-label">Tone</span><span class="stat-value">${empathy.tone || 'Supportive'}</span></div>`;
+                }
+                // Update Blackboard
+                const bbFeed = document.getElementById('blackboard-feed');
+                if (bbFeed) {
+                    const entries = Object.entries(bb.current_state || {});
+                    bbFeed.innerHTML = entries.length ? entries.map(([agent, entry]) => `
+                        <div style="padding:8px 0;border-bottom:1px solid #1e293b;">
+                            <div style="display:flex;justify-content:space-between;"><b style="color:#38bdf8;">${agent}</b></div>
+                            <div style="font-size:12px;color:#94a3b8;">${JSON.stringify(entry.data)}</div>
+                        </div>`).join('') : '<div class="metric-label">No active insights.</div>';
+                }
+                // Update Graph
+                renderCoTGraph(trace);
+            } catch (e) { console.error('Agent refresh error:', e); }
+        }
+        function renderCoTGraph(traceData, activeStepIndex = -1) {
+            const container = document.getElementById('mermaid-graph-container');
+            if (!container) return;
+            if (traceData && traceData.sequence && traceData.sequence.length > 0) {
+                try {
+                    const agentGroups = {
+                        'Planner': 'Cognitive', 'Router': 'Cognitive', 'Empathy': 'Cognitive',
+                        'Retriever': 'Memory',
+                        'Generator': 'Execution', 'Judge': 'Execution', 'Orchestrator': 'Execution', 'AdminTerminal': 'Execution'
+                    };
+                    let graphDef = 'graph TB\n';
+                    graphDef += 'classDef agentNode fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#fff,rx:5,ry:5;\n';
+                    graphDef += 'classDef bbNode fill:#0b1424,stroke:#34d399,stroke-width:2px,stroke-dasharray:4 4,color:#34d399,rx:5,ry:5;\n';
+                    graphDef += 'classDef activeNode fill:#065f46,stroke:#34d399,stroke-width:3px,color:#fff,rx:5,ry:5;\n';
+                    graphDef += 'linkStyle default stroke:#475569,stroke-width:2px;\n';
+                    // Prepare subgraphs with subtle styling
+                    const subgraphs = { 'Cognitive': '', 'Memory': '', 'Execution': '' };
+                    graphDef += 'style Cognitive fill:transparent,stroke:#1e293b,stroke-width:1px,color:#94a3b8\n';
+                    graphDef += 'style Memory fill:transparent,stroke:#1e293b,stroke-width:1px,color:#94a3b8\n';
+                    graphDef += 'style Execution fill:transparent,stroke:#1e293b,stroke-width:1px,color:#94a3b8\n';
+                    traceData.sequence.forEach((step, index) => {
+                        const fromId = step.agent.replace(/[^a-zA-Z0-9]/g, '');
+                        const toId = step.to.replace(/[^a-zA-Z0-9]/g, '');
+                        const isActive = index === activeStepIndex;
+                        const edgeStyle = isActive ? 'stroke:#34d399,stroke-width:4px' : 'stroke:#475569,stroke-width:2px';
+                        // Group nodes
+                        const group = agentGroups[fromId] || 'Execution';
+                        subgraphs[group] += `${fromId}["${step.agent}"]\n`;
+                        if (toId !== 'Blackboard') subgraphs[agentGroups[toId] || 'Execution'] += `${toId}["${step.to}"]\n`;
+                        graphDef += `${fromId} -->|"${step.action}"| ${toId}\n`;
+                        graphDef += `linkStyle ${index} ${edgeStyle}\n`;
+                        graphDef += `class ${fromId} ${isActive ? 'activeNode' : 'agentNode'};\n`;
+                        if (toId === 'Blackboard') graphDef += `class ${toId} bbNode;\n`;
+                    });
+                    // Assemble subgraphs
+                    for (const [name, content] of Object.entries(subgraphs)) {
+                        graphDef += `subgraph ${name}\n${content}end\n`;
+                    }
+                    container.innerHTML = `<div class="mermaid">${graphDef}</div>`;
+                    if (typeof mermaid !== 'undefined') {
+                        mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
+                    }
+                } catch(e) {
+                    console.log('Mermaid render error:', e);
+                }
+            } else {
+                container.innerHTML = `<div style="text-align:center;color:#64748b;padding:20px;"><div>🔄</div><div>Awaiting negotiation signal...</div></div>`;
+            }
+        }
+        // ============ USB CLINICAL FUNCTIONS ============
+        async function loadClinicalDashboard() { if (window.loadClinicalDashboard) await window.loadClinicalDashboard(); }
+        async function searchClinicalAudit() { if (window.searchClinicalAudit) await window.searchClinicalAudit(); }
+        async function verifyClinicalReceipt(id) { if (window.verifyClinicalReceipt) await window.verifyClinicalReceipt(id); }
+        function exportClinicalAudit() { if (window.exportClinicalAudit) window.exportClinicalAudit(); }
+        async function triggerSwarm() {
+            const input = document.getElementById('swarm-query-input');
+            if (!input) return;
+            const query = input.value.trim();
+            if (!query) { showToast('Enter a query', 'error'); return; }
+            input.disabled = true; input.style.opacity = '0.5';
+            showToast('🔄 Initializing swarm negotiation...', 'info');
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/swarm/trigger', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ query: query })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'swarm_completed') {
+                    appendThought('User', query);
+                    appendThought('Orchestrator', `✅ ${data.result || 'Acknowledged'}`);
+                    showToast('✅ Negotiation complete', 'success');
+                    input.value = '';
+                } else {
+                    appendThought('System', `Error: ${data.error || 'Unknown error'}`);
+                    showToast('❌ Swarm error', 'error');
+                }
+            } catch (e) {
+                appendThought('Network', `Error: ${e.message}`);
+                showToast('❌ Network error', 'error');
+            } finally {
+                input.disabled = false; input.style.opacity = '1'; input.focus();
+                if (currentTab === 'agents') fetchAgentStatus();
+            }
+        }
+        let lastPhase = '';
+        let lastAction = '';
+        function appendThought(agent, content) {
+            const log = document.getElementById('thought-log');
+            if (!log) return;
+            // Remove placeholder if present
+            if (log.children.length === 1 && log.children[0].textContent.includes('Initialize')) {
+                log.innerHTML = '';
+            }
+            // 1. Noise Filtering
+            if (content.trim() === 'insight') return;
+            // 2. Sanitization
+            let cleanContent = content
+                .replace(/Response: /i, '')
+                .replace(/INSTRUCTIONS: /i, '')
+                .replace(/DRAFT DOCUMENT: /i, '')
+                .replace(/"/g, '')
+                .trim();
+            // 3. Mapping to Semantic Phases
+            const phaseMap = {
+                'Planner': 'Analysis', 'Retriever': 'Analysis', 'Empathy': 'Analysis', 'Router': 'Analysis',
+                'Generator': 'Synthesis', 'Judge': 'Synthesis', 'Orchestrator': 'System'
+            };
+            const currentPhase = phaseMap[agent] || 'System';
+            // 4. Debouncing
+            if (currentPhase === lastPhase && cleanContent === lastAction) return;
+            lastPhase = currentPhase;
+            lastAction = cleanContent;
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const entry = document.createElement('div');
+            entry.style.cssText = "margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #1e293b;";
+            entry.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                    <span style="font-size:10px; color:${currentPhase === 'Analysis' ? '#38bdf8' : (currentPhase === 'Synthesis' ? '#34d399' : '#64748b')}; font-weight:700;">
+                        ${currentPhase.toUpperCase()} | ${agent.toUpperCase()}
+                    </span>
+                    <span style="font-size:9px; color:#475569; font-family:monospace;">${timestamp}</span>
+                </div>
+                <div style="font-size:13px; color:#e2e8f0; line-height:1.4;">${cleanContent}</div>
+            `;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        // ============ MCP ============
+        async function fetchMcpRegistry() {
+            try {
+                // Fetch servers from the admin dashboard endpoint
+                const serversRes = await fetch('/api/v1/admin/dashboard/mcp/registry');
+                const serversData = await serversRes.json();
+                const serversList = document.getElementById('mcp-servers-list');
+                if (serversList) {
+                    serversList.innerHTML = serversData.servers?.map(s => `
+                        <div class="stat-row">
+                            <span class="stat-label">${s.name}</span>
+                            <span class="tag tag-success">${s.status}</span>
+                        </div>
+                    `).join('') || 'None';
+                }
+                // Fetch tools from the NEW Unified Intelligence Gateway endpoint
+                const toolsRes = await fetch('/api/v1/mcp/tools');
+                const toolsData = await toolsRes.json();
+                const toolsList = document.getElementById('mcp-tools-list');
+                if (toolsList) {
+                    if (toolsData.tools && toolsData.tools.length > 0) {
+                        toolsList.innerHTML = toolsData.tools.map(t => `
+                            <div style="padding:6px;background:#020617;border-radius:4px;margin-bottom:4px;">
+                                <b style="color:#38bdf8;">${t.name}</b><br>
+                                <span style="font-size:11px;color:#94a3b8;">${t.description || 'No description'}</span>
+                                ${t.parameters ? `<br><span style="font-size:10px;color:#64748b;">Params: ${Object.keys(t.parameters).join(', ')}</span>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        toolsList.innerHTML = '<div class="metric-label">No MCP tools registered.</div>';
+                    }
+                }
+                // Populate the tool tester dropdown
+                populateMcpToolTester(toolsData.tools);
+            } catch (e) { console.error('MCP error:', e); }
+        }
+        function populateMcpToolTester(tools) {
+            const selectElement = document.getElementById('mcp-test-tool');
+            if (!selectElement) return;
+            selectElement.innerHTML = '';
+            if (tools && tools.length > 0) {
+                tools.forEach(tool => {
+                    const option = document.createElement('option');
+                    option.value = tool.name;
+                    option.textContent = tool.name;
+                    selectElement.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No tools available';
+                selectElement.appendChild(option);
+            }
+        }
+        async function executeMcpTest() {
+            const tool = document.getElementById('mcp-test-tool')?.value;
+            const argsStr = document.getElementById('mcp-test-args')?.value;
+            const output = document.getElementById('mcp-test-output');
+            if (!output || !tool) return;
+            output.style.display = 'block';
+            output.textContent = 'Running...';
+            try {
+                let args = {};
+                if (argsStr) {
+                    try { args = JSON.parse(argsStr); } catch (e) { output.textContent = '❌ Invalid JSON in arguments'; return; }
+                }
+                const res = await fetch(`/api/v1/mcp/call/${tool}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(args)
+                });
+                const data = await res.json();
+                output.textContent = JSON.stringify(data, null, 2);
+                showToast('Tool executed', 'success');
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+                showToast('Execution failed', 'error');
+            }
+        }
+        // ============ CONTEXT BAR ============
+        async function refreshContextBar() {
+            try {
+                // Get provider status
+                const providerRes = await fetch('/api/v1/admin/dashboard/config/primary-ai-provider');
+                const providerData = await providerRes.json();
+                document.getElementById('context-provider').textContent = providerData.primary_provider || 'ollama';
+                // Get alert status
+                const alertRes = await fetch('/api/v1/admin/dashboard/governance/logs?limit=5');
+                const alertData = await alertRes.json();
+                if (alertData.logs && alertData.logs.length > 0) {
+                    const pending = alertData.logs.filter(l => l.hitl === true).length;
+                    if (pending > 0) {
+                        document.getElementById('context-alerts').innerHTML = `🔔 ${pending} pending action${pending > 1 ? 's' : ''}`;
+                        document.getElementById('context-status').textContent = '⚠️ Action Required';
+                        document.getElementById('context-status').className = 'tag tag-warning';
+                    } else {
+                        document.getElementById('context-alerts').innerHTML = `🔔 No alerts`;
+                        document.getElementById('context-status').textContent = '✅ Operational';
+                        document.getElementById('context-status').className = 'tag tag-success';
+                    }
+                }
+            } catch (e) { console.error('Context bar refresh error:', e); }
+        }
+        // ============ CHAT UI HELPERS ============
+        function showTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.style.display = 'block';
+        }
+        function hideTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.style.display = 'none';
+        }
+        // ============ CHAT ============
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const query = input?.value?.trim();
+            if (!query) return;
+            // Extract patient_id from the cockpit sidebar
+            let patient_id = null;
+            const patientEl = document.querySelector('.cockpit-item .cockpit-value');
+            if (patientEl) {
+                patient_id = patientEl.textContent.trim();
+            }
+            addMessage('user', query);
+            input.value = '';
+            showTyping();
+            // Clear previous thoughts
+            const thoughtContainer = document.getElementById('thought-process-container');
+            if (thoughtContainer) {
+                thoughtContainer.style.display = 'none';
+                thoughtContainer.innerHTML = '';
+            }
+            try {
+                const providerSelect = document.getElementById('primary-ai-provider-select-chat');
+                const provider = providerSelect ? providerSelect.value : 'ollama';
+                const payload = { query, provider };
+                if (patient_id) payload.patient_id = patient_id;
+                const res = await fetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && !data.error) {
+                    let response = data.response || 'No response';
+                    let sources = data.sources || [];
+                    let provider = data.provider || 'unknown';
+                    if (sources.length > 0) {
+                        const sourceTypes = sources.map(s => s.type).join(', ');
+                        response += `\n\n📚 Sources: ${sourceTypes}`;
+                    }
+                    if (data.confidence) {
+                        response += `\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
+                    }
+                    response += `\n⚡ Provider: ${provider}`;
+                    addMessage('ai', response);
+                    // Render thought process if present
+                    if (data.thought_process) {
+                        renderThoughtProcess(data.thought_process, data.total_time);
+                    }
+                } else {
+                    addMessage('ai', `❌ Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (e) {
+                addMessage('ai', `❌ Network error: ${e.message}`);
+            } finally {
+                hideTyping();
+            }
+        }
+        function toggleThoughtProcess() {
+            const steps = document.getElementById('thought-steps');
+            const toggle = document.getElementById('thought-toggle');
+            if (steps.style.display === 'none') {
+                steps.style.display = 'block';
+                toggle.textContent = 'Hide';
+            } else {
+                steps.style.display = 'none';
+                toggle.textContent = 'Show';
+            }
+        }
+        function renderThoughtProcess(steps, totalTime) {
+            const container = document.getElementById('thought-process-container');
+            if (!container) return;
+            let stepsHtml = steps.map(s => `
+                <div style="margin-bottom: 5px;">
+                    <span style="font-weight: 600; color: #38bdf8;">⏱️ Step ${s.step}: ${s.label} (${s.duration.toFixed(2)}s)</span><br>
+                    <span style="color: #cbd5e1; font-size: 11px;">${s.description}</span>
+                </div>
+            `).join('');
+            container.innerHTML = `
+                <div style="border-top: 1px solid #334155; padding-top: 8px;">
+                    <div onclick="toggleThoughtProcess()" style="cursor: pointer; color: #38bdf8; font-size: 12px;">
+                        <i class="fas fa-brain"></i> <span id="thought-toggle">Show</span> thought process
+                        <span style="color: #64748b; font-size: 11px;">(Total: ${totalTime.toFixed(2)}s)</span>
+                    </div>
+                    <div id="thought-steps" style="display: none; margin-top: 8px; background: #020617; border-radius: 6px; padding: 10px; border: 1px solid #1e293b;">
+                        ${stepsHtml}
+                    </div>
+                </div>
+            `;
+            container.style.display = 'block';
+        }
+        function addMessage(type, content, isLoading = false) {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+            const div = document.createElement('div');
+            const id = isLoading ? 'loading-' + Date.now() : '';
+            if (id) div.id = id;
+            div.className = `message ${type}`;
+            div.style.cssText = `padding: 12px; background: ${type === 'user' ? '#1e293b' : '#0f172a'}; border: 1px solid ${type === 'user' ? '#38bdf8' : '#334155'}; border-radius: 8px; margin-bottom: 10px; max-width: 85%; ${type === 'user' ? 'margin-left: auto;' : ''} white-space: pre-wrap; word-wrap: break-word;`;
+            div.textContent = content;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+        function clearChat() {
+            const container = document.getElementById('chat-messages');
+            if (container) {
+                container.innerHTML = `<div class="message ai" style="padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 10px; max-width: 80%;">👋 Chat cleared. Ask me anything!</div>`;
+            }
+        }
+        async function loadIntelligenceStatus() {
+            try {
+                const res = await fetch('/api/v1/intelligence/status');
+                const data = await res.json();
+                if (document.getElementById('status-provider')) document.getElementById('status-provider').textContent = data.providers?.join(', ') || 'None';
+                if (document.getElementById('status-files')) document.getElementById('status-files').textContent = data.files || 0;
+                if (document.getElementById('status-mode')) document.getElementById('status-mode').textContent = data.mode || 'hybrid';
+            } catch (e) { console.error('Status error:', e); }
+        }
+        // ============ TIMELINE ============
+        async function listEvents() {
+            const list = document.getElementById('timeline-list');
+            if (!list) return;
+            list.innerHTML = '<div class="metric-label">Loading events...</div>';
+            try {
+                const res = await fetch('/api/v1/behaviour/events?limit=10');
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    list.innerHTML = data.map(e => `
+                        <div class="stat-row" style="cursor:pointer;" onclick="document.getElementById('timeline-event-id').value=${e.id};fetchTimeline();">
+                            <span>ID: ${e.id}</span>
+                            <span style="color:#94a3b8;">${e.event_type}</span>
+                            <span class="tag ${e.outcome === 'success' ? 'tag-success' : 'tag-danger'}">${e.decision}</span>
+                            <span style="color:#64748b;font-size:11px;">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="metric-label">No events found. Create some first.</div>';
+                }
+            } catch (e) { list.innerHTML = '<div class="metric-label">Error loading events</div>'; }
+        }
+        async function fetchTimeline() {
+            const id = document.getElementById('timeline-event-id')?.value;
+            const list = document.getElementById('timeline-list');
+            if (!id || !list) { showToast('Enter an Event ID', 'error'); return; }
+            list.innerHTML = '<div class="metric-label">Loading timeline...</div>';
+            try {
+                const res = await fetch(`/api/v1/timeline/${id}`);
+                if (res.status === 404) {
+                    list.innerHTML = '<div class="metric-label" style="color:#f87171;">Event not found</div>';
+                    return;
+                }
+                const data = await res.json();
+                if (data.timeline && data.timeline.length > 0) {
+                    list.innerHTML = `
+                        <div style="padding:10px;background:#020617;border-radius:8px;margin-bottom:15px;">
+                            <span style="color:#94a3b8;">Event: ${data.event_type}</span>
+                            <span class="tag tag-success" style="margin-left:10px;">${data.decision}</span>
+                        </div>
+                        ${data.timeline.map(step => `
+                            <div class="stat-row" style="border-left:3px solid ${step.type === 'audit' ? '#34d399' : step.type === 'ai_recommendation' ? '#fbbf24' : '#38bdf8'};padding-left:12px;">
+                                <span><span style="font-weight:700;color:${step.type === 'audit' ? '#34d399' : step.type === 'ai_recommendation' ? '#fbbf24' : '#38bdf8'};">${step.step}.</span> ${step.label}</span>
+                                <span style="font-size:12px;color:#94a3b8;">${step.description}</span>
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    list.innerHTML = '<div class="metric-label">No timeline data</div>';
+                }
+            } catch (e) { list.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading timeline</div>'; }
+        }
+        // ============ REPLAY ============
+        async function replayDecision() {
+            const id = document.getElementById('replay-event-id')?.value;
+            const resultDiv = document.getElementById('replay-result');
+            const output = document.getElementById('replay-output');
+            if (!id || !resultDiv || !output) { showToast('Enter an Event ID', 'error'); return; }
+            resultDiv.style.display = 'block';
+            output.textContent = 'Replaying...';
+            try {
+                const res = await fetch(`/api/v1/timeline/replay/${id}`);
+                const data = await res.json();
+                output.textContent = JSON.stringify(data, null, 2);
+                showToast('Replay complete', 'success');
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+                showToast('Replay failed', 'error');
+            }
+        }
+        function replaySpeed(speed) {
+            document.getElementById('replay-speed-label').textContent = `Speed: ${speed}x`;
+        }
+        // ============ TRENDS ============
+        async function fetchTrends() {
+            const domain = document.getElementById('trend-domain')?.value;
+            const days = document.getElementById('trend-days')?.value || 30;
+            const result = document.getElementById('trend-result');
+            if (!domain || !result) return;
+            result.innerHTML = '<div class="metric-label">Analyzing...</div>';
+            try {
+                const res = await fetch(`/api/v1/timeline/trends/${domain}?days=${days}`);
+                const data = await res.json();
+                if (data.error) {
+                    result.innerHTML = `<div class="metric-label" style="color:#f87171;">${data.error}</div>`;
+                    return;
+                }
+                result.innerHTML = `
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;">
+                        <div><div class="metric-label">Events</div><div style="font-size:24px;font-weight:700;">${data.total_events || 0}</div></div>
+                        <div><div class="metric-label">Avg Confidence</div><div style="font-size:24px;font-weight:700;color:${(data.average_confidence||0)>0.8?'#34d399':'#fbbf24'}">${((data.average_confidence||0)*100).toFixed(1)}%</div></div>
+                        <div><div class="metric-label">Trend</div><div style="font-size:24px;font-weight:700;color:${data.trend==='improving'?'#34d399':data.trend==='stable'?'#fbbf24':'#f87171'}">${data.trend==='improving'?'📈 Improving':data.trend==='stable'?'➡️ Stable':'📉 Declining'}</div></div>
+                    </div>
+                    <div style="margin-top:15px;display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div><div class="metric-label">Decisions</div><div style="font-size:14px;">${Object.entries(data.decision_distribution||{}).map(([k,v]) => `${k}: ${v}`).join(' | ')}</div></div>
+                        <div><div class="metric-label">Outcomes</div><div style="font-size:14px;">${Object.entries(data.outcome_distribution||{}).map(([k,v]) => `${k}: ${v}`).join(' | ')}</div></div>
+                    </div>
+                `;
+            } catch (e) {
+                result.innerHTML = `<div class="metric-label" style="color:#f87171;">Error: ${e.message}</div>`;
+            }
+        }
+        // ============ GOVERNANCE ============
+        async function fetchGovernanceLogs() {
+            const container = document.getElementById('audit-container');
+            if (!container) return;
+            container.innerHTML = '<div class="metric-label">Loading audit trail...</div>';
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/governance/logs?limit=20');
+                const data = await res.json();
+                if (data.logs && data.logs.length > 0) {
+                    container.innerHTML = data.logs.map(l => `
+                        <div style="padding:8px 0;border-bottom:1px solid #1e293b;">
+                            <div style="display:flex;justify-content:space-between;">
+                                <span style="font-size:13px;">${l.query || 'No query'}</span>
+                                <span class="tag ${l.hitl ? 'tag-success' : ''}">${l.hitl ? 'HITL' : 'AUTO'}</span>
+                            </div>
+                            <div style="font-size:11px;color:#64748b;">Receipt: ${l.receipt || 'N/A'} | ${new Date(l.timestamp).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="metric-label">No governance logs found</div>';
+                }
+            } catch (e) { container.innerHTML = '<div class="metric-label">Error loading governance logs</div>'; }
+        }
+        async function toggleVeriLinkMode() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/governance/toggle-offline', {method: 'POST'});
+                const data = await res.json();
+                showToast(data.offline_mode ? 'VeriLink offline' : 'VeriLink online', 'info');
+                document.getElementById('verilink-desc').textContent = data.offline_mode ? 'VeriLink connection suppressed' : 'VeriLink active';
+            } catch (e) { showToast('Error toggling VeriLink', 'error'); }
+        }
+        // ============ SECURITY ============
+        async function fetchSecurityStatus() {
+            const container = document.getElementById('security-status-card');
+            if (!container) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/metrics');
+                const data = await res.json();
+                container.innerHTML = `
+                    <div class="stat-row"><span class="stat-label">Encryption</span><span style="color:#34d399;">✅ ${data.security?.encryption || 'Active'}</span></div>
+                    <div class="stat-row"><span class="stat-label">Tokenization</span><span style="color:#34d399;">✅ ${data.security?.tokenization || 'Active'}</span></div>
+                    <div class="stat-row"><span class="stat-label">Sovereign Mode</span><span style="color:#34d399;">✅ Local-First</span></div>
+                    <div class="stat-row"><span class="stat-label">VeriLink</span><span style="color:${data.ai?.verilink_status === 'active' ? '#34d399' : '#fbbf24'};">${data.ai?.verilink_status || 'Not Installed'}</span></div>
+                `;
+            } catch (e) { container.innerHTML = '<div class="metric-label">Error loading security status</div>'; }
+        }
+        // ============ LEARNING ============
+        async function fetchLearningConfig() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/learning/config');
+                const data = await res.json();
+                const batch = document.getElementById('input-batch-size');
+                const interval = document.getElementById('input-interval');
+                if (batch) batch.value = data.batch_size || 10;
+                if (interval) interval.value = data.interval_hours || 1.0;
+            } catch (e) { /* silent */ }
+        }
+        async function saveLearningConfig() {
+            const batch = document.getElementById('input-batch-size')?.value;
+            const interval = document.getElementById('input-interval')?.value;
+            try {
+                await fetch('/api/v1/admin/dashboard/learning/config', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({batch_size: batch, interval_hours: interval})
+                });
+                showToast('Learning config saved', 'success');
+            } catch (e) { showToast('Error saving config', 'error'); }
+        }
+        async function triggerLearning() {
+            try {
+                await fetch('/api/v1/admin/dashboard/learning/trigger', {method: 'POST'});
+                showToast('Crystallization cycle triggered', 'success');
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+        // ============ SIMULATION ============
+        async function toggleSimulation() {
+            const btn = document.getElementById('sim-btn');
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/system/simulate-iot', {method: 'POST'});
+                const data = await res.json();
+                if (data.status === 'started') {
+                    btn.innerHTML = '<i class="fas fa-stop-circle"></i> Terminate Simulation';
+                    btn.style.background = '#7f1d1d';
+                    showToast('IoT simulation active', 'success');
+                } else {
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> Ignite IoT Simulation';
+                    btn.style.background = '#38bdf8';
+                    showToast('Simulation stopped', 'info');
+                }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+        // ============ HITL ============
+        async function approveAction(id) {
+            try {
+                await fetch(`/api/v1/admin/dashboard/hitl/${id}/approve`, {method: 'POST'});
+                showToast('Action approved', 'success');
+                fetchAgentStatus();
+            } catch (e) { showToast('Error approving', 'error'); }
+        }
+        async function denyAction(id) {
+            try {
+                await fetch(`/api/v1/admin/dashboard/hitl/${id}/deny`, {method: 'POST'});
+                showToast('Action denied', 'info');
+                fetchAgentStatus();
+            } catch (e) { showToast('Error denying', 'error'); }
+        }
+        function showHitlDetails(id) {
+            const modal = document.getElementById('details-modal');
+            const body = document.getElementById('modal-body');
+            document.getElementById('modal-title').textContent = 'HITL Action Details';
+            modal.style.display = 'block';
+            body.innerHTML = '<div class="metric-label">Loading...</div>';
+            fetch(`/api/v1/admin/dashboard/hitl/${id}/explain`, {method: 'POST'})
+                .then(res => res.json())
+                .then(data => {
+                    body.innerHTML = `
+                        <div style="margin-bottom:15px;">
+                            <div class="metric-label">Explanation</div>
+                            <div style="background:#020617;padding:15px;border-radius:8px;margin-top:5px;">${data.explanation || 'No explanation available'}</div>
+                        </div>
+                        <button class="btn" onclick="closeModal()">Close</button>
+                    `;
+                })
+                .catch(() => {
+                    body.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading details</div>';
+                });
+        }
+        function closeModal() { document.getElementById('details-modal').style.display = 'none'; }
+        // ============ LOGOUT ============
+        async function logout() {
+            await fetch('/api/v1/auth/logout', {method: 'POST'});
+            window.location.href = '/login';
+        }
+        async function quickAction(action) {
+            showToast(`⏳ Executing ${action.replace('_', ' ')}...`, 'info');
+            try {
+                switch(action) {
+                    case 'new_decision':
+                        switchTab('timeline');
+                        setTimeout(() => document.getElementById('timeline-event-id')?.focus(), 300);
+                        showToast('📝 Enter decision details', 'info');
+                        break;
+                    case 'refresh_data':
+                        refreshAll();
+                        await Promise.all([fetchMetrics(), loadActions(), refreshContextBar()]);
+                        showToast('✅ All data refreshed', 'success');
+                        break;
+                    case 'export_report':
+                        window.location.href = '/api/v1/admin/dashboard/report/export';
+                        showToast('📥 Report download started', 'success');
+                        break;
+                    case 'clear_cache':
+                        if (confirm('Clear browser cache and reload?')) {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.reload();
+                        }
+                        break;
+                    case 'quick_chat':
+                        switchTab('chat');
+                        setTimeout(() => document.getElementById('chat-input')?.focus(), 300);
+                        showToast('💬 Ask me anything', 'info');
+                        break;
+                    default:
+                        showToast('⚠️ Unknown action: ' + action, 'error');
+                }
+            } catch (e) {
+                console.error('Quick action error:', e);
+                showToast('❌ Error: ' + e.message, 'error');
+            }
+        }
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey) {
+                if (e.key === 'R') { e.preventDefault(); quickAction('refresh_data'); }
+                if (e.key === 'C') { e.preventDefault(); quickAction('clear_cache'); }
+                if (e.key === 'N') { e.preventDefault(); quickAction('new_decision'); }
+                if (e.key === 'Q') { e.preventDefault(); quickAction('quick_chat'); }
+            }
         });
-}
-
-function closeModal() {
-    document.getElementById('details-modal').style.display = 'none';
-}
-
-// ============ INIT ============
-document.addEventListener('DOMContentLoaded', function() {
-    var lastTab = localStorage.getItem('active-tab') || 'overview';
-    switchTab(lastTab);
-    refreshContextBar();
-    loadActions();
-    setTimeout(initWebSocket, 500);
-    
-    setInterval(function() {
-        if (currentTab === 'overview' || currentTab === 'agents') {
-            loadTabContent(currentTab);
+        // Show shortcuts hint
+        if (!localStorage.getItem('shortcuts_shown')) {
+            setTimeout(() => {
+                showToast('⌨️ Tip: Use Ctrl+Shift + R/C/N/Q for quick actions!', 'info');
+                localStorage.setItem('shortcuts_shown', 'true');
+            }, 5000);
         }
-    }, 30000);
-    
-    setInterval(refreshContextBar, 30000);
-    setInterval(loadActions, 30000);
-});
+        // ============ HITL ACTIONS ============
+        async function loadActions() {
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/hitl/pending');
+                if (!res.ok) throw new Error('Failed to fetch actions');
+                const actions = await res.json();
+                if (!Array.isArray(actions)) throw new Error('Invalid response format');
+                const count = actions.length;
+                const widget = document.getElementById('action-required-widget');
+                // Track if user explicitly closed the widget in this session
+                const isManuallyClosed = sessionStorage.getItem('action-widget-closed') === 'true';
+                const lastActionCount = parseInt(sessionStorage.getItem('last-action-count') || '0');
+                // If count changed, reset manual closure
+                if (count !== lastActionCount) {
+                    sessionStorage.setItem('action-widget-closed', 'false');
+                    sessionStorage.setItem('last-action-count', count.toString());
+                }
+                if (count > 0 && !(count !== lastActionCount ? false : isManuallyClosed)) {
+                    widget.style.display = 'block';
+                    document.getElementById('action-count').textContent = count;
+                    document.getElementById('action-plural').textContent = count > 1 ? 's' : '';
+                    document.getElementById('action-list').innerHTML = actions.map(a => `
+                        <div style="padding: 10px; background: #0f172a; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #f87171; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #f1f5f9; font-size: 13px;">
+                                    ${a.agent_type || 'Unknown Agent'}
+                                    <span style="font-weight: 400; color: #94a3b8; font-size: 11px; margin-left: 8px;">
+                                        ${new Date(a.timestamp).toLocaleTimeString()}
+                                    </span>
+                                </div>
+                                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                                    ${a.query || 'No description provided'}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-left: 10px; flex-shrink: 0;">
+                                <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #34d399; color: #0f172a; cursor: pointer;" onclick="resolveAction('${a.id}', 'approve')">
+                                    ✅ Approve
+                                </button>
+                                <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #f87171; cursor: pointer;" onclick="resolveAction('${a.id}', 'deny')">
+                                    ❌ Deny
+                                </button>
+                                <button class="btn" style="padding: 2px 10px; font-size: 10px; background: #334155; cursor: pointer;" onclick="showHitlDetails('${a.id}')">
+                                    📋 Details
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    widget.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Actions load error:', e);
+                // Keep the widget hidden if load fails to avoid UX noise
+            }
+        }
+        async function resolveAction(actionId, resolution) {
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard/hitl/${actionId}/${resolution}`, { method: 'POST' });
+                if (res.ok) {
+                    showToast(`✅ Action ${resolution}d`, 'success');
+                    loadActions();
+                    refreshContextBar();
+                } else {
+                    showToast('❌ Failed to resolve action', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
+        }
+        async function approveAllActions() {
+            if (!confirm('Approve all pending actions?')) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/hitl/approve-all', { method: 'POST' });
+                if (res.ok) {
+                    showToast('✅ All actions approved', 'success');
+                    loadActions();
+                    refreshContextBar();
+                } else {
+                    showToast('❌ Failed to approve all', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+        async function denyAllActions() {
+            if (!confirm('Deny all pending actions?')) return;
+            try {
+                const res = await fetch('/api/v1/admin/dashboard/hitl/deny-all', { method: 'POST' });
+                if (res.ok) {
+                    showToast('✅ All actions denied', 'success');
+                    loadActions();
+                    refreshContextBar();
+                } else {
+                    showToast('❌ Failed to deny all', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', function() {
+            const lastTab = localStorage.getItem('active-tab') || 'overview';
+            performTabLoad(lastTab);
+            refreshContextBar();
+            loadActions();
+            setInterval(() => { if (currentTab === 'overview' || currentTab === 'agents') refreshTabContent(currentTab); }, 30000);
+            setInterval(refreshContextBar, 30000);
+            setInterval(loadActions, 30000);
+        });
+    </script>
+    <script src="/static/js/packs.js" defer></script>
+    <script src="/static/js/reload.js" defer></script>
+    <script src="/static/js/models.js" defer></script>
+    <script src="/static/js/chat.js" defer></script>
 
-console.log('✅ PersonaVault dashboard initialized');
-</script>
 </body>
-</html>
-
-
-<script>
-// ============ AGENT STATUS UI ============
-function updateAgentStatusUI(data) {
-    const container = document.getElementById("agent-status-container");
-    if (!container) return;
-    
-    // Show the container
-    container.style.display = "block";
-    
-    const agents = data.agent_activity || {};
-    const activeCount = Object.values(agents).filter(s => s === "active" || s === 1 || s === true).length;
-    
-    // Update active count
-    const countEl = document.getElementById("agent-active-count");
-    if (countEl) countEl.textContent = `${activeCount} active`;
-    
-    // Build agent grid
-    const grid = document.getElementById("agent-status-grid");
-    if (!grid) return;
-    
-    let html = "";
-    for (const [name, status] of Object.entries(agents)) {
-        const isActive = status === "active" || status === 1 || status === true;
-        const statusColor = isActive ? "#34d399" : "#64748b";
-        const bgColor = isActive ? "rgba(52, 211, 153, 0.1)" : "transparent";
-        const borderColor = isActive ? "#34d399" : "#1e293b";
-        
-        html += `
-            <div style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: ${bgColor}; border-radius: 4px; border: 1px solid ${borderColor};">
-                <span style="font-size: 10px; color: ${statusColor};">
-                    ${isActive ? "●" : "○"}
-                </span>
-                <span style="font-size: 11px; color: ${statusColor}; font-weight: ${isActive ? "600" : "400"};">
-                    ${name}
-                </span>
-                ${isActive ? `<span style="font-size: 8px; color: #34d399; margin-left: auto;">⚡</span>` : ``}
-            </div>
-        `;
-    }
-    grid.innerHTML = html || `<span style="color: #64748b; font-size: 11px;">No agents active</span>`;
-}
-
-</script>
-</body>
-</html>
+    </html>

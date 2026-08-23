@@ -47,14 +47,14 @@ class PackLoader:
                 version=pack_data.get("version", "1.0.0"),
                 domain=pack_data.get("domain", "general"),
                 description=pack_data.get("description", ""),
-                entities=pack_data.get("entities", []),
-                events=pack_data.get("events", []),
-                decision_types=pack_data.get("decision_types", []),
-                metrics=pack_data.get("metrics", []),
-                prompts=pack_data.get("prompts", {}),
-                views=pack_data.get("views", {}),
-                policies=pack_data.get("policies", []),
-                evaluation_rules=pack_data.get("evaluation_rules", []),
+                entities=data.get("entities", []),
+                events=data.get("events", []),
+                decision_types=data.get("decision_types", []),
+                metrics=data.get("metrics", []),
+                prompts=data.get("prompts", {}),
+                views=data.get("views", {}),
+                policies=data.get("policies", []),
+                evaluation_rules=data.get("evaluation_rules", []),
                 installed_by=user_id
             )
             

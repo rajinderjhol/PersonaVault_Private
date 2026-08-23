@@ -1,10 +1,85 @@
 <!-- Markdown rendering -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
+// ============ CHECK PROVIDER STATUS ============
+async function checkProviderStatus() {
+    try {
+        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
+        const data = await res.json();
+        const provider = data.primary_provider || "ollama";
+        
+        const statusEl = document.getElementById("primary-ai-provider-status-chat");
+        if (statusEl) {
+            statusEl.textContent = provider;
+            statusEl.className = "tag tag-info";
+        }
+        
+        // Also sync the dropdown
+        const chatSelect = document.getElementById("chat-provider-select");
+        if (chatSelect) chatSelect.value = provider;
+        
+        showToast("✅ Provider status updated", "success");
+    } catch (e) {
+        console.error("Error checking provider status:", e);
+        showToast("❌ Error checking provider status", "error");
+    }
+}
+
+</script>
 <!-- Syntax highlighting -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github-dark.css">
-<script src="https://cdn.jsdelivr.net/npm/highlight.js/lib/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
+// ============ CHECK PROVIDER STATUS ============
+async function checkProviderStatus() {
+    try {
+        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
+        const data = await res.json();
+        const provider = data.primary_provider || "ollama";
+        
+        const statusEl = document.getElementById("primary-ai-provider-status-chat");
+        if (statusEl) {
+            statusEl.textContent = provider;
+            statusEl.className = "tag tag-info";
+        }
+        
+        // Also sync the dropdown
+        const chatSelect = document.getElementById("chat-provider-select");
+        if (chatSelect) chatSelect.value = provider;
+        
+        showToast("✅ Provider status updated", "success");
+    } catch (e) {
+        console.error("Error checking provider status:", e);
+        showToast("❌ Error checking provider status", "error");
+    }
+}
+
+</script>
 <!-- For code copy button -->
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js">
+// ============ CHECK PROVIDER STATUS ============
+async function checkProviderStatus() {
+    try {
+        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
+        const data = await res.json();
+        const provider = data.primary_provider || "ollama";
+        
+        const statusEl = document.getElementById("primary-ai-provider-status-chat");
+        if (statusEl) {
+            statusEl.textContent = provider;
+            statusEl.className = "tag tag-info";
+        }
+        
+        // Also sync the dropdown
+        const chatSelect = document.getElementById("chat-provider-select");
+        if (chatSelect) chatSelect.value = provider;
+        
+        showToast("✅ Provider status updated", "success");
+    } catch (e) {
+        console.error("Error checking provider status:", e);
+        showToast("❌ Error checking provider status", "error");
+    }
+}
+
+</script>
 
 <div id="chat-tab" style="padding: 20px; display: flex; flex-direction: column; height: calc(100vh - 120px);">
     <h2 style="color: var(--accent);">💬 PersonaVault Chat</h2>
@@ -41,7 +116,7 @@
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <!-- Model Selector with sync from dashboard -->
-                    <select id="chat-provider-select" class="input-field" style="width: 180px; padding: 4px 8px; font-size: 11px; margin: 0; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; border-radius: 4px;">
+                    <select id="chat-provider-select" class="input-field" style="width: 180px; padding: 4px 8px; font-size: 11px; margin: 0; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; border-radius: 4px;" onchange="updatePrimaryAIProvider(this.value)">
                         <option value="ollama">🖥️ Ollama (Local)</option>
                         <option value="groq">☁️ Groq (Cloud)</option>
                         <option value="gemini">☁️ Gemini (Cloud)</option>
@@ -555,6 +630,31 @@ function clearChat() {
 document.addEventListener('DOMContentLoaded', function() {
     syncChatProviderWithDashboard();
 });
+
+// ============ CHECK PROVIDER STATUS ============
+async function checkProviderStatus() {
+    try {
+        const res = await fetch("/api/v1/admin/dashboard/config/primary-ai-provider");
+        const data = await res.json();
+        const provider = data.primary_provider || "ollama";
+        
+        const statusEl = document.getElementById("primary-ai-provider-status-chat");
+        if (statusEl) {
+            statusEl.textContent = provider;
+            statusEl.className = "tag tag-info";
+        }
+        
+        // Also sync the dropdown
+        const chatSelect = document.getElementById("chat-provider-select");
+        if (chatSelect) chatSelect.value = provider;
+        
+        showToast("✅ Provider status updated", "success");
+    } catch (e) {
+        console.error("Error checking provider status:", e);
+        showToast("❌ Error checking provider status", "error");
+    }
+}
+
 </script>
 
 <!-- Swarm Agent Activity -->

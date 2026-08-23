@@ -9,6 +9,7 @@ from typing import List, Optional, Dict, Any
 
 # Import the central Base from the session module to ensure metadata is shared
 from app.db.session import Base
+from app.models.semantic import SemanticPattern
 from app.models.pending_action import PendingAction
 from app.models.organization import Organization
 from app.models.user import User
@@ -191,19 +192,6 @@ class RetrievalPlan(BaseModel):
     graph_traversals: List[str] = Field(default_factory=list)
     reasoning: str = ""
     complexity_score: float = Field(default=0.5, ge=0.0, le=1.0)
-
-class SemanticPattern(Base):
-    __tablename__ = "semantic_patterns"
-    id = Column(Integer, primary_key=True, index=True)
-    pattern_type = Column(String, index=True)
-    trigger = Column(Text)
-    correction = Column(Text)
-    success_count = Column(Integer, default=0)    # ← NEW
-    weight = Column(Float, default=0.7)           # ← NEW
-    is_active = Column(Boolean, default=True) # ← NEW
-    occurrence_count = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class MemoryResult(BaseModel):
     content: str

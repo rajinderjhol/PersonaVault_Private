@@ -1,44 +1,107 @@
 # PersonaVault Architecture
 
-## System Overview
+## Strategic Thesis
 
-PersonaVault is a **Sovereign Organisational Intelligence Platform** built on a **Decision Operating System** architecture. The core philosophy is to capture, learn, and improve how organisations make decisions.
+PersonaVault is a **model-independent Decision Operating System (DOS)**. It decouples the AI inference engine from the organization’s accumulated, governed, and provenance-backed institutional intelligence.
+
+**Core Thesis:** AI models generate intelligence; PersonaVault accumulates intelligence. PersonaVault owns institutional continuity.
 
 ---
 
-## The Decision Intelligence Architecture
+## The Decision Intelligence Architecture: The Crystallization Loop
 
+The architecture is designed to convert ephemeral interactions into durable organizational knowledge through a governance-backed feedback loop.
+
+```text
+       ┌─────────────────────────────────────┐
+       │     THE CRYSTALLIZATION LOOP        │
+       └─────────────────────────────────────┘
+              │                 ▲
+              ▼                 │
+   ┌──────────────────┐   ┌───────────────┐
+   │ AI Recommendation│ → │ Human Decision│
+   └──────────────────┘   └───────┬───────┘
+                                  │
+                                  ▼
+   ┌──────────────────┐   ┌───────────────┐
+   │ Reinforcement    │ ← │ Real Outcome  │
+   └────────┬─────────┘   └───────────────┘
+            │
+            ▼
+   ┌──────────────────┐
+   │ Crystallized Rule│ (Layer 3: Ice)
+   └──────────────────┘
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  🏛️ PersonaVault - Decision Operating System             │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Event → Decision → Behaviour → Explain → Audit → Learn   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │               Behaviour Packs                        │    │
-│  │  Security │ Legal │ Insurance │ Procurement │ Compliance │ │
-│  │  Robotics                                            │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                          ↓                                  │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                 Decision Engine                      │    │
-│  │  • Policy Engine    • Reinforcement                 │    │
-│  │  • Explainability   • Audit                        │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                          ↓                                  │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │               Behaviour Memory                       │    │
-│  │  • Events  • Decisions  • Outcomes  • Context      │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                          ↓                                  │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │               Three-Layer Memory                     │    │
-│  │  Layer 1 (Gas) → Layer 2 (Liquid) → Layer 3 (Ice) │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+
+## Cognitive Execution Trace
+
+PersonaVault utilizes **Cognitive Execution Traces** to provide an auditable explanation of system activity. This trace includes:
+*   Agents involved
+*   Evidence retrieved
+*   Tools invoked
+*   Policies applied
+*   Decisions/recommendations
+*   Validations performed
+*   Confidence and Governance checks
+*   Human interventions
+
+---
+
+## The Decision Operating System (Decision State)
+
+Instead of a simple "Cognitive State," PersonaVault maintains an **Enterprise Decision State** for every interaction:
+
+*   **Evidence State**: Sufficiency and relevance of retrieved memories.
+*   **Policy State**: Active policies applied (P-184, etc.).
+*   **Memory State**: Relevant retrieved patterns (Layer 1-3).
+*   **Model State**: The specific AI engine utilized.
+*   **Confidence/Uncertainty**: Numerical metrics.
+*   **Authorization**: Governance and permission status.
+*   **Outcome State**: The final real-world result (e.g., successful/failed).
+
+---
+
+## The Strategic Moat
+
+The moat is not the Three-Layer Memory architecture; the moat is the **accumulated crystallized state**. As an organization uses PersonaVault, the system learns:
+*   How the organization behaves.
+*   Which policies work in practice.
+*   Where humans override AI.
+*   Empirical outcome evidence.
+
+A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better engine with which to compound the organization's existing intelligence.
+
+---
+
+## The Decision Operating System (DOS) Architecture
+
+Inspired by **DeepSeek Harness**, PersonaVault 2026 utilizes a **Service-Oriented monorepo architecture** that emphasizes spatiotemporal composability.
+
+### 1. Service Registry (Cordis-Inspired)
+The `ServiceRegistry` is the backbone of the DOS. It allows runtime swapping of core components without system restarts.
+*   **Inference Providers**: Dynamic switching between Ollama, Groq, and Gemini.
+*   **Memory Providers**: Hot-swapping episodic and semantic storage engines.
+*   **Governance Providers**: Runtime activation of local or cryptographic (VeriLink) trust protocols.
+
+### 2. Sovereign Execution Modes
+The system operates in four specialized modes to balance risk and performance:
+*   **Standard Mode**: Full tool access with mandatory HITL approval gates.
+*   **Restricted Mode**: Air-gapped execution, utilizing only "Ice" (Semantic) memory.
+*   **Simulation Mode**: Sandboxed decision replay with no side effects.
+*   **Audit Mode**: Read-only access with intensified system logging.
+
+### 3. Observability Layer
+A deep instrumentation layer that tracks performance at the request level:
+*   **Memory Hit Rate**: Tracking how often crystallized intelligence (Ice) is utilized.
+*   **Token Efficiency**: Measuring the cost-per-decision.
+*   **Processing Latency**: Real-time duration metrics injected into response headers.
+
+---
+
+## Cognitive Execution Trace
+
+
+PersonaVault is a **Sovereign Organisational Intelligence Platform** built on the Decision Operating System architecture. The core philosophy is to capture, learn, and improve how organisations make decisions.
 
 ---
 
@@ -153,19 +216,16 @@ PersonaVault is not a single agent but a **collaborative swarm** of specialized 
 
 Agents communicate via a shared **Cognitive Blackboard** and negotiate actions based on a unified understanding of the user's state and preferences.
 
-### Cognitive State
-The system maintains a "Cognitive State" representing its current reasoning confidence. This state is visualized via the **Live Swarm Feed** and the **Chain-of-Thought (CoT) Graph**.
-
-#### Human-In-The-Loop (HITL) Paradigms
+### Human-In-The-Loop (HITL) Paradigms
 1.  **Blocking HITL (Approval Gates)**: When uncertainty is high (< 0.6) or governance is violated, the swarm halts for explicit user approval.
 2.  **Active Steering (Leapfrog HITL)**: Operators can observe the reasoning process in the live feed and inject instructions directly into the L1 Blackboard to redirect agents without suspending execution.
 
-#### Confidence Scoring
+### Confidence Scoring
 *   **High (>= 0.8)**: Autonomous execution.
 *   **Medium (0.6 - 0.79)**: Warning logged, background evaluation intensified.
 *   **Low (< 0.6)**: Automatic transition to HITL (Human-in-the-loop).
 
-#### HITL Triggers
+### HITL Triggers
 1.  **Validator Failure**: Significant discrepancy between retrieved evidence and reasoning logic.
 2.  **Judge Rejection**: Low scores in faithfulness or relevance.
 3.  **Governance Violation**: Intent flagged by the Local Guardian Constitution.
@@ -182,7 +242,6 @@ Administrators can manage these rules via the **Visual Rule Editor** in the Admi
 PersonaVault utilizes the **Model Context Protocol (MCP)** to decouple the AI's cognitive reasoning from its data sources and tools.
 *   **PersonaVault as MCP Server**: Exposes crystallized memories (Layer 3) to external models.
 *   **Agents as MCP Clients**: Allows the swarm to utilize third-party tools (APIs, Local DBs) via a unified interface.
-
 
 ## Data Layer
 
@@ -209,17 +268,15 @@ Uses **SQLAlchemy** (targeting PostgreSQL/SQLite) to manage Layer 2 episodic dat
 *   Legal matters, Documents, and Workflow tasks.
 
 ### 2. Semantic Search (Vector Store)
-During development, the `VectorService` utilizes **FAISS** for local embedding management and K-Nearest Neighbor (KNN) searches. This allows for high-speed retrieval of Layer 3 memories without requiring a dedicated cloud vector database. It is responsible for:
-*   Storing memory embeddings.
-*   Performing K-Nearest Neighbor (KNN) searches to find semantically relevant memories based on natural language queries.
+During development, the `VectorService` utilizes **FAISS** for local embedding management and K-Nearest Neighbor (KNN) searches. This allows for high-speed retrieval of Layer 3 memories without requiring a dedicated cloud vector database.
 
 ### 3. Knowledge Graph (SQL-Graph Simulation)
-The `GraphService` manages relationships between entities and memories. To maintain development speed in constrained environments, graph traversal is simulated via **Graph Adjacency Tables** within SQL. This allows the AI to understand the *context* of a memory (e.g., "Who was present during this event?") without requiring a standalone graph engine.
+The `GraphService` manages relationships between entities and memories. To maintain development speed in constrained environments, graph traversal is simulated via **Graph Adjacency Tables** within SQL.
 
 ## 🛡️ Strategic Infrastructure Note
 
 PersonaVault employs an **"Integrated-to-Distributed"** evolution strategy:
-*   **Development Lattices (Current):** We utilize **SQLite** (Cloud Shell) for relational data, **FAISS** for vector retrieval, and simulated SQL tables for graph relationships. This reduces operational overhead while enabling the full cognitive loop.
+*   **Development Lattices (Current):** We utilize **SQLite** (Cloud Shell) for relational data, **FAISS** for vector retrieval, and simulated SQL tables for graph relationships.
 *   **Production Scale-Out:** The architecture is designed for a seamless migration to specialized engines:
     *   **PostgreSQL** (Relational Metadata)
     *   **Weaviate** (High-scale Vector Retrieval)
@@ -235,7 +292,7 @@ PersonaVault employs an **"Integrated-to-Distributed"** evolution strategy:
 *   **GeneratorAgent**: The LLM interface. It abstracts the complexity of switching between Ollama and Gemini.
 *   **EmpathyAgent**: Interprets real-time situational data to ground the AI's emotional response tone.
 *   **IoTService**: Processes telemetry data. Real-time data is ingested via WebSockets and persisted for historical analysis.
-*   **HITL-as-a-Service**: A core module managing the "Cognitive State" when human intervention is required for high-stakes decisions or low-confidence reasoning.
+*   **HITL-as-a-Service**: A core module managing the "Cognitive State" when human intervention is required.
 *   **TaskService**: Handles background maintenance like memory expiration, periodic reflection, and data retention policies.
 
 ## Middleware & Security
@@ -252,23 +309,9 @@ The system is designed for production-grade monitoring:
 *   **Prometheus**: Tracking request latency and error rates across all endpoints.
 *   **Cognified Admin Dashboard**: A specialized router (`dashboard_router.py`) providing real-time metrics, system health, and cognitive trace visualization.
 *   **Cognitive Narrative Stream**: Real-time human-readable monitoring of agent swarm reasoning, providing high-level operational insight into agent collaboration.
-*   **CoT Visualization**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization and auditability.
+*   **Cognitive Execution Trace**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization and auditability.
 *   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs (SSE).
 *   **Model Management**: Direct interface for pulling and deleting Ollama models.
-
-## 🏆 The Moat
-
-> **"Every decision across your organisation makes your entire enterprise more intelligent, while all value remains under your control."**
-
-### The "Compounding Advantage"
-
-```mermaid
-graph LR
-    A[Day 1] -->|0 Patterns| B[Day 30]
-    B -->|4 Patterns| C[Day 60]
-    C -->|Patterns at 0.90+ Weight| D[Day 90]
-    D -->|Exponential Growth| E[Uncatchable Lead]
-```
 
 ## Request Lifecycle
 

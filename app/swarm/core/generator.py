@@ -1,348 +1,276 @@
+"""
+Generator Agent - Supports streaming with intelligence packs integration
+"""
 import logging
-import os
-import asyncio
-import httpx
 import json
-from typing import List, Dict, Any, Optional, Union
-import re
-from sqlalchemy import select
-from app.config import Config
-import warnings
-
-# Suppress warnings
-warnings.filterwarnings("ignore", message=".*google.generativeai.*")
-warnings.filterwarnings("ignore", category=FutureWarning)
+import httpx
+import os
+from typing import Dict, Any, Optional, AsyncGenerator, List
 
 logger = logging.getLogger(__name__)
 
-try:
-    from google import genai
-    HAS_NEW_GEMINI = True
-    HAS_LEGACY_GEMINI = False
-except ImportError:
-    HAS_NEW_GEMINI = False
-    try:
-        import google.generativeai as genai
-        HAS_LEGACY_GEMINI = True
-    except ImportError:
-        HAS_LEGACY_GEMINI = False
-
 class GeneratorAgent:
-    """
-    Synthesizes answers using a tiered approach:
-    1. Ollama (Local - Default Priority)
-    2. Gemini (Cloud - Fallback/Secondary)
-    3. Template-based Fallback (Deterministic)
-    """
-    
     def __init__(self, client: Optional[httpx.AsyncClient] = None):
-        self.gemini_key = os.getenv("GEMINI_API_KEY")
-        self.ollama_url = Config.OLLAMA_BASE_URL
-        self.ollama_model = getattr(Config, "OLLAMA_LLM_MODEL", os.getenv("OLLAMA_LLM_MODEL", "tinydolphin"))
         self.client = client or httpx.AsyncClient()
-        
-        if self.gemini_key:
-            if HAS_NEW_GEMINI:
-                self.genai_client = genai.Client(api_key=self.gemini_key)
-                logger.info("GeneratorAgent: New Gemini AI SDK initialized")
-            elif HAS_LEGACY_GEMINI:
-                genai.configure(api_key=self.gemini_key)
-                logger.info("GeneratorAgent: Legacy Gemini AI SDK initialized")
-  
+        self.groq_key = os.getenv("GROQ_API_KEY")
+        self.ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.ollama_model = os.getenv("OLLAMA_LLM_MODEL", "tinydolphin")
+        self._packs = []
         logger.info("GeneratorAgent initialized")
     
-    async def _get_primary_provider(self) -> str:
-        try:
-            from app.db.session import SessionLocal
-            from app.models import SystemConfig
-            
-            async with SessionLocal() as session:
-                stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
-                result = await session.execute(stmt)
-                config = result.scalars().first()
-                if config:
-                    return config.value.lower()
-        except Exception as e:
-            logger.error(f"Error accessing database: {e}")
+    def set_packs(self, packs: List[Dict]):
+        """Set intelligence packs for context enhancement."""
+        self._packs = packs
+        logger.info(f"GeneratorAgent loaded {len(packs)} packs")
+    
+    def _build_pack_context(self, query: str) -> str:
+        """Build context from intelligence packs based on query."""
+        if not self._packs:
+            return ""
         
-        return os.getenv("AI_PRIMARY_PROVIDER", "ollama").lower()
+        context_parts = []
+        query_lower = query.lower()
+        
+        for pack in self._packs:
+            if not pack.get('is_active', True):
+                continue
+            
+            pack_name = pack.get('name', '').lower()
+            pack_domain = pack.get('domain', '').lower()
+            pack_desc = pack.get('description', '').lower()
+            
+            # Check relevance
+            relevance_score = 0
+            if pack_domain in query_lower:
+                relevance_score += 3
+            if any(word in query_lower for word in pack_name.split()):
+                relevance_score += 2
+            if any(word in query_lower for word in pack_desc.split()[:10]):
+                relevance_score += 1
+            
+            if relevance_score >= 2:
+                context_parts.append(f"--- {pack.get('name')} Pack ---")
+                context_parts.append(f"Domain: {pack.get('domain')}")
+                context_parts.append(f"Description: {pack.get('description')}")
+                
+                # Add entities if available
+                entities = pack.get('entities', [])
+                if entities:
+                    # Extract names from entity dictionaries or use as-is if strings
+                    entity_names = []
+                    for entity in entities[:5]:
+                        if isinstance(entity, dict):
+                            # Get 'name' field, fallback to 'id' or 'label'
+                            name = entity.get('name', entity.get('id', entity.get('label', '')))
+                            if name:
+                                entity_names.append(str(name))
+                            # Also include examples if available
+                            examples = entity.get('examples', [])
+                            if examples and isinstance(examples, list):
+                                for ex in examples[:2]:
+                                    if isinstance(ex, str):
+                                        entity_names.append(f"({ex})")
+                        elif isinstance(entity, str):
+                            entity_names.append(entity)
+                    if entity_names:
+                        context_parts.append(f"Key concepts: {', '.join(entity_names)}")
+                    else:
+                        # Fallback: show the first few entities as JSON strings
+                        context_parts.append(f"Key concepts: {str(entities[:3])}")
+                context_parts.append("")
+        
+        return "\n".join(context_parts) if context_parts else ""
     
     async def generate(
         self, 
         query: str, 
-        context: List[Any] = None, 
-        reasoning_insight: Any = None,
-        route: Dict[str, Any] = None,
-        situational_awareness: Dict[str, Any] = None,
-        persona: Any = None,
-        response_tone: str = "neutral",
-        hitl_approved: bool = False
+        context: list = None, 
+        provider: str = "groq",
+        **kwargs
     ) -> Dict[str, Any]:
-        prompt = self._build_prompt(query, context, reasoning_insight, situational_awareness, persona)
-        
-        result = None
-        if route and "provider" in route:
-            provider = route["provider"]
-            logger.info(f"GeneratorAgent: Routing to {provider} as requested")
-            
-            if provider == "ollama":
-                result = await self._try_ollama(prompt)
-            elif provider == "groq":
-                result = await self._try_groq(prompt)
-            elif provider == "gemini":
-                result = await self._try_gemini(prompt)
-            
-            if result:
-                if hitl_approved:
-                    result["hitl_approved"] = True
-                return result
-
-        primary = await self._get_primary_provider()
-        providers = ["ollama", "groq", "gemini"]
-        if primary in providers:
-            providers.remove(primary)
-            providers.insert(0, primary)
-        
-        for provider in providers:
-            if route and route.get("provider") == provider:
-                continue
-
-            if provider == "ollama":
-                result = await self._try_ollama(prompt)
-            elif provider == "groq":
-                result = await self._try_groq(prompt)
-            elif provider == "gemini":
-                result = await self._try_gemini(prompt)
-            
-            if result:
-                if hitl_approved:
-                    result["hitl_approved"] = True
-                return result
-        
-        logger.info("Falling back to template-based generation")
-        result = self._fallback_generate(query, context)
-        if hitl_approved:
-            result["hitl_approved"] = True
-        return result
-    
-    async def _try_ollama(self, prompt: str) -> Optional[Dict[str, Any]]:
+        """Generate a response using intelligence packs for context."""
         try:
-            logger.info(f"Attempting generation with Ollama ({self.ollama_model})...")
-            res = await self.client.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": self.ollama_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.1}
-                },
-                timeout=30.0
-            )
-            if res.status_code == 200:
-                response_text = res.json().get("response", "").strip()
-                if response_text:
-                    return {
-                        "answer": response_text,
-                        "source": "ollama",
-                        "confidence": 0.85
-                    }
-        except Exception as e:
-            logger.warning(f"Ollama generation failed: {e}")
-        return None
-    
-    async def _try_groq(self, prompt: str) -> Optional[Dict[str, Any]]:
-        groq_key = os.getenv("GROQ_API_KEY")
-        if not groq_key:
-            logger.warning("GROQ_API_KEY not set")
-            return None
-        
-        try:
-            # Get the model from database or use default
-            model = "qwen/qwen3.6-27b"
+            # Build pack context
+            pack_context = self._build_pack_context(query)
+            
+            # Build the full prompt with context
+            full_prompt = query
+            if pack_context:
+                full_prompt = f"""Use the following domain intelligence to answer the question. 
+If the question can be answered using this context, use it. Otherwise, use your general knowledge.
+
+{pack_context}
+
+Question: {query}
+
+Answer:"""
+            
+            logger.info(f"🧠 Generator using pack context: {len(pack_context)} chars")
+            
+            # Try Groq first
+            if provider == "groq" and self.groq_key:
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        res = await client.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            headers={
+                                "Authorization": f"Bearer {self.groq_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "model": "qwen/qwen3.6-27b",
+                                "messages": [
+                                    {"role": "system", "content": "You are PersonaVault, an AI assistant specialized in contract intelligence, security, compliance, and domain-specific knowledge. Use the provided context when available."},
+                                    {"role": "user", "content": full_prompt}
+                                ],
+                                "temperature": 0.7,
+                                "max_tokens": 1000
+                            }
+                        )
+                        if res.status_code == 200:
+                            content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                            return {
+                                "answer": content, 
+                                "source": "groq",
+                                "confidence": 0.9,
+                                "pack_context_used": bool(pack_context)
+                            }
+                except Exception as e:
+                    logger.error(f"Groq generation failed: {e}")
+            
+            # Fallback to Ollama
             try:
-                from app.db.session import SessionLocal
-                from app.models import SystemConfig
-                import json
-                
-                async with SessionLocal() as session:
-                    stmt = select(SystemConfig).where(SystemConfig.key == "ai_providers")
-                    result = await session.execute(stmt)
-                    config = result.scalars().first()
-                    if config:
-                        ai_config = json.loads(config.value)
-                        if "groq" in ai_config and "model" in ai_config["groq"]:
-                            model = ai_config["groq"]["model"]
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    res = await client.post(
+                        f"{self.ollama_url}/api/generate",
+                        json={
+                            "model": self.ollama_model,
+                            "prompt": full_prompt,
+                            "stream": False,
+                            "options": {"temperature": 0.7}
+                        }
+                    )
+                    if res.status_code == 200:
+                        content = res.json().get("response", "")
+                        return {
+                            "answer": content,
+                            "source": "ollama",
+                            "confidence": 0.7,
+                            "pack_context_used": bool(pack_context)
+                        }
             except Exception as e:
-                logger.warning(f"Could not load Groq model from DB: {e}")
+                logger.error(f"Ollama generation failed: {e}")
             
-            logger.info(f"Attempting generation with Groq (model: {model})...")
+            # Final fallback
+            return {
+                "answer": "I'm having trouble generating a response. Please try again.",
+                "source": "fallback",
+                "confidence": 0.3,
+                "pack_context_used": bool(pack_context)
+            }
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                res = await client.post(
+        except Exception as e:
+            logger.error(f"Generator error: {e}")
+            return {"answer": f"[Error: {str(e)}]", "source": "error", "confidence": 0.0}
+    
+    async def generate_stream(
+        self, 
+        query: str, 
+        provider: str = "groq",
+        context: str = "",
+        **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """Stream generation from the provider with pack context."""
+        
+        # Build pack context
+        pack_context = self._build_pack_context(query)
+        
+        # Build the full prompt with context
+        full_prompt = query
+        if pack_context:
+            full_prompt = f"""Use the following domain intelligence to answer the question.
+If the question can be answered using this context, use it. Otherwise, use your general knowledge.
+
+{pack_context}
+
+Question: {query}
+
+Answer:"""
+        
+        if provider == "ollama":
+            async for chunk in self._stream_ollama(full_prompt):
+                yield chunk
+        elif provider == "groq":
+            async for chunk in self._stream_groq(full_prompt):
+                yield chunk
+        else:
+            yield f"Unknown provider: {provider}"
+    
+    async def _stream_ollama(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream from Ollama"""
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.ollama_url}/api/generate",
+                    json={
+                        "model": self.ollama_model,
+                        "prompt": prompt,
+                        "stream": True
+                    }
+                ) as response:
+                    async for line in response.aiter_lines():
+                        if line:
+                            try:
+                                data = json.loads(line)
+                                if data.get("response"):
+                                    yield data["response"]
+                                if data.get("done", False):
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+        except Exception as e:
+            logger.error(f"Ollama streaming failed: {e}")
+            yield f"Error: {str(e)}"
+    
+    async def _stream_groq(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream from Groq"""
+        if not self.groq_key:
+            yield "GROQ_API_KEY not set"
+            return
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers={
-                        "Authorization": f"Bearer {groq_key}",
+                        "Authorization": f"Bearer {self.groq_key}",
                         "Content-Type": "application/json"
                     },
                     json={
-                        "model": model,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.1,
-                        "max_tokens": 500
+                        "model": "qwen/qwen3.6-27b",
+                        "messages": [
+                            {"role": "system", "content": "You are PersonaVault, an AI assistant with domain intelligence."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1000,
+                        "stream": True
                     }
-                )
-                
-                if res.status_code == 200:
-                    response_text = res.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                    if response_text:
-                        return {
-                            "answer": response_text,
-                            "source": "groq",
-                            "confidence": 0.92
-                        }
-                else:
-                    logger.error(f"Groq API error: {res.status_code}")
-                    return None
+                ) as response:
+                    async for line in response.aiter_lines():
+                        if line and line.startswith("data: "):
+                            data = line[6:]
+                            if data == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data)
+                                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                if content:
+                                    yield content
+                            except json.JSONDecodeError:
+                                continue
         except Exception as e:
-            logger.error(f"Groq generation failed: {e}")
-            return None
-    
-    async def _try_gemini(self, prompt: str) -> Optional[Dict[str, Any]]:
-        if not self.gemini_key:
-            return None
-        
-        try:
-            logger.info("Attempting generation with Gemini...")
-            if HAS_NEW_GEMINI:
-                response = await asyncio.to_thread(
-                    self.genai_client.models.generate_content,
-                    model='gemini-2.0-flash-exp', 
-                    contents=prompt
-                )
-                text = response.text
-            elif HAS_LEGACY_GEMINI:
-                model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                response = await asyncio.to_thread(model.generate_content, prompt)
-                text = response.text
-            else:
-                return None
-
-            if text:
-                return {"answer": text.strip(), "source": "gemini", "confidence": 0.95}
-        except Exception as e:
-            logger.error(f"Gemini generation failed: {e}")
-        return None
-    
-    def _build_prompt(
-        self, 
-        query: str, 
-        context: List[Any], 
-        reasoning_insight: Any = None,
-        situational_awareness: Dict[str, Any] = None,
-        response_tone: str = "neutral",
-        persona: Any = None
-    ) -> str:
-        """Constructs a structured prompt for the LLM with memory context."""
-        reasoning_str = f"\nREASONING INSIGHTS:\n{reasoning_insight}\n" if reasoning_insight else ""
-        
-        # Format memory context
-        memory_context = ""
-        if context and len(context) > 0:
-            memory_context = "RELEVANT MEMORIES:\n"
-            for i, item in enumerate(context):
-                if hasattr(item, 'content'):
-                    content = item.content
-                elif isinstance(item, dict):
-                    content = item.get("content", "")
-                else:
-                    content = str(item)
-                
-                if content:
-                    memory_context += f"{i+1}. {content}\n"
-        
-        # Template (for document generation)
-        template = ""
-        if context and len(context) > 0:
-            item = context[0]
-            if hasattr(item, 'content'):
-                template = item.content
-            elif isinstance(item, dict):
-                template = item.get("content", "")
-            else:
-                template = str(item)
-        
-        awareness_str = json.dumps(situational_awareness) if situational_awareness else "No real-time context available."
-        writing_style = persona.writing_style if persona else "balanced"
-        comm_style = persona.communication_style if persona else "casual"
-        
-        prompt = f"""
-USER PERSONA:
-Writing Style: {writing_style}
-Communication Style: {comm_style}
-Response Tone: {response_tone}
-
-CURRENT SITUATIONAL AWARENESS:
-{awareness_str}
-
-{memory_context}
-
-{reasoning_str}
-
-USER QUERY:
-{query}
-
-TEMPLATE:
-{template}
-
-Instructions:
-- Use the RELEVANT MEMORIES as your primary source of truth.
-- If memories provide specific information, use it directly in your response.
-- If information is missing from memories, use your reasoning to provide general guidance.
-- Be concise, direct, and human-like in your response.
-- If the user asks about specific data and it's in the memories, reference it.
-- Format your response clearly with bullet points or numbered lists when helpful.
-"""
-        return prompt.strip()
-    
-    def _fallback_generate(self, query: str, context: List[Any]) -> Dict[str, Any]:
-        template = ""
-        if context and len(context) > 0:
-            item = context[0]
-            if hasattr(item, 'content'):
-                template = item.content
-            elif isinstance(item, dict):
-                template = item.get("content", "")
-            else:
-                template = str(item)
-        
-        placeholders = re.findall(r'\{([^}]+)\}', template)
-        variables = {}
-        for p in placeholders:
-            if "name" in p.lower() or "client" in p.lower():
-                variables[p] = "Acme Corporation"
-            elif "company" in p.lower():
-                variables[p] = "Security Tech Inc"
-            elif "purpose" in p.lower():
-                variables[p] = "biometric authentication services"
-            elif "terms" in p.lower():
-                variables[p] = "standard terms and conditions"
-            else:
-                variables[p] = f"[{p}]"
-        
-        result = template
-        for key, value in variables.items():
-            result = result.replace(f"{{{key}}}", str(value))
-        
-        final_result = f"""
-INSTRUCTIONS:
-{query}
-
-DRAFT DOCUMENT:
-{result}
-"""
-        
-        return {
-            "answer": final_result.strip(),
-            "source": "fallback",
-            "warning": "Running in Cloud Shell mode - using template-based generation"
-        }
+            logger.error(f"Groq streaming failed: {e}")
+            yield f"Error: {str(e)}"

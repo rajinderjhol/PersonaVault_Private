@@ -125,3 +125,30 @@ async def delete_pack(
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Pack not found")
     return {"status": "success"}
+
+@router.post("/bulk-toggle")
+async def bulk_toggle_packs(
+    activate: bool = True,
+    user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Activate or deactivate all packs."""
+    from sqlalchemy import select
+    from app.models.learning.behaviour_pack import BehaviourPack
+    
+    stmt = select(BehaviourPack)
+    result = await db.execute(stmt)
+    packs = result.scalars().all()
+    
+    count = 0
+    for pack in packs:
+        if pack.is_active != activate:
+            pack.is_active = activate
+            count += 1
+    
+    await db.commit()
+    return {
+        "status": "success", 
+        "message": f"{count} packs {'activated' if activate else 'deactivated'}",
+        "count": count
+    }

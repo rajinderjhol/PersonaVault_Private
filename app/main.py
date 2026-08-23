@@ -45,6 +45,8 @@ from app.api.v1.endpoints.collaborative import router as collaborative_router
 from app.api.v1.endpoints.multimodal import router as multimodal_router
 from app.api.v1.endpoints.clinical import router as clinical_router
 from app.api.v1.endpoints.dashboard.dashboard_router import router as dashboard_router
+from app.api.v1.endpoints.service_registry import router as service_registry_router
+from app.api.v1.endpoints.execution_mode import router as execution_mode_router
 from app.core.audit import audit_middleware
 from app.core.rbac import rbac_middleware
 from app.core.rate_limit import rate_limiter
@@ -75,6 +77,7 @@ from app.repositories.neo4j.graph import Neo4jGraphRepository
 from app.services.intelligence_gateway import gateway, MCPRegistry
 from app.services.consolidation_service import ConsolidationTask
 from app.services.self_improving import SelfImprovingIntelligence
+from app.middleware.observability import ObservabilityMiddleware
 import scripts.seed_demo_data
 
 # Create tables
@@ -86,7 +89,7 @@ from app.models import (
 )
 from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
-from app.services.rate_limit_service import rate_limit_service
+from app.services.rate_limit_service import RateLimitService
 from app.services.task_service import init_scheduler
 
 # Password hashing for seeding
@@ -137,7 +140,7 @@ async def lifespan(app: FastAPI):
     app.state.blackboard = CognitiveBlackboard()
     app.state.ai_router = AIRouter(engine_mode="Local-First (Ollama)")
     
-    app.state.semantic_memory = SemanticMemory(repository=app.state.repos["semantic_pattern"])
+    app.state.semantic_memory = SemanticMemory(db_session=SessionLocal())
     app.state.episodic_memory = EpisodicMemory(repository=app.state.repos["episodic_task"])
     
     app.state.planning_agent = PlannerAgent(semantic_memory=app.state.semantic_memory)
@@ -293,7 +296,6 @@ app.mount("/api/v1/admin/dashboard/static", StaticFiles(directory=static_dir), n
 
 # Attach global services to app state for specialized routers
 app.state.vector_service = vector_service
-app.state.rate_limit_service = rate_limit_service
 app.state.graph_service = graph_service
 app.state.iot_service = IoTService
 app.state.is_pulling_models = False
@@ -374,6 +376,7 @@ async def prometheus_middleware(request: Request, call_next):
 
 # Enterprise Governance Middlewares
 # Registered in order: Outer -> Inner
+app.add_middleware(ObservabilityMiddleware)
 app.middleware("http")(audit_middleware)
 app.middleware("http")(rbac_middleware)
 app.middleware("http")(rate_limiter)
@@ -399,6 +402,8 @@ app.include_router(enterprise.router, prefix="/api/v1", tags=["enterprise"])
 app.include_router(robotics.router, prefix="/api/v1")
 app.include_router(legal.router, prefix="/api/v1")
 app.include_router(personalization.router, prefix="/api/v1")
+app.include_router(service_registry_router)
+app.include_router(execution_mode_router)
 app.include_router(automation.router, prefix="/api/v1")
 app.include_router(widgets.router, prefix="/api/v1/widgets", tags=["widgets"])
 app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
@@ -659,37 +664,6 @@ async def health_check():
         "environment": "production"
     }
 
-@app.get("/api/v1/admin/dashboard/cognitive-load")
-async def get_cognitive_load(request: Request, user_id: int = Depends(require_admin)):
-    """
-    Provides real-time cognitive load and agent activity status for the dashboard.
-    Simulates activity if no real orchestration is happening to provide a "warm" state.
-    """
-    orchestrator = getattr(request.app.state, "orchestrator", None)
-    
-    # Default "ready" state for all agents
-    default_agent_activity = {
-        "planner": "ready",
-        "retriever": "ready",
-        "reasoner": "ready",
-        "validator": "ready",
-        "generator": "ready",
-        "judge": "ready",
-        "router": "ready",
-        "empathy": "ready",
-        "hitl": "ready",
-        "episodic": "ready",
-        "semantic": "ready"
-    }
-
-    if not orchestrator or not hasattr(orchestrator, "agent_status"):
-        return {
-            "active_tasks": 0,
-            "agent_activity": default_agent_activity,
-            "status_message": "🟢 System ready. Send a query to activate the swarm."
-        }
-    
-    return {"active_tasks": 0, "agent_activity": default_agent_activity, "status_message": "Agents are active."}
 
 if __name__ == "__main__":
     # Configure uvicorn to also log to uvicorn.log

@@ -1,52 +1,42 @@
-# 📝 PersonaVault Todo List (USB Strategic Alignment)
+# 📝 PersonaVault Strategic Todo List (Post-Leapfrog)
 
-## 🔴 Critical USB Priorities (P0 - Immediate)
-- [ ] **Guardian Integration into MCP**: Integrate `GuardianCircuitBreaker` logic into MCP tool dispatch path (`mcp.py`).
-- [ ] **Healthcare Intelligence Pack**: Build/configure for clinical operations and patient care.
-- [ ] **VeriLinkOS Deep Integration**: Implement cryptographic proof for clinical AI decisions.
+## ✅ Foundational Achievements (100% COMPLETE)
+- [x] **Service-Oriented Architecture**: Cordis-inspired `ServiceRegistry` for runtime provider swapping.
+- [x] **Sovereign Execution Modes**: Implementation of Standard, Restricted, Simulation, and Audit modes.
+- [x] **Observability Layer**: Middleware for Memory Hit Rate and Latency tracking.
+- [x] **Developer Ecosystem (Alpha)**: Python SDK and `pv` CLI tool launch.
+- [x] **Three-Layer Memory**: Operational Gas → Liquid → Ice crystallization loop.
+- [x] **Intelligence Packs**: Active packs for Security, Legal, Compliance, Procurement, Insurance, Robotics, and Healthcare.
+- [x] **VeriLink Integration**: Initial cryptographic proof for institutional decisions.
 
-## 🟠 Strategic Priorities (P1 - Short Term)
-- [ ] **PostgreSQL Migration**: Move from SQLite to PostgreSQL for enterprise-grade scalability.
-- [ ] **Docker/Kubernetes**: Finalize containerization and orchestration manifests.
-- [ ] **openEHR MCP Integration**: Establish data-platform connectivity via MCP.
-- [ ] **Stargate Integration**: Connect to Swiss healthcare trust infrastructure.
+---
 
-## 🟡 Future Priorities (P2 - Long Term)
-- [ ] **Epic/Tieto MCP Integration**: Vendor-neutral KIS connectivity.
-- [ ] **FHIR API Integration**: Enhance interoperability with external systems.
-- [ ] **SSO Integration**: Integrate with enterprise identity providers (Entra ID).
-- [ ] **OpenTelemetry**: Implement robust observability for regulatory compliance.
+## 🎯 Active Strategic Horizons (2026-2027)
 
-## 🏛 Architectural Standards
-- [x] **Modular Design**: Enforce a strict "No Monolith" policy.
-- [x] **UI Asset Standard**: Transitioned dashboard to external template model.
-- [ ] **Structural Audit**: Identify large files for decomposition.
-- [ ] **Repository Pattern**: Abstract database logic for Weaviate/Neo4j migration.
-- [ ] **Global Error Handling**: Custom exception handlers for API routers.
-- [ ] **Schema Hardening**: Pydantic `response_model` usage audit.
-- [ ] **Configuration Purity**: Pydantic `BaseSettings` migration.
+### Horizon 1: Performance & Observability Hardening (🔴 HIGH)
+- [ ] **Governance Latency Tracking**: Granular timing for policy matching and circuit breaking.
+- [ ] **Provider Benchmarking**: Automated testing for Ollama, Groq, and Gemini.
+- [ ] **Live Observability Dashboard**: Real-time charts for latency and hit rates in the UI.
 
-## 🧠 Core AI & Memory Features
-- [x] **Behaviour Pack System**: Declarative domain configuration.
-- [x] **Decision Timeline**: 5-step timeline for every decision.
-- [x] **Decision Replay**: Replay decisions at any point in time.
-- [x] **Trend Analysis**: Track confidence/patterns over time.
-- [x] **Explainability Engine**: Full decision reasoning.
-- [x] **Audit Trail**: Complete audit logging.
-- [ ] **MultiModal Support**: Image/audio embeddings.
-- [ ] **VeriLinkOS**: Deep Trust Layer integration.
+### Horizon 2: SDK & CLI Maturity (🔴 HIGH)
+- [ ] **Memory Client**: Add programmatic context search and crystallization to the SDK.
+- [ ] **WebSocket SDK**: Native token-by-token streaming in the client.
+- [ ] **CLI Instance Management**: `pv instance [start|stop]` utilities for DevOps.
+- [ ] **Node.js/TypeScript SDK**: Core SDK for web/mobile ecosystems.
 
-## 📦 Domain Behaviour Packs
-- [x] **Security Intelligence Pack**: 54 events, 90.8% confidence.
-- [x] **Compliance Intelligence Pack**: 7 events, 94.6% confidence.
-- [x] **Contract Intelligence Pack**: 15 events, 87.9% confidence.
-- [x] **Procurement Intelligence Pack**: 1 event, 80.0% confidence.
-- [x] **Insurance Intelligence Pack**: 4 events, 91.5% confidence.
-- [x] **Healthcare Intelligence Pack (USB)**: 124 decisions, 94.5% confidence.
-- [ ] **HR Intelligence Pack**: Recruitment, retention.
-- [ ] **Finance Intelligence Pack**: Risk, compliance.
+### Horizon 3: Marketplace & Ecosystem Expansion (🟡 MEDIUM)
+- [ ] **Behaviour Pack Registry**: Federated repository for domain packs (`pv pack install`).
+- [ ] **Pack Development Kit (PDK)**: Tools for building and signing custom intelligence packs.
+- [ ] **Cross-Domain Transfer**: Logic for inter-domain reinforcement learning.
 
-## 📊 **Current Metrics**
+### Horizon 4: Enterprise Productionization (🟡 MEDIUM)
+- [ ] **High Availability (HA)**: Multi-node clusters with shared intelligence state.
+- [ ] **HSM Integration**: Secure hardware-level storage for VeriLink keys.
+- [ ] **Kubernetes Operator**: Native lifecycle management in K8s clusters.
+
+---
+
+## 📊 Current Metrics (August 22, 2026)
 
 | Domain | Events/Decisions | Confidence | Trend | Status |
 |--------|------------------|------------|-------|--------|
@@ -55,10 +45,11 @@
 | Contract Intelligence | 15 | 87.9% | 📈 Improving | ✅ Active |
 | Procurement Intelligence | 1 | 80.0% | 📈 Improving | ✅ Active |
 | Insurance Intelligence | 4 | 91.5% | 📈 Improving | ✅ Active |
-| **Healthcare (USB)** | **124** | **94.5%** | **📈 Improving** | **✅ Active** |
-| **Robotics Intelligence**| 0 | Ready | - - | 🆕 Available |
+| Healthcare (USB) | 124 | 94.5% | 📈 Improving | ✅ Active |
+| **Sovereign Control** | - | - | - | ✅ Operational |
+| **Developer Tools** | - | - | - | 🧪 Alpha |
 | **TOTAL** | **205** | **91.5%** | **📈 Improving** | **✅** |
 
 ---
 
-*Last Updated: August 12, 2026*
+*Last Updated: August 22, 2026 (Completion of Leapfrog Phase 10)*

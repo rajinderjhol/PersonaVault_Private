@@ -1,324 +1,146 @@
 <div id="models-tab">
     <h2 style="color: var(--accent);">📦 Model Management</h2>
     
-    <div class="card" style="margin-bottom:25px; border-top: 4px solid #34d399;">
-        <h3 style="margin-top:0; color:#34d399;">Primary AI Provider</h3>
-        <p style="color: #94a3b8; font-size: 13px;">Select the default AI provider for general queries and orchestration.</p>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <select id="primary-ai-provider-select" class="input-field" style="margin:0; flex:1;" onchange="updatePrimaryAIProvider(this.value)">
-                <option value="ollama">Ollama (Local)</option>
+    <!-- ============================================================
+         PRIMARY PROVIDER
+         ============================================================ -->
+    <div class="card" style="margin-bottom:20px; border-top: 3px solid #34d399;">
+        <h3 style="margin-top:0; color:#34d399; font-size:14px;">🎯 Primary AI Provider</h3>
+        <p style="color: #94a3b8; font-size: 12px;">Select the default AI provider for all system queries.</p>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select id="primary-ai-provider-select" class="input-field" style="margin:0; flex:1; min-width:150px;" onchange="updatePrimaryAIProvider(this.value)">
+                <option value="ollama">🔒 Ollama (Local)</option>
+                <option value="groq">⚡ Groq (Cloud)</option>
+                <option value="gemini">🧠 Gemini (Cloud)</option>
+                <option value="deepseek">🚀 DeepSeek (Cloud)</option>
             </select>
-            <span id="primary-ai-provider-status" class="tag tag-info">Loading...</span>
+            <span id="primary-ai-provider-status" class="tag tag-info" style="font-size:11px;">Loading...</span>
         </div>
     </div>
 
-    <div class="card" style="margin-bottom:25px; border-top: 4px solid #a855f7;">
-        <h3 style="margin-top:0; color:#a855f7;">Add Cloud AI Connection</h3>
-        <p style="color: #94a3b8; font-size: 13px;">Connect any OpenAI-compatible or cloud provider (Gemini, DeepSeek, etc.).</p>
+    <!-- ============================================================
+         PROVIDER STATS
+         ============================================================ -->
+    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
+        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">📊 Provider Status</h3>
+        <div id="provider-stats-container">
+            <div class="metric-label">Loading stats...</div>
+        </div>
+        <button class="refresh-btn" style="margin-top:8px; font-size:11px;" onclick="refreshAllProviderStats()">
+            <i class="fas fa-sync-alt"></i> Refresh Stats
+        </button>
+    </div>
+
+    <!-- ============================================================
+         AI PROVIDERS TABLE
+         ============================================================ -->
+    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
+        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">🔌 AI Providers</h3>
+        <p style="color: #94a3b8; font-size: 12px;">Manage all AI providers. Click <strong style="color:#38bdf8;">Edit</strong> to update model, host, or API key.</p>
         
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <input type="text" id="cloud-api-name" placeholder="Connection Name (e.g. DeepSeek-Prod, MyLocalProxy)" class="input-field" style="margin:0;">
-            <input type="text" id="cloud-api-host" placeholder="API Host (e.g. https://api.openai.com/v1)" class="input-field" style="margin:0;">
-            <input type="password" id="cloud-api-key" placeholder="API Key" class="input-field" style="margin:0;">
-            <input type="text" id="cloud-api-model" placeholder="Model ID (e.g. deepseek-chat, gpt-4o)" class="input-field" style="margin:0;">
-            <div style="display:flex; gap:10px;">
-                <button class="btn" style="background:#6366f1; flex:1;" onclick="testCloudConnection()"><i class="fas fa-plug"></i> Test Connection</button>
-                <button class="btn" style="background:#a855f7; flex:1;" onclick="saveCloudConfig()"><i class="fas fa-save"></i> Save Connection</button>
+        <div style="overflow-x:auto; margin-top:12px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:2px solid #334155;">
+                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Provider</th>
+                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Model</th>
+                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Status</th>
+                        <th style="text-align:left; padding:8px 6px; color:#64748b; font-weight:500; font-size:10px; text-transform:uppercase;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="providers-table-body">
+                    <tr><td colspan="4" style="padding:20px; text-align:center; color:#64748b;">Loading providers...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Edit/Add Form -->
+        <div id="provider-form-container" style="display:none; margin-top:16px; background:#020617; border:1px solid #334155; border-radius:6px; padding:14px;">
+            <h4 id="provider-form-title" style="color:#fbbf24; margin:0 0 10px 0; font-size:13px;">✏️ Edit Provider</h4>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                <input type="text" id="provider-name" placeholder="Provider Name" class="input-field" style="flex:1; min-width:100px; background:#0f172a; font-size:12px;" readonly>
+                <input type="text" id="provider-host" placeholder="API Host" class="input-field" style="flex:2; min-width:180px; background:#0f172a; font-size:12px;">
+                <input type="password" id="provider-api-key" placeholder="API Key (optional)" class="input-field" style="flex:1.5; min-width:120px; background:#0f172a; font-size:12px;">
+                <input type="text" id="provider-model" placeholder="Model ID" class="input-field" style="flex:1; min-width:100px; background:#0f172a; font-size:12px;">
             </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn" style="background:#34d399; color:#0f172a; font-size:12px; padding:4px 12px;" onclick="saveProviderConfig()">💾 Save</button>
+                <button class="btn" style="background:#64748b; font-size:12px; padding:4px 12px;" onclick="cancelProviderEdit()">Cancel</button>
+                <button class="btn" style="background:#6366f1; font-size:12px; padding:4px 12px;" onclick="testProviderConnection()">🔌 Test</button>
+            </div>
+            <div id="edit-status" style="margin-top:6px; font-size:11px; color:#94a3b8;"></div>
         </div>
+        
+        <button class="btn" style="background:#a855f7; font-size:12px; padding:4px 14px; margin-top:10px;" onclick="showAddProviderForm()">
+            <i class="fas fa-plus"></i> Add Provider
+        </button>
     </div>
 
-
-    <!-- Groq Rate Limits -->
-    <div class="card" style="margin-bottom:25px; border-top: 4px solid #f87171;">
-        <h3 style="margin-top:0; color:#f87171;">🚀 Groq Rate Limits</h3>
-        <div id="groq-stats-list" style="font-size: 13px; color: #94a3b8;">
-            <div class="metric-label">Checking limits...</div>
-        </div>
-        <button class="btn" style="background: #334155; margin-top: 10px;" onclick="fetchProviderStats("groq")">Refresh Stats</button>
-    </div>
-
-
-    <div class="card" style="margin-bottom:25px; border-top: 4px solid #f472b6;">
-        <h3 style="margin-top:0; color:#f472b6;">Configured Cloud Connections</h3>
-        <div id="cloud-connections-list" style="display:flex; flex-direction:column; gap:12px;">
-            <div class="metric-label">Loading connections...</div>
-
-    <div class="card" style="margin-bottom:25px; border-top: 4px solid #34d399;">
-        <h3 style="margin-top:0; color:#34d399;">🔄 Reload API Keys from .env</h3>
-        <p style="color: #94a3b8; font-size: 13px;">
-            Load API keys from your .env file into the database. This is useful when you update your .env file 
-            without restarting the server.
-        </p>
+    <!-- ============================================================
+         RELOAD API KEYS
+         ============================================================ -->
+    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
+        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">🔄 Reload API Keys</h3>
+        <p style="color: #94a3b8; font-size: 12px;">Load API keys from .env file into the database.</p>
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button class="btn" onclick="reloadApiKeys()" style="background: #34d399; color: #0f172a;">
+            <button class="btn" onclick="reloadApiKeys()" style="background: #34d399; color: #0f172a; font-size:12px; padding:4px 14px;">
                 <i class="fas fa-sync-alt"></i> Reload from .env
             </button>
-            <span id="reload-status" style="font-size: 12px; color: #94a3b8;"></span>
+            <span id="reload-status" style="font-size: 11px; color: #94a3b8;"></span>
         </div>
-        <div id="reload-result" style="margin-top: 10px; display: none; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #020617; font-size: 12px; font-family: monospace;"></div>
+        <div id="reload-result" style="margin-top: 8px; display: none; padding: 8px; border-radius: 4px; border: 1px solid #334155; background: #020617; font-size: 11px; font-family: monospace; max-height:80px; overflow-y:auto;"></div>
     </div>
 
+    <!-- ============================================================
+         AI BOM
+         ============================================================ -->
+    <div class="card" style="margin-bottom:20px; border-top: 3px solid #64748b;">
+        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">📋 AI Bill of Materials</h3>
+        <div id="ai-bom-container">
+            <div class="metric-label">Loading BOM...</div>
         </div>
+        <button class="refresh-btn" style="margin-top:8px; font-size:11px;" onclick="refreshAIBOM()">
+            <i class="fas fa-sync-alt"></i> Refresh BOM
+        </button>
     </div>
 
-    <div class="card" style="margin-bottom:25px; border-top: 4px solid #38bdf8;">
-        <h3 style="margin-top:0; color:#38bdf8;">Pull New Model</h3>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="new-model-input" placeholder="e.g. llama3.2:3b" class="input-field" style="flex:1;">
-            <button class="btn" onclick="triggerModelPull()"><i class="fas fa-download"></i> Pull Model</button>
+    <!-- ============================================================
+         PULL NEW MODEL
+         ============================================================ -->
+    <div class="card" style="margin-bottom:20px; border-top: 3px solid #38bdf8;">
+        <h3 style="margin-top:0; color:#38bdf8; font-size:14px;">📥 Pull New Ollama Model</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="new-model-input" placeholder="e.g. llama3.2:3b" class="input-field" style="flex:2; min-width:180px; font-size:12px;">
+            <button class="btn" onclick="triggerModelPull()" style="background:#38bdf8; color:#0f172a; font-size:12px; padding:4px 14px;">
+                <i class="fas fa-download"></i> Pull Model
+            </button>
         </div>
-        
-        <div id="pull-progress-container" style="display:none; margin-top:15px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span id="pull-status-label" style="font-size:12px; color:#94a3b8;">Initializing...</span>
-                <span id="pull-percentage" style="font-size:12px; color:#38bdf8; font-weight:700;">0%</span>
+        <div id="pull-progress-container" style="display:none; margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span id="pull-status-label" style="font-size:11px; color:#94a3b8;">Initializing...</span>
+                <span id="pull-percentage" style="font-size:11px; color:#38bdf8; font-weight:600;">0%</span>
             </div>
-            <div style="width:100%; height:8px; background:#1e293b; border-radius:4px; overflow:hidden; border:1px solid #334155;">
+            <div style="width:100%; height:4px; background:#1e293b; border-radius:2px; overflow:hidden; border:1px solid #334155;">
                 <div id="pull-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.3s ease;"></div>
             </div>
         </div>
-        
-        <div id="pull-status" style="margin-top:10px; font-family:monospace; font-size:11px; color:#64748b; white-space:pre-wrap; max-height:60px; overflow-y:auto; border-radius:4px; padding:8px; background:rgba(15, 23, 42, 0.5); display:none;"></div>
+        <div id="pull-status" style="margin-top:6px; font-family:monospace; font-size:10px; color:#64748b; white-space:pre-wrap; max-height:50px; overflow-y:auto; border-radius:4px; padding:4px; background:rgba(15, 23, 42, 0.5); display:none;"></div>
     </div>
 
-    <div class="card" style="border-top: 4px solid #34d399;">
-        <h3 style="margin-top:0; color:#34d399;">Installed Models</h3>
-        <div id="models-list" style="display:flex; flex-direction:column; gap:12px;">
+    <!-- ============================================================
+         INSTALLED MODELS
+         ============================================================ -->
+    <div class="card" style="border-top: 3px solid #64748b;">
+        <h3 style="margin-top:0; color:#94a3b8; font-size:14px;">📦 Installed Ollama Models</h3>
+        <p style="color: #94a3b8; font-size: 12px;">
+            Manage your local Ollama models. <span style="color:#fbbf24;">🛡️ Protected</span> models cannot be deleted.
+        </p>
+        <div id="models-list" style="display:flex; flex-direction:column; gap:6px;">
             <div class="metric-label">Loading models...</div>
+        </div>
+        <div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="refresh-btn" onclick="fetchModels()" style="font-size:11px;"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <span id="model-count" style="font-size:11px; color:#64748b; align-self:center;"></span>
         </div>
     </div>
 </div>
-
-
-<script>
-async function reloadApiKeys() {
-    const statusEl = document.getElementById('reload-status');
-    const resultEl = document.getElementById('reload-result');
-    
-    statusEl.textContent = '⏳ Reloading API keys from .env...';
-    statusEl.style.color = '#fbbf24';
-    resultEl.style.display = 'none';
-    
-    try {
-        const res = await fetch('/api/v1/admin/dashboard/config/reload-api-keys', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            statusEl.textContent = '✅ ' + data.message;
-            statusEl.style.color = '#34d399';
-            
-            resultEl.style.display = 'block';
-            resultEl.innerHTML = `
-                <div style="color: #34d399;">✅ Successfully loaded ${data.providers_loaded?.length || 0} provider(s)</div>
-                <div style="color: #94a3b8; margin-top: 4px;">Providers: ${data.providers_loaded?.join(', ') || 'None'}</div>
-                <div style="color: #64748b; margin-top: 4px; font-size: 11px;">Env vars found: ${data.env_vars_found?.join(', ') || 'None'}</div>
-            `;
-            
-            // Refresh the cloud connections list
-            if (typeof fetchCloudConnections === 'function') {
-                fetchCloudConnections();
-            }
-            if (typeof fetchPrimaryAIProvider === 'function') {
-                fetchPrimaryAIProvider();
-            }
-        } else if (data.status === 'no_keys_found') {
-            statusEl.textContent = '⚠️ ' + data.message;
-            statusEl.style.color = '#fbbf24';
-            resultEl.style.display = 'block';
-            resultEl.innerHTML = `
-                <div style="color: #fbbf24;">⚠️ ${data.message}</div>
-                <div style="color: #64748b; margin-top: 4px; font-size: 11px;">Env vars found: ${data.env_vars_found?.join(', ') || 'None'}</div>
-                <div style="color: #64748b; margin-top: 4px; font-size: 11px;">Add GROQ_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY to .env</div>
-            `;
-        } else {
-            statusEl.textContent = '❌ Error: ' + (data.error || 'Unknown error');
-            statusEl.style.color = '#f87171';
-        }
-    } catch (e) {
-        statusEl.textContent = '❌ Network error: ' + e.message;
-        statusEl.style.color = '#f87171';
-        console.error('Reload error:', e);
-    }
-}
-</script>
-
-<script>
-
-async function fetchProviderStats("groq") {
-    const list = document.getElementById("groq-stats-list");
-    if (!list) return;
-    
-    list.innerHTML = "<div class=\"metric-label\">Checking limits...</div>";
-    
-    try {
-        const res = await fetch("/api/v1/admin/dashboard/models/provider-stats/groq");
-        if (!res.ok) throw new Error("Failed to fetch Groq stats");
-        const data = await res.json();
-        
-        if (data.error) {
-            list.innerHTML = `<div style="color: #f87171;">⚠️ ${data.error}</div>`;
-        } else {
-            list.innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div><strong>Requests Left:</strong> ${data.remaining_requests || "N/A"}</div>
-                    <div><strong>Tokens Left:</strong> ${data.remaining_tokens || "N/A"}</div>
-                    <div><strong>Reset Requests:</strong> ${data.reset_requests || "N/A"}</div>
-                    <div><strong>Reset Tokens:</strong> ${data.reset_tokens || "N/A"}</div>
-                </div>
-                <div style="margin-top:8px; font-size: 11px;">Status: ${data.status}</div>
-            `;
-        }
-    } catch (e) {
-        console.error("Error fetching Groq stats:", e);
-        list.innerHTML = "<div style="color: #f87171;">Error loading stats</div>";
-    }
-}
-
-
-// ============ CLOUD CONNECTIONS MANAGEMENT ============
-
-async function fetchCloudConnections() {
-    const list = document.getElementById('cloud-connections-list');
-    if (!list) return;
-    
-    try {
-        const res = await fetch('/api/v1/admin/dashboard/config/ai-providers/cloud');
-        if (!res.ok) throw new Error('Failed to fetch cloud connections');
-        const data = await res.json();
-        console.log('📋 Cloud connections:', data);
-        
-        if (data && data.length > 0) {
-            list.innerHTML = data.map(p => `
-                <div style="display:flex; justify-content:space-between; padding:12px; background:#020617; border-radius:8px; border:1px solid #334155; align-items:center; margin-bottom:10px;">
-                    <div style="flex:1;">
-                        <div style="font-weight:700; color:#f472b6;">${p.name}</div>
-                        <div style="font-size:11px; color:#64748b;">
-                            Host: ${p.host || 'Default'} | Model: ${p.model || 'Default'}
-                            ${p.enabled ? '<span class="tag tag-success" style="font-size:9px; padding:2px 6px; margin-left:8px;">ACTIVE</span>' : ''}
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="refresh-btn" style="color:#38bdf8; border-color:#38bdf8; padding:4px 10px; font-size:11px;" onclick="editCloudConnection('${p.name}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="refresh-btn" style="color:#f87171; border-color:#f87171; padding:4px 10px; font-size:11px;" onclick="deleteCloudConnection('${p.name}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            list.innerHTML = '<div class="metric-label">No cloud connections configured. Add one using the form above.</div>';
-        }
-    } catch (e) {
-        console.error('Error fetching cloud connections:', e);
-        list.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading connections</div>';
-    }
-}
-
-async function editCloudConnection(name) {
-    try {
-        // Fetch current config
-        const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider-settings/${name}`);
-        if (!res.ok) throw new Error('Failed to fetch config');
-        const data = await res.json();
-        
-        // Fill the edit form fields
-        document.getElementById('cloud-api-name').value = name;
-        document.getElementById('cloud-api-host').value = data.host || '';
-        document.getElementById('cloud-api-key').value = data.api_key || '';
-        document.getElementById('cloud-api-model').value = data.model || '';
-        
-        // Change button text to "Update Connection"
-        const saveBtn = document.querySelector('#models-tab .card:nth-child(2) .btn:last-child');
-        if (saveBtn) {
-            saveBtn.textContent = 'Update Connection';
-            saveBtn.style.background = '#fbbf24';
-            saveBtn.onclick = function() {
-                updateCloudConnection(name);
-            };
-        }
-        
-        showToast(`Editing ${name} configuration`, 'info');
-    } catch (e) {
-        console.error('Error editing cloud connection:', e);
-        showToast('Error loading configuration', 'error');
-    }
-}
-
-async function updateCloudConnection(name) {
-    const host = document.getElementById('cloud-api-host').value;
-    const api_key = document.getElementById('cloud-api-key').value;
-    const model = document.getElementById('cloud-api-model').value;
-    
-    if (!host || !api_key || !model) {
-        showToast('Please fill in all fields', 'error');
-        return;
-    }
-    
-    try {
-        const res = await fetch('/api/v1/admin/dashboard/config/ai-provider-settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: name, host, api_key, model })
-        });
-        if (!res.ok) throw new Error('Failed to update');
-        
-        showToast(`✅ ${name} configuration updated`, 'success');
-        
-        // Reset form
-        document.getElementById('cloud-api-name').value = '';
-        document.getElementById('cloud-api-host').value = '';
-        document.getElementById('cloud-api-key').value = '';
-        document.getElementById('cloud-api-model').value = '';
-        
-        // Reset button
-        const saveBtn = document.querySelector('#models-tab .card:nth-child(2) .btn:last-child');
-        if (saveBtn) {
-            saveBtn.textContent = 'Save Connection';
-            saveBtn.style.background = '#a855f7';
-            saveBtn.onclick = function() {
-                saveCloudConfig();
-            };
-        }
-        
-        // Refresh connections
-        fetchCloudConnections();
-        fetchPrimaryAIProvider();
-    } catch (e) {
-        console.error('Error updating cloud connection:', e);
-        showToast('Error updating configuration', 'error');
-    }
-}
-
-async function deleteCloudConnection(name) {
-    if (!confirm(`Delete connection "${name}"? This cannot be undone.`)) return;
-    
-    try {
-        const res = await fetch(`/api/v1/admin/dashboard/config/ai-provider/${name}`, {
-            method: 'DELETE'
-        });
-        if (!res.ok) throw new Error('Failed to delete');
-        
-        showToast(`✅ ${name} deleted`, 'info');
-        fetchCloudConnections();
-    } catch (e) {
-        console.error('Error deleting cloud connection:', e);
-        showToast('Error deleting configuration', 'error');
-    }
-}
-
-// Initialize cloud connections on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if we're on the models tab
-    const modelsTab = document.getElementById('models-tab');
-    if (modelsTab) {
-        setTimeout(fetchCloudConnections, 500);
-        setTimeout(fetchGroqStats, 500);
-    }
-});
-</script>

@@ -1,27 +1,28 @@
-# 🚀 PersonaVault Leapfrog Roadmap
+# 🚀 PersonaVault Decision Operating System (DOS) Roadmap
 
 ## Overall Progress: ████████████████████ 100% ✅
 
-| Phase | Focus | Duration | Status |
-|-------|-------|----------|--------|
-| **1** | Foundation Hardening | 2 Weeks | ✅ Complete |
-| **2** | Self-Improving Intelligence | 4 Weeks | ✅ Complete |
-| **3** | Predictive Intelligence | 4 Weeks | ✅ Complete |
-| **4** | Generative Decision Making | 3 Weeks | ✅ Complete |
-| **5** | Collaborative Intelligence | 3 Weeks | ✅ Complete |
-| **6** | Multimodal Intelligence | 4 Weeks | ✅ Complete |
-| **7** | Enterprise Polish | 3 Weeks | ✅ Complete |
+| Stage | Focus | Status |
+|-------|-------|--------|
+| **1** | Foundation Hardening | ✅ Complete |
+| **2** | Crystallization Loop (Memory) | ✅ Complete |
+| **3** | Predictive Intelligence | ✅ Complete |
+| **4** | Generative Decision Simulation | ✅ Complete |
+| **5** | Collaborative Intelligence | ✅ Complete |
+| **6** | Multimodal Intelligence | ✅ Complete |
+| **7** | Enterprise Governance & Polish | ✅ Complete |
+| **8** | Sovereign Control (DeepSeek-Inspired) | ✅ Complete |
+| **9** | Developer Ecosystem (SDK/CLI Alpha) | ✅ Complete |
 
 ## 🎯 Current Status
-**PersonaVault is now a complete Cognitive Decision Interface!**
-All roadmap phases are 100% complete.
+**PersonaVault is now a fully functional Decision Operating System!**
+The core foundational roadmap is 100% complete as of August 22, 2026.
 
-## 📈 Key Metrics
+## 📈 Key Capabilities
 - **Intelligence**: Self-improving with reinforcement learning loop.
-- **Predictive**: Emerging risk detection and drift analysis.
-- **Generative**: Multi-path decision simulation and ranking.
-- **Collaborative**: Team insight sharing and domain pattern transfer.
-- **Multimodal**: Processing for documents, images, and audio.
-- **Enterprise**: Production-ready monitoring, logging, and security.
+- **Sovereign**: 4 Execution Modes (Standard, Restricted, Simulation, Audit).
+- **Extensible**: Cordis-inspired Service Registry for runtime provider swapping.
+- **Developer-Ready**: Python SDK and `pv` CLI for programmatic integration.
+- **Observable**: Real-time tracking of Memory Hit Rate and Latency.
 
-*Last Updated: August 16, 2026*
+*Next Strategic Focus: Performance Hardening & Behaviour Pack Marketplace.*

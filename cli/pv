@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""
+PersonaVault CLI - Command Line Interface.
+"""
+import click
+import json
+import sys
+import os
+
+# Add SDK to path for local execution
+sys.path.append(os.path.join(os.path.dirname(__file__), '../sdk/python'))
+
+try:
+    from personavault import PersonaVault
+except ImportError:
+    click.echo("Error: Could not import PersonaVault SDK. Make sure it is in the expected location.")
+    sys.exit(1)
+
+@click.group()
+@click.option('--host', default='http://localhost:8000', help='PersonaVault host')
+@click.option('--username', envvar='PV_USERNAME', help='Username')
+@click.option('--password', envvar='PV_PASSWORD', help='Password')
+@click.pass_context
+def cli(ctx, host, username, password):
+    """PersonaVault CLI - Sovereign Decision Intelligence."""
+    ctx.ensure_object(dict)
+    ctx.obj['client'] = PersonaVault(host=host)
+    if username and password:
+        try:
+            ctx.obj['client'].login(username, password)
+        except Exception as e:
+            click.echo(f"Login failed: {e}")
+
+@cli.command()
+@click.argument('query')
+@click.option('--provider', default='ollama', help='AI provider')
+@click.pass_context
+def chat(ctx, query, provider):
+    """Chat with PersonaVault swarm."""
+    client = ctx.obj['client']
+    try:
+        result = client.swarm.chat(query, provider=provider)
+        click.echo(result.get('response', 'No response'))
+    except Exception as e:
+        click.echo(f"Error: {e}")
+
+@cli.command()
+@click.option('--domain', required=True, help='Decision domain')
+@click.option('--event-type', default='cli_decision', help='Event type')
+@click.option('--decision', required=True, help='Decision made')
+@click.option('--outcome', default='success', help='Decision outcome')
+@click.option('--confidence', default=0.85, help='Confidence score')
+@click.option('--reason', help='Reason for decision')
+@click.pass_context
+def decide(ctx, domain, event_type, decision, outcome, confidence, reason):
+    """Create a new decision."""
+    client = ctx.obj['client']
+    try:
+        # Using internal client for direct POST as example
+        result = client._client.post(
+            "/api/v1/behaviour/event",
+            headers=client._headers,
+            json={
+                "user_id": 1,
+                "event_type": f"{domain}_{event_type}",
+                "actor": "cli",
+                "artefact": "cli_command",
+                "decision": decision,
+                "reason": reason or f"CLI Decision in {domain}",
+                "outcome": outcome,
+                "confidence": confidence,
+                "extra_data": {"domain": domain}
+            }
+        )
+        result.raise_for_status()
+        click.echo(json.dumps(result.json(), indent=2))
+    except Exception as e:
+        click.echo(f"Error: {e}")
+
+@cli.command()
+@click.option('--days', default=30, help='Number of days')
+@click.option('--format', default='json', help='Output format (json/csv)')
+@click.pass_context
+def trends(ctx, days, format):
+    """Get decision trends."""
+    client = ctx.obj['client']
+    try:
+        response = client._client.get(
+            "/api/v1/timeline/trends/incident_response",
+            params={"days": days}
+        )
+        response.raise_for_status()
+        data = response.json()
+        if format == 'json':
+            click.echo(json.dumps(data, indent=2))
+        else:
+            # Simple CSV output
+            click.echo("Date,Total,Confidence")
+            # Logic for CSV would go here
+    except Exception as e:
+        click.echo(f"Error: {e}")
+
+@cli.command()
+@click.argument('event_id')
+@click.pass_context
+def replay(ctx, event_id):
+    """Replay a decision."""
+    client = ctx.obj['client']
+    try:
+        response = client._client.get(
+            f"/api/v1/timeline/replay/{event_id}"
+        )
+        response.raise_for_status()
+        click.echo(json.dumps(response.json(), indent=2))
+    except Exception as e:
+        click.echo(f"Error: {e}")
+
+if __name__ == '__main__':
+    cli()

@@ -5,6 +5,7 @@ from app.db.session import Base
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
+    
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     title = Column(String, default="New Chat")
@@ -16,11 +17,12 @@ class ChatSession(Base):
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
+    
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("chat_sessions.id"), index=True)
-    role = Column(String)  # 'user' or 'ai'
+    role = Column(String)  # 'user' or 'assistant'
     content = Column(Text)
-    provider = Column(String, nullable=True)  # 'groq', 'gemini', etc.
-    created_at = Column(DateTime, default=datetime.utcnow)  # Changed from timestamp
+    provider = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
     session = relationship("ChatSession", back_populates="messages")

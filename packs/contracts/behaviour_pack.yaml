@@ -9,48 +9,42 @@ pack:
   description: Learn your legal team's review patterns and improve contract review speed and accuracy.
 
 entities:
-  - name: clause
-    description: A clause in a contract
-    fields:
-      - name: text
-        type: text
-        required: true
-      - name: type
-        type: string
-        required: true
-      - name: risk_level
-        type: float
-        default: 0.0
-      - name: suggested_action
-        type: string
-        enum: [approve, reject, negotiate, escalate]
-  
-  - name: party
-    description: A party to the contract
-    fields:
-      - name: name
-        type: string
-        required: true
-      - name: type
-        type: string
-        enum: [individual, company, government]
-  
-  - name: contract
-    description: A contract document
-    fields:
-      - name: title
-        type: string
-        required: true
-      - name: parties
-        type: array
-        items: party
-      - name: clauses
-        type: array
-        items: clause
-      - name: value
-        type: float
-      - name: jurisdiction
-        type: string
+  - name: contract_type
+    description: Types of contracts
+    examples:
+      - Employment Agreement
+      - Service Agreement
+      - Non-Disclosure Agreement (NDA)
+      - Master Service Agreement (MSA)
+      - Statement of Work (SOW)
+      - Partnership Agreement
+      - Licensing Agreement
+      - Lease Agreement
+
+  - name: key_clause
+    description: Key contract clauses to review
+    examples:
+      - Indemnification
+      - Limitation of Liability
+      - Termination
+      - Force Majeure
+      - Governing Law
+      - Dispute Resolution
+      - Confidentiality
+      - Payment Terms
+      - Intellectual Property Rights
+
+  - name: red_flag
+    description: Common contract red flags
+    examples:
+      - Unlimited liability
+      - Automatic renewal without notice
+      - One-sided indemnification
+      - Unreasonable termination penalties
+      - Vague scope of work
+      - Missing termination for convenience
+      - Non-compete restrictions
+      - Jurisdiction outside home country
 
 events:
   - name: contract_review
@@ -64,97 +58,118 @@ events:
         required: true
       - name: time_spent
         type: integer
-        unit: seconds
+        unit: minutes
       - name: clauses_reviewed
         type: integer
       - name: clauses_flagged
         type: integer
-      - name: clauses_accepted
-        type: integer
-      - name: clauses_rejected
-        type: integer
       - name: risk_score
         type: float
+        range: [0, 10]
+  
+  - name: negotiation
+    description: Contract negotiation event
+    fields:
+      - name: contract_id
+        type: string
+        required: true
+      - name: rounds
+        type: integer
+      - name: changes_made
+        type: integer
+      - name: time_to_close
+        type: integer
+        unit: days
 
 decision_types:
   - id: approve
     label: Approve
-    description: Accept the clause as-is
-  - id: reject
-    label: Reject
-    description: Reject the clause
+    description: Accept the contract as-is
+    risk_threshold: low
+  
+  - id: flag
+    label: Flag for Review
+    description: Flag the contract for legal review
+    risk_threshold: medium
+  
   - id: negotiate
     label: Negotiate
-    description: Request changes to the clause
-  - id: escalate
-    label: Escalate
-    description: Escalate for review
+    description: Request changes to the contract
+    risk_threshold: high
+  
+  - id: reject
+    label: Reject
+    description: Reject the contract
+    risk_threshold: critical
 
 metrics:
-  - id: time_per_contract
-    label: Time per Contract
+  - id: review_time
+    label: Review Time
     description: Average time to review a contract
     target: "< 30"
     unit: minutes
     good: lower
   
-  - id: clauses_flagged
-    label: Clauses Flagged
-    description: Percentage of clauses flagged correctly
-    target: "> 95"
+  - id: flag_rate
+    label: Flag Rate
+    description: Percentage of contracts flagged for review
+    target: "< 20%"
     unit: percent
-    good: higher
+    good: lower
   
-  - id: risk_score_reduction
-    label: Risk Score Reduction
-    description: Reduction in risk score over time
-    target: "> 20"
+  - id: risk_reduction
+    label: Risk Reduction
+    description: Reduction in contract risk over time
+    target: "> 20%"
     unit: percent
     good: higher
 
 policies:
   - name: unlimited_liability
-    description: Flag unlimited liability clauses
+    description: Flag contracts with unlimited liability
     triggers:
-      - unlimited
-      - no cap
       - unlimited liability
+      - no cap
       - without limit
     actions:
-      - action: flag
+      - action: reject
         severity: high
-        message: "This clause contains unlimited liability, which is typically rejected."
-    confidence_threshold: 0.7
+        message: "Unlimited liability is a critical risk. This should be capped."
+    confidence_threshold: 0.8
   
-  - name: indemnity_clause
-    description: Flag indemnity clauses
+  - name: automatic_renewal
+    description: Flag automatic renewal clauses
     triggers:
-      - indemnify
-      - hold harmless
-      - indemnity
+      - automatic renewal
+      - auto-renew
+      - renew automatically
     actions:
       - action: flag
         severity: medium
-        message: "This is an indemnity clause. Check coverage and scope."
-    confidence_threshold: 0.6
+        message: "Check automatic renewal notice period. Ensure you can opt out."
+    confidence_threshold: 0.7
   
-  - name: governing_law
-    description: Check governing law
+  - name: indemnification
+    description: Review indemnification clauses
     triggers:
-      - governing law
-      - applicable law
-      - jurisdiction
+      - indemnify
+      - hold harmless
+      - indemnification
     actions:
       - action: flag
-        severity: low
-        message: "Check that governing law aligns with your jurisdiction."
-    confidence_threshold: 0.5
+        severity: medium
+        message: "Review indemnification scope. Ensure it's reciprocal."
+    confidence_threshold: 0.6
 
 evaluation_rules:
-  - metric: time_per_contract
+  - metric: review_time
     success_condition: "< 30"
     failure_condition: "> 60"
   
-  - metric: clauses_flagged
-    success_condition: "> 95"
-    failure_condition: "< 85"
+  - metric: flag_rate
+    success_condition: "< 20%"
+    failure_condition: "> 40%"
+  
+  - metric: risk_reduction
+    success_condition: "> 20%"
+    failure_condition: "< 10%"

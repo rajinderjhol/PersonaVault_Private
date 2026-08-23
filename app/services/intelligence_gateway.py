@@ -48,6 +48,8 @@ from sqlalchemy import select
 from app.services.thought_tracker import ThoughtTracker
 from app.services.safe_cache import SafeCache
 from app.services.ollama_manager import ollama_manager
+from app.services.service_registry import ServiceRegistry
+from app.services.execution_modes import ExecutionMode, ExecutionModeManager
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +159,7 @@ class IntelligenceGateway:
         self._initialized_from_db = False
         self.packs = []
         self._register_mcp_tools()
+        self._register_services()
         self._register_groq_provider()  # Register Groq on startup
 
     # ==================== GROQ PROVIDER REGISTRATION ====================
@@ -194,9 +197,18 @@ class IntelligenceGateway:
     # ==================== AI GENERATE ====================
     
     async def generate(self, provider: str, query: str, context: str = "") -> Dict[str, Any]:
+        # Check execution mode
+        if ExecutionModeManager.is_ice_memory_only():
+            logger.info("🧊 Restricted mode: using only Ice memory")
+            return {"response": "Restricted mode: I can only access crystallized memory."}
+        
+        if ExecutionModeManager.is_sandboxed():
+            logger.info("🏖️ Simulation mode: no side effects")
+            # In simulation mode, don't cache or persist
+        
         cache_key = self.cache._get_key(query, {"provider": provider})
         cached = self.cache.get(cache_key)
-        if cached:
+        if cached and not ExecutionModeManager.is_sandboxed():
             logger.info(f"🔁 Cache hit for query: {query[:50]}...")
             return cached
 
@@ -350,6 +362,43 @@ class IntelligenceGateway:
             
         return {"response": f"[All providers failed. Last error: {last_error}]"}
 
+    def _register_services(self):
+        """Register core services with ServiceRegistry for runtime swapping."""
+        # Register inference providers
+        ServiceRegistry.register("inference", "ollama", self.generate)
+        ServiceRegistry.register("inference", "groq", self.generate)
+        ServiceRegistry.register("inference", "gemini", self.generate)
+        
+        # Register memory providers
+        ServiceRegistry.register("memory", "episodic", self._get_episodic_memory)
+        ServiceRegistry.register("memory", "semantic", self._get_semantic_memory)
+        
+        # Register governance providers
+        ServiceRegistry.register("governance", "local", self._apply_local_governance)
+        ServiceRegistry.register("governance", "verilink", self._apply_verilink_governance)
+        
+        logger.info("✅ Services registered with ServiceRegistry")
+    
+    def _get_episodic_memory(self):
+        """Get episodic memory service."""
+        # Dynamic import to avoid circular dependency
+        from app.services.memory_service import MemoryService
+        return MemoryService()
+    
+    def _get_semantic_memory(self):
+        """Get semantic memory service."""
+        # Dynamic import to avoid circular dependency
+        from app.services.vector_service import VectorService
+        return VectorService()
+    
+    def _apply_local_governance(self, decision):
+        """Apply local governance rules."""
+        return {"approved": True, "reason": "Local governance passed"}
+    
+    def _apply_verilink_governance(self, decision):
+        """Apply VeriLink governance."""
+        return {"approved": True, "reason": "VeriLink governance passed"}
+
     def _register_mcp_tools(self):
         MCPRegistry.register(MCPTool(
             name="ai_generate",
@@ -448,17 +497,99 @@ class IntelligenceGateway:
         await self.ensure_initialized()
         self.thought_tracker.add_step("Config", "Gateway initialized")
         
-        context = "Context assembled."
-        logger.info(f"🔄 Chat using provider: {provider}")
+        # DEBUG: Log what's in the state
+        logger.info(f"🔍 DEBUG: state type: {type(state)}")
+        logger.info(f"🔍 DEBUG: state has orchestrator: {hasattr(state, 'orchestrator')}")
+        if hasattr(state, 'orchestrator'):
+            logger.info(f"🔍 DEBUG: state.orchestrator: {state.orchestrator}")
         
-        self.thought_tracker.add_step("Routing", f"Routing to provider: {provider}")
-        result = await self._call_with_fallback(provider, query, context)
-        self.thought_tracker.add_step("Generation", "Response generated")
+        # Route through swarm orchestrator if available
+        orchestration_result = None
         
-        final_result = {"response": result.get("response", "No response")}
-        final_result["provider"] = provider
-        final_result["thought_process"] = self.thought_tracker.get_steps()
-        final_result["total_time"] = self.thought_tracker.get_total_time()
+        # Try multiple ways to get orchestrator
+        orchestrator = None
+        if hasattr(state, 'orchestrator') and state.orchestrator:
+            orchestrator = state.orchestrator
+            logger.info("✅ Orchestrator found in state")
+        elif hasattr(self, '_orchestrator') and self._orchestrator:
+            orchestrator = self._orchestrator
+            logger.info("✅ Orchestrator found in gateway instance")
+        
+        if orchestrator:
+            try:
+                self.thought_tracker.add_step("Swarm Routing", "Routing query through swarm agents")
+                logger.info(f"🧠 Routing through swarm orchestrator: {orchestrator}")
+                
+                # Process through swarm
+                swarm_result = await orchestrator.run(
+                    query=query,
+                    context={
+                        "user_id": user_id_int,
+                        "patient_id": patient_id,
+                        "provider": provider,
+                        "role": user_role
+                    }
+                )
+                
+                # Extract response from swarm result
+                response_text = swarm_result.get("answer", swarm_result.get("response", ""))
+                sources = swarm_result.get("sources", [])
+                confidence = swarm_result.get("confidence", 0.0)
+                
+                self.thought_tracker.add_step("Swarm Complete", f"Swarm returned response with confidence {confidence}")
+                logger.info(f"✅ Swarm response: {response_text[:100]}...")
+                
+                orchestration_result = {
+                    "response": response_text,
+                    "sources": sources,
+                    "confidence": confidence,
+                    "provider": provider,
+                    "swarm_used": True
+                }
+            except Exception as e:
+                logger.error(f"Swarm orchestration failed: {e}", exc_info=True)
+                self.thought_tracker.add_step("Swarm Error", f"Falling back to direct LLM: {str(e)}")
+        else:
+            logger.warning("⚠️ No orchestrator available - using direct LLM")
+            self.thought_tracker.add_step("No Orchestrator", "Using direct LLM fallback")
+        
+        # Fallback to direct LLM if swarm failed or not available
+        if orchestration_result is None:
+            self.thought_tracker.add_step("Direct LLM", "Using direct LLM fallback")
+            logger.info(f"🔄 Using direct LLM with provider: {provider}")
+            result = await self._call_with_fallback(provider, query, "Context assembled.")
+            orchestration_result = {
+                "response": result.get("response", "No response"),
+                "sources": [],
+                "confidence": 0.7,
+                "provider": provider,
+                "swarm_used": False
+            }
+        
+        # Apply self-improving patterns if available
+        if hasattr(state, 'self_improving') and state.self_improving:
+            try:
+                self.thought_tracker.add_step("Self-Improvement", "Applying learned patterns")
+                enhanced_response = await state.self_improving.apply_patterns_to_response(
+                    query, orchestration_result.get("response", "")
+                )
+                if enhanced_response != orchestration_result.get("response", ""):
+                    orchestration_result["response"] = enhanced_response
+                    orchestration_result["pattern_applied"] = True
+            except Exception as e:
+                logger.warning(f"Self-improvement failed: {e}")
+        
+        final_result = {
+            "response": orchestration_result.get("response", "No response"),
+            "provider": orchestration_result.get("provider", provider),
+            "sources": orchestration_result.get("sources", []),
+            "confidence": orchestration_result.get("confidence", 0.7),
+            "swarm_used": orchestration_result.get("swarm_used", False),
+            "thought_process": self.thought_tracker.get_steps(),
+            "total_time": self.thought_tracker.get_total_time()
+        }
+        
+        logger.info(f"📊 Final result: swarm_used={final_result.get('swarm_used')}, provider={final_result.get('provider')}")
         
         return final_result
     

@@ -1,18 +1,20 @@
 # 🛡️ PersonaVault
 
-**PersonaVault** is a **Sovereign Organisational Intelligence Platform** that captures, learns, and improves how organisations make decisions. It transforms every decision into institutional knowledge.
+**PersonaVault** is a **model-independent Decision Operating System (DOS)**. It decouples the AI inference engine from the organization’s accumulated, governed, and provenance-backed institutional intelligence.
 
-## 🏆 **Why PersonaVault is Different**
+**Core Thesis:** AI models generate intelligence; PersonaVault accumulates intelligence. PersonaVault owns institutional continuity.
 
-| Feature | Others | PersonaVault |
-|---------|--------|--------------|
-| **Decision Tracking** | ❌ | ✅ |
-| **Behavioural Memory** | ❌ | ✅ |
-| **Explainability** | ⚠️ | ✅ |
-| **Audit Trail** | ⚠️ | ✅ |
-| **Self-Improvement** | ❌ | ✅ |
-| **Cross-Domain Learning** | ❌ | ✅ |
-| **Sovereign Data** | ⚠️ | ✅ |
+---
+
+## 🏆 The Strategic Moat
+
+The moat is not the Three-Layer Memory architecture; the moat is the **accumulated crystallized state**. As an organization uses PersonaVault, the system learns:
+*   How the organization behaves.
+*   Which policies work in practice.
+*   Where humans override AI.
+*   Empirical outcome evidence.
+
+A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better engine with which to compound the organization's existing intelligence.
 
 ---
 
@@ -43,9 +45,9 @@ Every decision is captured as a 5-step timeline:
 Replay any decision at any point in time to see how policies would have changed.
 
 ### 3. **Trend Analysis**
-Track confidence and decision patterns over time to measure improvement.
+Track confidence and decision patterns over time.
 
-### 4. **Explainability**
+### 4. **Cognitive Execution Trace (Explainability)**
 Every decision is explained with context, reasoning, and confidence scores.
 
 ### 5. **Audit Trail**
@@ -66,15 +68,19 @@ Domain-specific intelligence packs that can be installed for any industry.
 | **Procurement Intelligence** | Supply Chain | ✅ Active | 1 |
 | **Insurance Intelligence** | Insurance | ✅ Active | 4 |
 | **Robotics Intelligence** | Robotics/HRI | ✅ Active | 0 |
+| **Sovereign Control** | Platform | ✅ Active | NEW |
+| **Python SDK** | Integration | 🧪 Alpha | NEW |
+| **CLI (`pv`)** | DevOps | 🧪 Alpha | NEW |
 
 ---
 
 ## 🛠️ **Technical Stack**
 
 - **Backend**: FastAPI (Async Python 3.12)
+- **Architecture**: Service-Oriented (Cordis-inspired Registry)
 - **Database**: SQLite (Development), PostgreSQL (Production)
 - **Vector Store**: FAISS
-- **AI Integration**: Ollama (Local), Gemini (Cloud)
+- **AI Integration**: Ollama (Local), Groq (Cloud), Gemini (Cloud)
 - **Agent Swarm**: 11 specialized agents
 - **Memory**: Three-layer (Gas → Liquid → Ice)
 
@@ -110,16 +116,11 @@ The PersonaVault dashboard provides a professional, "Mission Control" style inte
 ## 🔒 **Privacy & Security**
 
 - **Sovereign**: Your data stays under your control
+- **Multi-Mode**: Standard, Restricted (Ice-only), Simulation, and Audit modes
 - **Local-First**: Runs in your environment
-- **Auditable**: Every decision is traceable
+- **Auditable**: Every decision is traceable with cryptographic receipts
 - **Explainable**: Every decision can be explained
-- **Compliant**: Built-in governance
-
----
-
-## 🏆 **The Moat**
-
-> **"Every decision across your organisation makes your entire enterprise more intelligent, while all value remains under your control."**
+- **Compliant**: Built-in governance (VeriLink)
 
 ---
 
@@ -134,7 +135,7 @@ The PersonaVault dashboard provides a professional, "Mission Control" style inte
 
 ## 🚀 **Leapfrog Roadmap Summary**
 
-PersonaVault has evolved into a full **Cognitive Decision Interface (CDI)** through a 7-phase implementation.
+PersonaVault has evolved into the ultimate **Decision Operating System (DOS)** through a 9-phase implementation.
 
 ### Status: 100% Complete ✅
 
@@ -147,13 +148,25 @@ PersonaVault has evolved into a full **Cognitive Decision Interface (CDI)** thro
 | **5** | Collaborative Intelligence | ✅ Complete |
 | **6** | Multimodal Intelligence | ✅ Complete |
 | **7** | Enterprise Polish | ✅ Complete |
-
-*Developed with high-speed "Leapfrog" methodology for next-generation organisational intelligence.*
-
+| **8** | DeepSeek-Inspired DOS | ✅ Complete |
+| **9** | Sovereign Control Dashboard | ✅ Complete |
+| **10** | Developer Ecosystem (SDK/CLI) | 🧪 Alpha |
 
 ## 🆕 New Enhancements (2026)
 
 PersonaVault has been significantly upgraded with the following features:
+
+### 👑 Sovereign Control Center
+A new mission control center for platform governance:
+- **Execution Mode Management**: Standard, Restricted, Simulation, and Audit modes.
+- **Service Registry**: Runtime swapping of inference, memory, and governance providers.
+- **Real-time Observability**: Live tracking of Memory Hit Rate, Latency, and Token Efficiency.
+
+### 📦 Python SDK & CLI
+Transitioned PersonaVault from an application into a **platform**:
+- **Python SDK**: Programmatic access to decisions, swarm chat, and three-layer memory.
+- **`pv` CLI**: Terminal-based management for DevOps, decision replay, and real-time observability.
+- **Extensible Swarm**: Base classes for building custom, governance-aware agents.
 
 ### ⚡ Streaming Responses
 Chat responses now stream token-by-token, providing a real-time experience instead of waiting for full generation.
@@ -169,3 +182,12 @@ Real-time visualization of agent activity within the chat interface, providing t
 
 ### 🧠 Three-Layer Memory Integration
 Improved context-awareness by injecting relevant memories directly into the chat pipeline.
+
+---
+
+## 🛠️ Developer Intelligence
+
+PersonaVault is evolving from an application into a **Decision Operating System (DOS)** platform. For a detailed analysis of the implementation, see:
+* [Architecture Overview](ARCHITECTURE.md)
+* [Learning System](LEARNING_SYSTEM.md)
+

@@ -23,6 +23,8 @@ PUBLIC_PATHS = {
     "/metrics",
     "/api/v1/auth/login",
     "/api/v1/auth/register",
+    "/api/v1/mode/current",
+    "/api/v1/registry/services",
     "/login", 
     "/favicon.ico"
 }

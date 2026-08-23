@@ -1,0 +1,152 @@
+<div id="sovereign-tab">
+    <h2 style="color: var(--accent);">👑 Sovereign Control Center</h2>
+    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">
+        Manage execution modes, runtime services, and deep system observability.
+    </p>
+
+    <div class="grid">
+        <!-- Execution Mode Control -->
+        <div class="card" style="border-top: 4px solid #a855f7;">
+            <div class="card-title">🛡️ Execution Mode</div>
+            <div id="current-mode-display" style="margin-bottom: 15px;">
+                <span id="mode-badge" class="tag tag-info">Loading...</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn" style="background: #38bdf8; color: #0f172a;" onclick="setExecutionMode('standard')">Standard Mode (Full)</button>
+                <button class="btn" style="background: #fbbf24; color: #0f172a;" onclick="setExecutionMode('restricted')">Restricted Mode (Ice Only)</button>
+                <button class="btn" style="background: #a855f7;" onclick="setExecutionMode('simulation')">Simulation Mode (Sandbox)</button>
+                <button class="btn" style="background: #64748b;" onclick="setExecutionMode('audit')">Audit Mode (ReadOnly)</button>
+            </div>
+            <div id="mode-description" style="margin-top: 15px; font-size: 12px; color: #94a3b8; line-height: 1.4;">
+                Select a mode to view constraints.
+            </div>
+        </div>
+
+        <!-- Service Registry (Runtime Swapping) -->
+        <div class="card" style="border-top: 4px solid #34d399;">
+            <div class="card-title">🔄 Service Registry</div>
+            <div id="service-registry-list" style="max-height: 300px; overflow-y: auto;">
+                <div class="metric-label">Loading registry...</div>
+            </div>
+        </div>
+
+        <!-- Observability Metrics -->
+        <div class="card" style="border-top: 4px solid #f472b6; grid-column: span 2;">
+            <div class="card-title">📊 Real-time Performance Metrics</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <div class="metric-label">Avg Processing Latency</div>
+                    <div id="metric-avg-latency" class="metric-value" style="color: #f472b6;">0ms</div>
+                    <canvas id="latency-chart" style="max-height: 150px;"></canvas>
+                </div>
+                <div>
+                    <div class="metric-label">Memory Hit Rate (Ice)</div>
+                    <div id="metric-hit-rate" class="metric-value" style="color: #34d399;">0%</div>
+                    <canvas id="hitrate-chart" style="max-height: 150px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============ SOVEREIGN CONTROL LOGIC ============
+
+async function loadSovereignState() {
+    await Promise.all([
+        updateModeDisplay(),
+        loadServiceRegistry()
+    ]);
+}
+
+async function updateModeDisplay() {
+    try {
+        const res = await fetch("/api/v1/mode/current");
+        const data = await res.json();
+        const badge = document.getElementById("mode-badge");
+        const desc = document.getElementById("mode-description");
+        
+        badge.textContent = (data.mode || "UNKNOWN").toUpperCase();
+        badge.className = `tag tag-${data.mode === 'standard' ? 'success' : 'warning'}`;
+        
+        const config = data.config || {};
+        desc.innerHTML = `
+            <strong>Active Constraints:</strong><br>
+            • Tools Enabled: ${config.tools_enabled ? '✅' : '❌'}<br>
+            • HITL Required: ${config.hitl_required ? '✅' : '❌'}<br>
+            • Ice Memory Only: ${config.ice_memory_only ? '✅' : '❌'}<br>
+            • Sandboxed: ${config.sandboxed ? '✅' : '❌'}
+        `;
+    } catch (e) { console.error(e); }
+}
+
+async function setExecutionMode(mode) {
+    try {
+        const res = await fetch("/api/v1/mode/set?mode=" + mode, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast("Mode switched to " + mode, "success");
+            updateModeDisplay();
+        }
+    } catch (e) { showToast("Failed to switch mode", "error"); }
+}
+
+async function loadServiceRegistry() {
+    try {
+        const res = await fetch("/api/v1/registry/services");
+        const registry = await res.json();
+        const container = document.getElementById("service-registry-list");
+        
+        container.innerHTML = Object.entries(registry).map(([type, services]) => {
+            return `
+                <div style="margin-bottom: 15px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px;">` + type + ` Providers</div>
+                    ` + Object.keys(services).map(name => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px; border-radius: 4px; margin-bottom: 4px;">
+                            <span style="font-size: 13px; color: #e2e8f0;">` + name + `</span>
+                            <button class="btn" style="padding: 2px 8px; font-size: 10px;" onclick="swapService('` + type + `', '` + name + `')">Swap</button>
+                        </div>
+                    `).join("") + `
+                </div>
+            `;
+        }).join("");
+    } catch (e) { console.error(e); }
+}
+
+async function swapService(type, current) {
+    const newName = prompt("Enter new provider name for " + type + " (current: " + current + "):");
+    if (!newName || newName === current) return;
+    
+    try {
+        const res = await fetch("/api/v1/registry/swap/" + type + "/" + current + "/" + newName, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast("Service swapped: " + current + " -> " + newName, "success");
+            loadServiceRegistry();
+        } else {
+            showToast("Swap failed: Provider not found", "error");
+        }
+    } catch (e) { showToast("Error swapping service", "error"); }
+}
+
+// Observability Simulation for UI (in a real app, this would use the X-Duration headers)
+let latencyHistory = [120, 450, 300, 800, 200, 600, 400];
+let hitRateHistory = [0.8, 0.9, 0.75, 0.85, 0.95, 0.88, 0.9];
+
+function updateLiveMetrics() {
+    const lastLatency = latencyHistory[latencyHistory.length - 1];
+    const lastHitRate = hitRateHistory[hitRateHistory.length - 1];
+    
+    const latencyEl = document.getElementById("metric-avg-latency");
+    const hitRateEl = document.getElementById("metric-hit-rate");
+    
+    if (latencyEl) latencyEl.textContent = lastLatency + "ms";
+    if (hitRateEl) hitRateEl.textContent = (lastHitRate * 100).toFixed(1) + "%";
+}
+
+// Initialization
+setTimeout(() => {
+    loadSovereignState();
+    updateLiveMetrics();
+}, 500);
+</script>
