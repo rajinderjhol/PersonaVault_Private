@@ -303,14 +303,17 @@ The application enforces a multi-layered security approach:
 3.  **Rate Limiter**: Protects the API and AI providers from abuse.
 4.  **Security Headers**: Implements standard protections like `X-Frame-Options: DENY`.
 
-## 📊 Observability & System Control
+### 📊 Observability & System Control
 
-The system is designed for production-grade monitoring:
+The system is designed for production-grade monitoring, featuring a newly refactored, modular dashboard:
 *   **Prometheus**: Tracking request latency and error rates across all endpoints.
-*   **Cognified Admin Dashboard**: A specialized router (`dashboard_router.py`) providing real-time metrics, system health, and cognitive trace visualization.
-*   **Cognitive Narrative Stream**: Real-time human-readable monitoring of agent swarm reasoning, providing high-level operational insight into agent collaboration.
-*   **Cognitive Execution Trace**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization and auditability.
-*   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs (SSE).
+*   **Cognified Admin Dashboard**: A specialized router (`dashboard_router.py`) providing a modular UI:
+    *   **Learning Dashboard**: Visualizes reinforcement pattern extraction, confidence trends, and learning metrics.
+    *   **Agent Orchestration**: Real-time visualization of agent swarm activity via WebSocket.
+    *   **Configuration Manager**: Extensible interface for domain settings.
+*   **Cognitive Narrative Stream**: Real-time human-readable monitoring of agent swarm reasoning.
+*   **Cognitive Execution Trace**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization.
+*   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs.
 *   **Model Management**: Direct interface for pulling and deleting Ollama models.
 
 ## Request Lifecycle
