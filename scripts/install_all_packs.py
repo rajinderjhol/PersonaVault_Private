@@ -24,12 +24,11 @@ async def install_all_packs():
                     with open(pack_path, "r") as f:
                         yaml_content = f.read()
                     
-                    pack = await loader.load_pack_from_yaml(yaml_content, admin_user_id)
-                    if pack:
-                        await loader.install_pack(pack)
-                        print(f"    ✅ Installed {pack.name}")
+                    success = await loader.install_pack(yaml_content, admin_user_id)
+                    if success:
+                        print(f"    ✅ Installed pack from {pack_path}")
                     else:
-                        print(f"    ❌ Failed to load {pack_path}")
+                        print(f"    ❌ Failed to install {pack_path}")
                 except Exception as e:
                     print(f"    ❌ Error installing {pack_path}: {e}")
 

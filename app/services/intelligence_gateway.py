@@ -497,99 +497,17 @@ class IntelligenceGateway:
         await self.ensure_initialized()
         self.thought_tracker.add_step("Config", "Gateway initialized")
         
-        # DEBUG: Log what's in the state
-        logger.info(f"🔍 DEBUG: state type: {type(state)}")
-        logger.info(f"🔍 DEBUG: state has orchestrator: {hasattr(state, 'orchestrator')}")
-        if hasattr(state, 'orchestrator'):
-            logger.info(f"🔍 DEBUG: state.orchestrator: {state.orchestrator}")
+        context = "Context assembled."
+        logger.info(f"🔄 Chat using provider: {provider}")
         
-        # Route through swarm orchestrator if available
-        orchestration_result = None
+        self.thought_tracker.add_step("Routing", f"Routing to provider: {provider}")
+        result = await self._call_with_fallback(provider, query, context)
+        self.thought_tracker.add_step("Generation", "Response generated")
         
-        # Try multiple ways to get orchestrator
-        orchestrator = None
-        if hasattr(state, 'orchestrator') and state.orchestrator:
-            orchestrator = state.orchestrator
-            logger.info("✅ Orchestrator found in state")
-        elif hasattr(self, '_orchestrator') and self._orchestrator:
-            orchestrator = self._orchestrator
-            logger.info("✅ Orchestrator found in gateway instance")
-        
-        if orchestrator:
-            try:
-                self.thought_tracker.add_step("Swarm Routing", "Routing query through swarm agents")
-                logger.info(f"🧠 Routing through swarm orchestrator: {orchestrator}")
-                
-                # Process through swarm
-                swarm_result = await orchestrator.run(
-                    query=query,
-                    context={
-                        "user_id": user_id_int,
-                        "patient_id": patient_id,
-                        "provider": provider,
-                        "role": user_role
-                    }
-                )
-                
-                # Extract response from swarm result
-                response_text = swarm_result.get("answer", swarm_result.get("response", ""))
-                sources = swarm_result.get("sources", [])
-                confidence = swarm_result.get("confidence", 0.0)
-                
-                self.thought_tracker.add_step("Swarm Complete", f"Swarm returned response with confidence {confidence}")
-                logger.info(f"✅ Swarm response: {response_text[:100]}...")
-                
-                orchestration_result = {
-                    "response": response_text,
-                    "sources": sources,
-                    "confidence": confidence,
-                    "provider": provider,
-                    "swarm_used": True
-                }
-            except Exception as e:
-                logger.error(f"Swarm orchestration failed: {e}", exc_info=True)
-                self.thought_tracker.add_step("Swarm Error", f"Falling back to direct LLM: {str(e)}")
-        else:
-            logger.warning("⚠️ No orchestrator available - using direct LLM")
-            self.thought_tracker.add_step("No Orchestrator", "Using direct LLM fallback")
-        
-        # Fallback to direct LLM if swarm failed or not available
-        if orchestration_result is None:
-            self.thought_tracker.add_step("Direct LLM", "Using direct LLM fallback")
-            logger.info(f"🔄 Using direct LLM with provider: {provider}")
-            result = await self._call_with_fallback(provider, query, "Context assembled.")
-            orchestration_result = {
-                "response": result.get("response", "No response"),
-                "sources": [],
-                "confidence": 0.7,
-                "provider": provider,
-                "swarm_used": False
-            }
-        
-        # Apply self-improving patterns if available
-        if hasattr(state, 'self_improving') and state.self_improving:
-            try:
-                self.thought_tracker.add_step("Self-Improvement", "Applying learned patterns")
-                enhanced_response = await state.self_improving.apply_patterns_to_response(
-                    query, orchestration_result.get("response", "")
-                )
-                if enhanced_response != orchestration_result.get("response", ""):
-                    orchestration_result["response"] = enhanced_response
-                    orchestration_result["pattern_applied"] = True
-            except Exception as e:
-                logger.warning(f"Self-improvement failed: {e}")
-        
-        final_result = {
-            "response": orchestration_result.get("response", "No response"),
-            "provider": orchestration_result.get("provider", provider),
-            "sources": orchestration_result.get("sources", []),
-            "confidence": orchestration_result.get("confidence", 0.7),
-            "swarm_used": orchestration_result.get("swarm_used", False),
-            "thought_process": self.thought_tracker.get_steps(),
-            "total_time": self.thought_tracker.get_total_time()
-        }
-        
-        logger.info(f"📊 Final result: swarm_used={final_result.get('swarm_used')}, provider={final_result.get('provider')}")
+        final_result = {"response": result.get("response", "No response")}
+        final_result["provider"] = provider
+        final_result["thought_process"] = self.thought_tracker.get_steps()
+        final_result["total_time"] = self.thought_tracker.get_total_time()
         
         return final_result
     

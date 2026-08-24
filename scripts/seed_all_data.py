@@ -11,6 +11,9 @@ from app.models import (
     BehaviourEvent, DecisionTrajectory, Policy, BehaviourPack
 )
 from sqlalchemy import select, func
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def seed_all():
     print("🌱 Seeding comprehensive demo data...")
@@ -33,7 +36,7 @@ async def seed_all():
         user = User(
             username="admin",
             email="admin@personavault.local",
-            hashed_password="hashed_password",
+            hashed_password=pwd_context.hash("admin123"),
             role="admin",
             organization_id=org.id,
             is_active=True
@@ -45,64 +48,56 @@ async def seed_all():
         behaviour_events = [
             BehaviourEvent(
                 user_id=user.id,
-                domain="security",
-                event_type="incident_response",
+                                event_type="incident_response",
                 decision="blocked",
                 confidence=0.92,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=1)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="security",
-                event_type="incident_response",
+                                event_type="incident_response",
                 decision="blocked",
                 confidence=0.95,
                 timestamp=datetime.now(timezone.utc) - timedelta(hours=2)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="compliance",
-                event_type="compliance_review",
+                                event_type="compliance_review",
                 decision="approved",
                 confidence=0.88,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=3)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="contract",
-                event_type="contract_review",
+                                event_type="contract_review",
                 decision="approved",
                 confidence=0.91,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=7)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="procurement",
-                event_type="procurement_decision",
+                                event_type="procurement_decision",
                 decision="approved",
                 confidence=0.82,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=14)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="security",
-                event_type="incident_response",
+                                event_type="incident_response",
                 decision="escalated",
                 confidence=0.87,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=5)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="compliance",
-                event_type="compliance_review",
+                                event_type="compliance_review",
                 decision="rejected",
                 confidence=0.95,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=4)
             ),
             BehaviourEvent(
                 user_id=user.id,
-                domain="contract",
-                event_type="contract_review",
+                                event_type="contract_review",
                 decision="rejected",
                 confidence=0.85,
                 timestamp=datetime.now(timezone.utc) - timedelta(days=2)

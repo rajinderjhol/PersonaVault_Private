@@ -238,26 +238,10 @@ PersonaVault implements a multi-layered safety strategy:
 
 Administrators can manage these rules via the **Visual Rule Editor** in the Admin Dashboard, which supports keyword triggers and direct JSON source editing.
 
-## The MCP Interoperability Substrate
-
-PersonaVault utilizes the **Model Context Protocol (MCP)** as the primary, standardized interface for all AI-to-System communication. This elevates MCP from a simple plugin mechanism to our core interoperability substrate:
-
-*   **PersonaVault as MCP Server:** By exposing the system state (Semantic Patterns, Constitution, Blackboard) via MCP, any external LLM or agent can securely query our institutional intelligence without custom integration effort.
-*   **PersonaVault as MCP Client:** Our agents leverage MCP to dynamically consume third-party tools and APIs. This decoupling ensures that PersonaVault remains model-neutral and tool-agnostic, allowing us to swap models or tools at runtime without altering the core DOS architecture.
-
-This standardized approach is critical to our "provider-agnostic" strategy, enabling a plug-and-play ecosystem for clinical AI models.
-
-## Provenance Substrate: Verifiable Action Protocol (VAP)
-
-While the `DecisionObject` represents the logical reasoning and context of a decision, the **Verifiable Action Protocol (VAP)** is the physical substrate that provides cryptographic integrity.
-
-Every consequential decision processed by PersonaVault is serialized into a **VAP Receipt**. This receipt provides a tamper-evident record binding:
-1.  **Logical Context:** The `DecisionObject` itself (Objective, Evidence, Policies).
-2.  **Model Provenance:** Identity of the models/agents used.
-3.  **Human Override Proof:** Cryptographic signature of human intervention.
-4.  **Integrity Anchor:** A SHA-256 leaf hash anchored via Merkle Tree roots to ensure long-term auditability.
-
-By binding our Decision Objects to VAP Receipts, PersonaVault moves from "trusting our logs" to **independently verifiable evidence**, satisfying the most stringent regulatory requirements for clinical and financial AI.
+### Standardized Intelligence (MCP)
+PersonaVault utilizes the **Model Context Protocol (MCP)** to decouple the AI's cognitive reasoning from its data sources and tools.
+*   **PersonaVault as MCP Server**: Exposes crystallized memories (Layer 3) to external models.
+*   **Agents as MCP Clients**: Allows the swarm to utilize third-party tools (APIs, Local DBs) via a unified interface.
 
 ## Data Layer
 
@@ -319,17 +303,14 @@ The application enforces a multi-layered security approach:
 3.  **Rate Limiter**: Protects the API and AI providers from abuse.
 4.  **Security Headers**: Implements standard protections like `X-Frame-Options: DENY`.
 
-### 📊 Observability & System Control
+## 📊 Observability & System Control
 
-The system is designed for production-grade monitoring, featuring a newly refactored, modular dashboard:
+The system is designed for production-grade monitoring:
 *   **Prometheus**: Tracking request latency and error rates across all endpoints.
-*   **Cognified Admin Dashboard**: A specialized router (`dashboard_router.py`) providing a modular UI:
-    *   **Learning Dashboard**: Visualizes reinforcement pattern extraction, confidence trends, and learning metrics.
-    *   **Agent Orchestration**: Real-time visualization of agent swarm activity via WebSocket.
-    *   **Configuration Manager**: Extensible interface for domain settings.
-*   **Cognitive Narrative Stream**: Real-time human-readable monitoring of agent swarm reasoning.
-*   **Cognitive Execution Trace**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization.
-*   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs.
+*   **Cognified Admin Dashboard**: A specialized router (`dashboard_router.py`) providing real-time metrics, system health, and cognitive trace visualization.
+*   **Cognitive Narrative Stream**: Real-time human-readable monitoring of agent swarm reasoning, providing high-level operational insight into agent collaboration.
+*   **Cognitive Execution Trace**: Structural graph representation of swarm negotiation steps, persisted via `CognitiveBlackboard` for real-time visualization and auditability.
+*   **Real-time Telemetry**: WebSocket-based streaming for IoT simulation and live system logs (SSE).
 *   **Model Management**: Direct interface for pulling and deleting Ollama models.
 
 ## Request Lifecycle

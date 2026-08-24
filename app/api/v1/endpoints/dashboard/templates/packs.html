@@ -1,109 +1,23 @@
 <div id="packs-tab">
     <h2 style="color: var(--accent);">📦 Domain Intelligence Pack Management</h2>
     
-    <!-- Stats -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;">
-        <div class="card">
-            <div class="metric-label">📦 Total Packs</div>
-            <div class="metric-value" id="total-packs">0</div>
-        </div>
-        <div class="card">
-            <div class="metric-label">✅ Active Packs</div>
-            <div class="metric-value" id="active-packs-count">0</div>
-        </div>
-        <div class="card">
-            <div class="metric-label">📈 Pack Coverage</div>
-            <div class="metric-value" id="pack-coverage">0%</div>
-        </div>
-    </div>
-    
-    <!-- Active/Inactive Lists -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <div class="card">
             <h3 class="card-title" style="color: #f87171;">❌ Inactive Packs</h3>
-            <div id="inactive-packs-list">
-                <div class="metric-label" style="padding: 10px; text-align: center;">No inactive packs</div>
-            </div>
-            <button class="btn" style="background: #34d399; color: #0f172a; width: 100%; margin-top: 10px;" onclick="bulkTogglePacks(true)">✅ Activate All</button>
+            <div id="inactive-packs-list"></div>
+            <button class="btn" style="background: #34d399; width: 100%; margin-top: 10px;" onclick="bulkTogglePacks(false)">Deactivate All</button>
         </div>
         <div class="card">
             <h3 class="card-title" style="color: #34d399;">✅ Active Packs</h3>
-            <div id="active-packs-list">
-                <div class="metric-label" style="padding: 10px; text-align: center;">No active packs</div>
-            </div>
-            <button class="btn" style="background: #fbbf24; width: 100%; margin-top: 10px;" onclick="bulkTogglePacks(false)">⏸️ Deactivate All</button>
+            <div id="active-packs-list"></div>
+            <button class="btn" style="background: #fbbf24; width: 100%; margin-top: 10px;" onclick="bulkTogglePacks(true)">Activate All</button>
         </div>
     </div>
     
-    <!-- Install New Pack -->
     <div class="card" style="margin-top: 20px; border-top: 4px solid var(--accent);">
         <h3 class="card-title">📥 Install New Pack</h3>
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <input type="file" id="pack-file-input" accept=".yaml,.yml" class="input-field" style="flex: 1; min-width: 200px; padding: 8px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9;">
-            <button class="btn" onclick="installPack()" style="background: #38bdf8; color: #0f172a;">📥 Install Pack</button>
-        </div>
-        <div id="pack-install-status" style="margin-top:10px; color: #94a3b8; font-size: 13px;"></div>
+        <input type="file" id="pack-file-input" accept=".yaml,.yml" class="input-field">
+        <button class="btn" onclick="installPack()">Install Pack</button>
+        <div id="pack-install-status" style="margin-top:10px;"></div>
     </div>
 </div>
-
-<script>
-async function fetchPacks() {
-    try {
-        const res = await fetch('/api/v1/packs/');
-        const data = await res.json();
-        const packs = data.packs || [];
-        const active = packs.filter(p => p.is_active);
-        const inactive = packs.filter(p => !p.is_active);
-        
-        document.getElementById('total-packs').textContent = packs.length;
-        document.getElementById('active-packs-count').textContent = active.length;
-        document.getElementById('pack-coverage').textContent = packs.length > 0 ? 
-            Math.round(active.length / packs.length * 100) + '%' : '0%';
-        
-        // Active packs
-        const activeContainer = document.getElementById('active-packs-list');
-        if (active.length > 0) {
-            activeContainer.innerHTML = active.map(p => `
-                <div style="background: #1e293b; padding: 12px; border-radius: 6px; border-left: 4px solid #34d399; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: #f1f5f9;">${p.name}</div>
-                        <div style="font-size: 11px; color: #94a3b8;">Domain: ${p.domain} | v${p.version}</div>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        <button class="btn btn-sm" style="background: #fbbf24; padding: 2px 10px; font-size: 10px;" onclick="togglePack('${p.id}')">Deactivate</button>
-                        <button class="btn btn-sm" style="background: #f87171; padding: 2px 10px; font-size: 10px;" onclick="removePack('${p.id}')">Remove</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            activeContainer.innerHTML = '<div class="metric-label" style="padding: 20px; text-align: center; color: #64748b;">No active packs</div>';
-        }
-        
-        // Inactive packs
-        const inactiveContainer = document.getElementById('inactive-packs-list');
-        if (inactive.length > 0) {
-            inactiveContainer.innerHTML = inactive.map(p => `
-                <div style="background: #1e293b; padding: 12px; border-radius: 6px; border-left: 4px solid #f87171; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: #f1f5f9;">${p.name}</div>
-                        <div style="font-size: 11px; color: #94a3b8;">Domain: ${p.domain} | v${p.version}</div>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        <button class="btn btn-sm" style="background: #34d399; padding: 2px 10px; font-size: 10px;" onclick="togglePack('${p.id}')">Activate</button>
-                        <button class="btn btn-sm" style="background: #f87171; padding: 2px 10px; font-size: 10px;" onclick="removePack('${p.id}')">Remove</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            inactiveContainer.innerHTML = '<div class="metric-label" style="padding: 20px; text-align: center; color: #64748b;">No inactive packs</div>';
-        }
-    } catch(e) {
-        console.error('Error loading packs:', e);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    fetchPacks();
-    setInterval(fetchPacks, 60000);
-});
-</script>

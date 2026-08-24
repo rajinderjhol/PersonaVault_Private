@@ -1,89 +1,16 @@
 <div id="governance-tab">
     <h2 style="color: var(--accent);">⚖️ Governance & Audit</h2>
-    
-    <!-- Compliance Status -->
-    <div class="card" style="margin-bottom: 20px;">
-        <h3 class="card-title">✅ Compliance Status</h3>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-            <div style="background: #020617; padding: 12px; border-radius: 6px; border: 1px solid #065f46;">
-                <span style="color: #94a3b8; font-size: 12px;">GDPR</span>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                    <span style="color: #34d399;">✅</span>
-                    <span style="color: #f1f5f9;">Compliant</span>
-                </div>
-            </div>
-            <div style="background: #020617; padding: 12px; border-radius: 6px; border: 1px solid #065f46;">
-                <span style="color: #94a3b8; font-size: 12px;">CCPA</span>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                    <span style="color: #34d399;">✅</span>
-                    <span style="color: #f1f5f9;">Compliant</span>
-                </div>
-            </div>
-            <div style="background: #020617; padding: 12px; border-radius: 6px; border: 1px solid #78350f;">
-                <span style="color: #94a3b8; font-size: 12px;">HIPAA</span>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                    <span style="color: #fbbf24;">⚠️</span>
-                    <span style="color: #f1f5f9;">Review Required</span>
-                </div>
-            </div>
-            <div style="background: #020617; padding: 12px; border-radius: 6px; border: 1px solid #065f46;">
-                <span style="color: #94a3b8; font-size: 12px;">SOC2</span>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                    <span style="color: #34d399;">✅</span>
-                    <span style="color: #f1f5f9;">Audited</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Audit Trail -->
-    <div class="card" style="margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-            <h3 class="card-title" style="margin: 0;">📋 Audit Trail</h3>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-sm" style="background: #1e293b;" onclick="exportAuditTrail()">📥 Export</button>
-                <button class="btn btn-sm" style="background: #1e293b;" onclick="fetchGovernanceLogs()"><i class="fas fa-sync-alt"></i></button>
-            </div>
-        </div>
-        <div id="audit-container" style="max-height: 400px; overflow-y: auto;">
-            <div class="metric-label" style="padding: 20px; text-align: center;">Loading audit trail...</div>
-        </div>
-    </div>
-    
-    <!-- VeriLink Control -->
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div>
-                <h3 class="card-title" style="margin: 0;">🔗 VeriLink Governance</h3>
-                <p style="color: #94a3b8; font-size: 13px; margin: 5px 0 0 0;" id="verilink-desc">VeriLink connection active</p>
-            </div>
-            <button class="btn" onclick="toggleVeriLinkMode()" style="background: #f87171;" id="verilink-btn">🔌 Toggle Offline</button>
+        <div class="flex-between" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="card-title" style="margin:0;">VeriLinkOS Execution Kernel</h3>
+            <button class="btn" id="verilink-toggle-btn" onclick="toggleVeriLinkMode()"><i class="fas fa-plug-circle-xmark"></i> Suppress Connection</button>
+        </div> 
+        <p id="verilink-desc" style="color: #94a3b8; font-size: 12px; margin-top: 5px;">VeriLink is currently in fail-soft mode, meaning external connections are suppressed. Toggle to activate.</p>
+    </div>
+    <div class="card">
+        <h3 class="card-title">Action Chain & VAP Receipts</h3>
+        <div id="audit-container" style="max-height:400px; overflow-y:auto;">
+            <div class="metric-label">Loading audit trail...</div>
         </div>
     </div>
 </div>
-
-<script>
-async function exportAuditTrail() {
-    try {
-        const res = await fetch('/api/v1/admin/dashboard/governance/logs?limit=1000');
-        const data = await res.json();
-        let content = '# Audit Trail Export\n';
-        content += `Date: ${new Date().toISOString()}\n\n`;
-        content += '| Timestamp | Query | Type |\n';
-        content += '|-----------|-------|------|\n';
-        data.logs.forEach(l => {
-            content += `| ${new Date(l.timestamp).toLocaleString()} | ${l.query || 'N/A'} | ${l.hitl ? 'HITL' : 'AUTO'} |\n`;
-        });
-        const blob = new Blob([content], {type: 'text/markdown'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `audit_trail_${new Date().toISOString().slice(0,10)}.md`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('📥 Audit trail exported', 'success');
-    } catch(e) {
-        showToast('Error exporting audit trail', 'error');
-    }
-}
-</script>

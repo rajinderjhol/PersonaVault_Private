@@ -109,8 +109,8 @@
 
 <script>
 // ============ SESSION MANAGEMENT ============
-let currentSessionId = null;
-let currentSessionTitle = '';
+window.currentSessionId = window.currentSessionId || null;
+window.currentSessionTitle = window.currentSessionTitle || '';
 
 async function loadSessions() {
     const container = document.getElementById('session-list');

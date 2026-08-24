@@ -33,55 +33,7 @@ class MultiAgentOrchestrator:
         }
         self.active_tasks = 0
         self._stages = []
-        self._packs = []
-        self._packs_loaded = False
-        # Load packs asynchronously
-        asyncio.create_task(self._load_packs())
         logger.info("MultiAgentOrchestrator initialized")
-        # Debug: Check if _load_packs is scheduled
-        logger.info("🔍 _load_packs task scheduled, will run asynchronously")
-
-    async def _load_packs(self):
-        """Load intelligence packs directly from the database."""
-        logger.info("🔍 _load_packs method started!")
-        try:
-            from sqlalchemy import select
-            from app.models.learning.behaviour_pack import BehaviourPack
-            from app.db.session import SessionLocal
-            
-            # Create a new session directly
-            async with SessionLocal() as session:
-                # Directly query the database
-                stmt = select(BehaviourPack)
-                result = await session.execute(stmt)
-                packs = result.scalars().all()
-                
-                self._packs = [{
-                    "id": p.id,
-                    "name": p.name,
-                    "domain": p.domain,
-                    "description": p.description,
-                    "is_active": p.is_active,
-                    "entities": getattr(p, "entities", []),
-                    "events": getattr(p, "events", []),
-                    "decision_types": getattr(p, "decision_types", []),
-                    "metrics": getattr(p, "metrics", [])
-                } for p in packs]
-                
-                self._packs_loaded = True
-                logger.info(f"🧠 Orchestrator loaded {len(self._packs)} intelligence packs directly from DB")
-                
-                # Set packs on generator
-                if hasattr(self, 'generator') and self.generator:
-                    self.generator.set_packs(self._packs)
-                    logger.info(f"✅ Set {len(self._packs)} packs on generator")
-                
-        except Exception as e:
-            logger.warning(f"Could not load packs in orchestrator: {e}")
-            import traceback
-            traceback.print_exc()
-            self._packs_loaded = True
-
     
     def _get_user_id(self, context: Dict[str, Any]) -> int:
         """Extract user_id from context"""
@@ -146,12 +98,10 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             await self._broadcast_thought("Generator", f"🤖 Generating response using {provider}...")
             
-            # Call the generator with the full context and provider
-            logger.info(f"🔍 Generator using provider: {provider}")
+            # Call the generator with the full context
             generation = await self.generator.generate(
                 query=query,
                 context=memory_context,
-                provider=provider,
                 reasoning_insight=None,
                 situational_awareness={},
                 persona=None,
@@ -286,18 +236,9 @@ class MultiAgentOrchestrator:
             yield {"type": "thought", "data": {"step": "🤖", "label": f"Generating using {provider}...", "status": "active"}}
             await asyncio.sleep(0.05)
             
-            # Stream from the generator directly with packs
+            # Stream from the generator directly
             full_response = ""
-            # Ensure packs are loaded
-            if not self._packs_loaded:
-                logger.info("⏳ Waiting for packs to load before streaming...")
-                await self._load_packs()
-            logger.info(f"📦 Using {len(self._packs)} packs for generation")
-            async for chunk in self.generator.generate_stream(
-                query=query,
-                provider=provider,
-                packs=self._packs if hasattr(self, '_packs') else []
-            ):
+            async for chunk in self.generator.generate_stream(query, provider):
                 if chunk:
                     full_response += chunk
                     yield {"type": "content", "data": chunk}
