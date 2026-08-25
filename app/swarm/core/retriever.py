@@ -19,9 +19,15 @@ class RetrievalAgent:
             try:
                 vector_results = await self.vector_repo.search(
                     query=plan.semantic_queries[0] if plan.semantic_queries else "",
+                    user_id=user_id,
                     limit=10
                 )
-                results.extend(vector_results)
+                for res in vector_results:
+                    results.append(MemoryResult(
+                        content=res['content'],
+                        source='faiss',
+                        score=res['score']
+                    ))
             except Exception as e:
                 logger.warning(f"Vector search failed: {e}")
         
@@ -48,6 +54,7 @@ class RetrievalAgent:
         return results
     
     async def search(self, query: str, user_id: int, limit: int = 10) -> List[MemoryResult]:
+        logger.info(f"RetrievalAgent searching for: {query}, user_id: {user_id}")
         plan = RetrievalPlan(
             needs_retrieval=True,
             semantic_queries=[query],

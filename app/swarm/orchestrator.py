@@ -18,9 +18,15 @@ class MultiAgentOrchestrator:
     def __init__(self, db_session, blackboard, agents: Dict[str, Any] = None):
         self.db = db_session
         self.blackboard = blackboard
+        self.agents = agents or {}
         self.working_memory = WorkingMemory()
-        self.semantic_memory = SemanticMemory(db_session) if db_session else None
-        self.generator = GeneratorAgent()
+        self.agents = agents or {}
+        logger.info(f"Agents initialized: {list(self.agents.keys())}")
+
+        # Fallback to agents if available, otherwise initialize defaults
+        self.retriever = self.agents.get("retriever")
+        logger.info(f"Retriever agent: {self.retriever}")
+        self.generator = self.agents.get("generator") or GeneratorAgent()
         self.agent_activity = {
             "planner": "idle",
             "retriever": "idle",
@@ -33,7 +39,7 @@ class MultiAgentOrchestrator:
         }
         self.active_tasks = 0
         self._stages = []
-        logger.info("MultiAgentOrchestrator initialized")
+        logger.info("MultiAgentOrchestrator initialized with swarm agents")
     
     def _get_user_id(self, context: Dict[str, Any]) -> int:
         """Extract user_id from context"""
@@ -221,11 +227,16 @@ class MultiAgentOrchestrator:
             
             # Step 2: Memory retrieval
             memory_context = []
-            if self.semantic_memory:
+            if self.retriever:
                 try:
                     yield {"type": "thought", "data": {"step": "🔍", "label": "Searching memory...", "status": "active"}}
-                    memory_context = await self.semantic_memory.search(query, user_id, limit=5)
-                    logger.info(f"Retrieved {len(memory_context)} memory items")
+                    # Assuming retriever has a search method
+                    search_results = await self.retriever.search(query, user_id=user_id)
+                    # Assuming search_results is a list of objects that have content or similar
+                    memory_context = [str(r) for r in search_results]
+                    logger.info(f"DEBUG: Retrieved memory items: {memory_context}")
+                    logger.info(f"DEBUG: Retrieved memory items: {memory_context}")
+                    logger.info(f"Retrieved {len(memory_context)} memory items via RetrieverAgent")
                 except Exception as e:
                     logger.warning(f"Memory search failed: {e}")
             
@@ -238,7 +249,7 @@ class MultiAgentOrchestrator:
             
             # Stream from the generator directly
             full_response = ""
-            async for chunk in self.generator.generate_stream(query, provider):
+            async for chunk in self.generator.generate_stream(query, provider, context=memory_context):
                 if chunk:
                     full_response += chunk
                     yield {"type": "content", "data": chunk}

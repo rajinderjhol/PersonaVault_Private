@@ -2,39 +2,40 @@
 // Placeholder for behaviour pack functionality
 
 async function fetchPacks() {
-    const grid = document.getElementById('packs-grid');
-    if (!grid) return;
+    const activeGrid = document.getElementById('active-packs-list');
+    const inactiveGrid = document.getElementById('inactive-packs-list');
     
-    grid.innerHTML = '<div class="metric-label">Loading packs...</div>';
+    if (!activeGrid || !inactiveGrid) return;
+    
+    activeGrid.innerHTML = '<div class="metric-label">Loading...</div>';
+    inactiveGrid.innerHTML = '<div class="metric-label">Loading...</div>';
+    
     try {
         const res = await fetch('/api/v1/packs/');
         const data = await res.json();
         const packs = data.packs || [];
         
-        if (packs.length > 0) {
-            grid.innerHTML = packs.map(p => `
-                <div class="pack-card" style="background: #1e293b; padding: 15px; border-radius: 8px; border-left: 4px solid ${p.is_active ? '#34d399' : '#f87171'}; margin-bottom: 10px;">
-                    <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 10px;">
-                        <span class="pack-name" style="font-weight:700; color:#38bdf8;">${p.name}</span>
-                        <span class="tag ${p.is_active ? 'tag-success' : 'tag-danger'}">${p.is_active ? 'Active' : 'Inactive'}</span>
-                    </div>
-                    <div class="pack-stats" style="color:#94a3b8; font-size: 12px; margin-bottom: 10px;">Domain: ${p.domain} | Version: ${p.version}</div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn" style="background: ${p.is_active ? '#fbbf24' : '#34d399'}; padding: 5px 10px; font-size: 11px;" onclick="togglePack('${p.id}')">
-                            ${p.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button class="btn" style="background: #f87171; padding: 5px 10px; font-size: 11px;" onclick="removePack('${p.id}')">
-                            Remove
-                        </button>
-                    </div>
+        const activePacks = packs.filter(p => p.is_active);
+        const inactivePacks = packs.filter(p => !p.is_active);
+        
+        const packHtml = (p) => `
+            <div class="pack-card" style="background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 12px;">
+                <div style="display:flex; justify-content:space-between; align-items: center;">
+                    <span style="font-weight:700; color:#38bdf8;">${p.name}</span>
+                    <button class="btn" style="background: ${p.is_active ? '#fbbf24' : '#34d399'}; padding: 2px 5px; font-size: 10px;" onclick="togglePack('${p.id}')">
+                        ${p.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
                 </div>
-            `).join('');
-        } else {
-            grid.innerHTML = '<div class="metric-label">No packs installed. Upload a pack to get started.</div>';
-        }
+            </div>
+        `;
+        
+        activeGrid.innerHTML = activePacks.length > 0 ? activePacks.map(packHtml).join('') : '<div class="metric-label">No active packs</div>';
+        inactiveGrid.innerHTML = inactivePacks.length > 0 ? inactivePacks.map(packHtml).join('') : '<div class="metric-label">No inactive packs</div>';
+        
     } catch (e) {
         console.error('Pack fetch error:', e);
-        grid.innerHTML = '<div class="metric-label" style="color:#f87171;">Error loading packs</div>';
+        activeGrid.innerHTML = '<div class="metric-label" style="color:#f87171;">Error</div>';
+        inactiveGrid.innerHTML = '<div class="metric-label" style="color:#f87171;">Error</div>';
     }
 }
 

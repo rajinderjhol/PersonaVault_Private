@@ -17,7 +17,7 @@ async def list_packs(
 ):
     """List all installed behaviour packs."""
     loader = PackLoader(lambda: db)
-    packs = await loader.list_packs()
+    packs = await loader.list_installed_packs()
     return {
         "total": len(packs),
         "packs": [{

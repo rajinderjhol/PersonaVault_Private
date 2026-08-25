@@ -73,6 +73,45 @@ A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better 
 
 ---
 
+## Platform Architecture Visualization
+
+This diagram illustrates the core functional flow of the PersonaVault Decision Operating System, emphasizing the interaction between the Orchestrator, Swarm Agents, and Memory Layers.
+
+```mermaid
+graph TD
+    User([User]) -->|Query| Orchestrator[MultiAgentOrchestrator]
+    
+    subgraph Swarm_Agents
+        Planner[Planner Agent]
+        Retriever[Retrieval Agent]
+        Generator[Generator Agent]
+        Reasoner[Reasoner Agent]
+    end
+    
+    Orchestrator -->|Delegates| Planner
+    Orchestrator -->|Delegates| Retriever
+    Orchestrator -->|Delegates| Generator
+    
+    subgraph Memory_Layer
+        VectorRepo[(Vector Store - FAISS)]
+        SQL[(SQL Database - Layer 2)]
+        Graph[(Graph Repository)]
+    end
+    
+    Retriever -->|Search| VectorRepo
+    Retriever -->|Search| SQL
+    Retriever -->|Search| Graph
+    
+    Orchestrator -->|Context Assembly| ContextAssembly[Context Assembly Service]
+    Retriever -->|Retrieved Memories| ContextAssembly
+    
+    ContextAssembly -->|Formatted Prompt| Generator
+    Generator -->|Enriched Prompt| LLM[LLM Provider - Groq/Ollama]
+    LLM -->|Streaming Response| User
+```
+
+---
+
 ## The Decision Operating System (DOS) Architecture
 
 Inspired by **DeepSeek Harness**, PersonaVault 2026 utilizes a **Service-Oriented monorepo architecture** that emphasizes spatiotemporal composability.

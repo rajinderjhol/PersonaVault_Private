@@ -5,7 +5,7 @@ import logging
 import json
 import httpx
 import os
-from typing import Dict, Any, Optional, AsyncGenerator
+from typing import Dict, Any, Optional, AsyncGenerator, List
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,30 @@ class GeneratorAgent:
     async def generate_stream(
         self, 
         query: str, 
-        provider: str = "groq"
+        provider: str = "groq",
+        context: Optional[List[str]] = None
     ) -> AsyncGenerator[str, None]:
-        """Stream generation from the provider"""
+        """Stream generation from the provider with injected context"""
         
+        # Construct structured prompt
+        if context:
+            context_str = "\n".join(context)
+            full_prompt = f"""## Relevant Context / Memories
+{context_str}
+
+## User Query
+{query}
+
+Please answer based on the provided context.
+"""
+        else:
+            full_prompt = query
+
         if provider == "ollama":
-            async for chunk in self._stream_ollama(query):
+            async for chunk in self._stream_ollama(full_prompt):
                 yield chunk
         elif provider == "groq":
-            async for chunk in self._stream_groq(query):
+            async for chunk in self._stream_groq(full_prompt):
                 yield chunk
         else:
             yield f"Unknown provider: {provider}"
@@ -100,7 +115,22 @@ class GeneratorAgent:
             yield f"Error: {str(e)}"
     
     async def generate(self, query: str, context: list = None, **kwargs) -> Dict[str, Any]:
-        """Non-streaming generation (fallback)"""
+        """Non-streaming generation with context"""
+        
+        # Construct structured prompt
+        if context:
+            context_str = "\n".join(context)
+            full_prompt = f"""## Relevant Context / Memories
+{context_str}
+
+## User Query
+{query}
+
+Please answer based on the provided context.
+"""
+        else:
+            full_prompt = query
+            
         # Use Groq for non-streaming
         if self.groq_key:
             try:
@@ -113,7 +143,7 @@ class GeneratorAgent:
                         },
                         json={
                             "model": "qwen/qwen3.6-27b",
-                            "messages": [{"role": "user", "content": query}],
+                            "messages": [{"role": "user", "content": full_prompt}],
                             "temperature": 0.7,
                             "max_tokens": 500
                         }
