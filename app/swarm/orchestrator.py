@@ -20,11 +20,13 @@ class MultiAgentOrchestrator:
         self.blackboard = blackboard
         self.agents = agents or {}
         self.working_memory = WorkingMemory()
-        self.agents = agents or {}
         logger.info(f"Agents initialized: {list(self.agents.keys())}")
 
         # Fallback to agents if available, otherwise initialize defaults
         self.retriever = self.agents.get("retriever")
+        # For compatibility with methods still using semantic_memory
+        self.semantic_memory = self.retriever 
+        
         logger.info(f"Retriever agent: {self.retriever}")
         self.generator = self.agents.get("generator") or GeneratorAgent()
         self.agent_activity = {
@@ -233,8 +235,7 @@ class MultiAgentOrchestrator:
                     # Assuming retriever has a search method
                     search_results = await self.retriever.search(query, user_id=user_id)
                     # Assuming search_results is a list of objects that have content or similar
-                    memory_context = [str(r) for r in search_results]
-                    logger.info(f"DEBUG: Retrieved memory items: {memory_context}")
+                    memory_context = [r.content for r in search_results]
                     logger.info(f"DEBUG: Retrieved memory items: {memory_context}")
                     logger.info(f"Retrieved {len(memory_context)} memory items via RetrieverAgent")
                 except Exception as e:

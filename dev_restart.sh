@@ -3,7 +3,6 @@
 # Define paths
 DB_PATH="storage/memory_db/personavault.db"
 LOG_PATH="storage/logs/uvicorn.log"
-VECTOR_METADATA="storage/vector_metadata.pkl"
 ENV_PATH=".env"
 
 # Colors
@@ -32,14 +31,17 @@ pkill -9 -f "uvicorn" 2>/dev/null || true
 pkill -9 -f "ollama" 2>/dev/null || true
 sleep 2
 
-# Purge volatile state if not in safe mode
-if [ "$PURGE_STATE" = true ]; then
-    echo "🔥 Full Restart initiated. Purging all volatile state..."
+# Purge volatile state if --force flag is used
+if [ "$1" == "--force" ]; then
+    echo "🔥 Forced Restart initiated. Purging all volatile state..."
     rm -f "$DB_PATH"
-    rm -f "$VECTOR_METADATA"
     > "$LOG_PATH"
+elif [ -f "$DB_PATH" ]; then
+    echo "✅ Database found at $DB_PATH. Skipping purge and seeding."
+    PURGE_STATE=false
 else
-    echo "ℹ️ Skipping state purge."
+    echo "🔥 No database found. Running full initialization..."
+    PURGE_STATE=true
 fi
 
 # 2. OLLAMA SETUP
@@ -65,9 +67,10 @@ for i in {1..20}; do
 done
 
 # 3. DATABASE SETUP
-echo "🔧 Initializing database schema..."
-export PYTHONPATH=$PWD
-python3 -c "
+if [ "$PURGE_STATE" = true ]; then
+    echo "🔧 Initializing database schema..."
+    export PYTHONPATH=$PWD
+    python3 -c "
 from app.db.session import engine, Base
 import asyncio
 import app.models
@@ -77,10 +80,13 @@ async def init_db():
 asyncio.run(init_db())
 "
 
-echo "🌱 Running data seeding..."
-python3 scripts/seed_all_data.py
-python3 scripts/install_all_packs.py
-python3 scripts/seed_contract_memories.py
+    echo "🌱 Running data seeding..."
+    python3 scripts/seed_all_data.py
+    python3 scripts/install_all_packs.py
+    python3 scripts/seed_contract_memories.py
+else
+    echo "ℹ️ Skipping database initialization and seeding."
+fi
 
 # 4. START SERVER
 echo "🚀 Igniting Intelligence Gateway..."

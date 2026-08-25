@@ -24,6 +24,9 @@ class GeneratorAgent:
         context: Optional[List[str]] = None
     ) -> AsyncGenerator[str, None]:
         """Stream generation from the provider with injected context"""
+        logger.info(f"GeneratorAgent received context with {len(context) if context else 0} items.")
+        if context:
+            logger.info(f"First context item: {context[0] if len(context) > 0 else 'None'}")
         
         # Construct structured prompt
         if context:
@@ -77,6 +80,7 @@ Please answer based on the provided context.
     
     async def _stream_groq(self, prompt: str) -> AsyncGenerator[str, None]:
         """Stream from Groq"""
+        logger.info(f"Sending prompt to Groq: {prompt[:200]}...")
         if not self.groq_key:
             yield "GROQ_API_KEY not set"
             return

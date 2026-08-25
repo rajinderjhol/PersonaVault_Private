@@ -14,8 +14,8 @@ class FAISSSemanticRepository(IVectorRepository):
     """FAISS implementation for semantic memory (Layer 3)."""
     
     def __init__(self, 
-                 index_path: str = "storage/vector_index.faiss", 
-                 metadata_path: str = "storage/vector_metadata.pkl",
+                 index_path: str = "/home/rajinderj8888/personavault/backend/storage/vector_index.faiss", 
+                 metadata_path: str = "/home/rajinderj8888/personavault/backend/storage/vector_metadata.pkl",
                  client: Optional[httpx.AsyncClient] = None):
         self.index_path = index_path
         self.metadata_path = metadata_path
@@ -27,11 +27,21 @@ class FAISSSemanticRepository(IVectorRepository):
 
     def _load_or_create_index(self):
         try:
+            logger.info(f"Loading index from {self.index_path}")
+            logger.info(f"DEBUG: CWD is {os.getcwd()}")
+            logger.info(f"DEBUG: Absolute index path: {os.path.abspath(self.index_path)}")
+            logger.info(f"DEBUG: Absolute metadata path: {os.path.abspath(self.metadata_path)}")
+            
+            logger.info(f"Index path exists: {os.path.exists(self.index_path)}")
+            logger.info(f"Metadata path exists: {os.path.exists(self.metadata_path)}")
+            
             if os.path.exists(self.index_path) and os.path.exists(self.metadata_path):
                 self.index = faiss.read_index(self.index_path)
                 with open(self.metadata_path, 'rb') as f:
                     self.metadata = pickle.load(f)
+                logger.info(f"Index loaded successfully. Total: {self.index.ntotal}")
             else:
+                logger.info("Index files not found, creating new index.")
                 raise FileNotFoundError("Index or metadata files missing.")
         except Exception as e:
             logger.error(f"Failed to load vector index: {e}. Creating a new index.")
