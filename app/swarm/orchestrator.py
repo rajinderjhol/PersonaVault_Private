@@ -1,5 +1,5 @@
 """
-Multi-Agent Orchestrator - Complete Implementation
+Multi-Agent Orchestrator - Complete Implementation with Auditable Traces
 """
 import logging
 import asyncio
@@ -11,19 +11,27 @@ from app.services.working_memory import WorkingMemory
 from app.services.episodic_memory import EpisodicMemory
 from app.services.semantic_memory import SemanticMemory
 from app.utils.websocket import manager
+from runtime.pack_executor import PackExecutor
 
 logger = logging.getLogger(__name__)
 
 class MultiAgentOrchestrator:
-    def __init__(self, db_session, blackboard, agents: Dict[str, Any] = None):
+    def __init__(self, db_session, blackboard, agents: Dict[str, Any] = None, confidence_threshold: float = 0.6):
         self.db = db_session
         self.blackboard = blackboard
         self.agents = agents or {}
         self.working_memory = WorkingMemory()
+        self.pack_executor = PackExecutor()  # ✅ Integrated Behavior Pack Compiler
         logger.info(f"Agents initialized: {list(self.agents.keys())}")
 
         # Fallback to agents if available, otherwise initialize defaults
         self.retriever = self.agents.get("retriever")
+        
+        # Configure confidence threshold
+        if self.retriever and hasattr(self.retriever, 'set_confidence_threshold'):
+            self.retriever.set_confidence_threshold(confidence_threshold)
+            logger.info(f"Orchestrator using confidence threshold: {confidence_threshold}")
+            
         # For compatibility with methods still using semantic_memory
         self.semantic_memory = self.retriever 
         
@@ -41,7 +49,7 @@ class MultiAgentOrchestrator:
         }
         self.active_tasks = 0
         self._stages = []
-        logger.info("MultiAgentOrchestrator initialized with swarm agents")
+        logger.info("MultiAgentOrchestrator initialized with swarm agents and PackExecutor")
     
     def _get_user_id(self, context: Dict[str, Any]) -> int:
         """Extract user_id from context"""
@@ -80,8 +88,10 @@ class MultiAgentOrchestrator:
             logger.debug(f"Failed to broadcast thought: {e}")
     
     async def run(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the cognitive pipeline with real generation"""
+        """Execute the cognitive pipeline with Auditable Traces"""
         logger.info(f"Processing query: {query[:50]}...")
+        
+        all_traces = []
         
         try:
             # Step 1: Get user ID
@@ -92,43 +102,49 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             await self._broadcast_thought("Orchestrator", f"📝 Processing: '{query[:50]}...'")
             
-            # Step 3: Get memory context (if available)
+            # Step 3: Behavior Pack Policy Check (Dominant Policy)
+            pack_result = await self.pack_executor.process_with_best_pack(query, user_id)
+            all_traces.append(pack_result.get("trace"))
+            
+            # Step 4: Get memory context
             memory_context = []
-            if self.semantic_memory:
+            if self.retriever:
                 try:
-                    memory_context = await self.semantic_memory.search(query, user_id, limit=5)
+                    search_data = await self.retriever.search(query, user_id, limit=5)
+                    search_results = search_data.get("results", [])
+                    all_traces.append(search_data.get("trace"))
+                    memory_context = [r.content for r in search_results]
                     logger.info(f"Retrieved {len(memory_context)} memory items")
                 except Exception as e:
                     logger.warning(f"Memory search failed: {e}")
             
-            # Step 4: Generate response
+            # Step 5: Generate response
             self.agent_activity["generator"] = "active"
             await self._broadcast_agent_status()
             await self._broadcast_thought("Generator", f"🤖 Generating response using {provider}...")
             
-            # Call the generator with the full context
+            # Inject pack intelligence into context if a policy matched
+            if pack_result["decision"]["policy"] != "no_match":
+                policy_context = f"[POLICY: {pack_result['decision']['policy']}] Decision: {pack_result['decision']['explanation']}"
+                memory_context.append(policy_context)
+            
+            # Call the generator
             generation = await self.generator.generate(
                 query=query,
-                context=memory_context,
-                reasoning_insight=None,
-                situational_awareness={},
-                persona=None,
-                response_tone="neutral",
-                hitl_approved=False
+                context=memory_context
             )
+            
+            all_traces.append(generation.get("trace"))
             
             # Extract the response
             response_text = generation.get("answer", "")
-            if not response_text:
-                response_text = f"I processed your query: '{query}'. The system generated a response."
-            
             confidence = generation.get("confidence", 0.7)
             
             self.agent_activity["generator"] = "idle"
             await self._broadcast_agent_status()
             await self._broadcast_thought("Orchestrator", "✅ Response generated")
             
-            # Step 5: Store in episodic memory (if available)
+            # Step 6: Store in episodic memory
             try:
                 if hasattr(self, 'episodic_memory') and self.episodic_memory:
                     await self.episodic_memory.store({
@@ -140,19 +156,12 @@ class MultiAgentOrchestrator:
             except Exception as e:
                 logger.debug(f"Failed to store in episodic memory: {e}")
             
-            # Step 6: Return the response with thought process
-            thought_process = [
-                {"step": 1, "label": "🔍 Understanding", "description": "Analyzing your query", "status": "complete"},
-                {"step": 2, "label": "🧠 Retrieving", "description": f"Found {len(memory_context)} relevant memories", "status": "complete"},
-                {"step": 3, "label": "🤖 Generating", "description": f"Using {provider} to generate response", "status": "complete"},
-                {"step": 4, "label": "✅ Finalizing", "description": "Response ready", "status": "complete"}
-            ]
-            
             return {
                 "answer": response_text,
                 "confidence": confidence,
-                "reasoning": generation.get("reasoning_steps", []),
-                "thought_process": thought_process,
+                "traces": all_traces,
+                "decision": pack_result.get("decision"),
+                "autonomy": pack_result.get("autonomy"),
                 "source": generation.get("source", provider)
             }
             
@@ -161,14 +170,10 @@ class MultiAgentOrchestrator:
             import traceback
             traceback.print_exc()
             
-            # Return a fallback response
             return {
                 "answer": f"I encountered an issue: {str(e)}. Please try again.",
                 "confidence": 0.1,
-                "reasoning": [],
-                "thought_process": [
-                    {"step": 1, "label": "❌ Error", "status": "error", "description": str(e)}
-                ],
+                "traces": all_traces,
                 "source": "error"
             }
     
@@ -189,27 +194,19 @@ class MultiAgentOrchestrator:
                 "response": result.get("answer", "No response generated."),
                 "provider": provider,
                 "session_id": session_id,
-                "thought_process": result.get("thought_process", []),
-                "confidence": result.get("confidence", 0.5),
-                "source": result.get("source", "unknown")
+                "traces": result.get("traces", []),
+                "decision": result.get("decision"),
+                "autonomy": result.get("autonomy"),
+                "confidence": result.get("confidence", 0.5)
             }
         except Exception as e:
             logger.error(f"Error in process_query: {e}")
-            import traceback
-            traceback.print_exc()
             return {
                 "response": f"Error: {str(e)}",
                 "provider": provider,
                 "session_id": session_id,
-                "thought_process": [
-                    {"step": 1, "label": "❌ Error", "status": "error", "description": str(e)}
-                ],
                 "confidence": 0.1
             }
-    
-    # ============================================================
-    # STREAMING METHOD - INSIDE THE CLASS
-    # ============================================================
     
     async def stream_process(
         self, 
@@ -218,26 +215,29 @@ class MultiAgentOrchestrator:
         session_id: int = None,
         provider: str = "groq"
     ):
-        """Process query with streaming output - yields chunks as they come"""
+        """Process query with streaming output and Auditable Traces"""
         
         try:
             logger.info(f"Streaming process for user {user_id}: {query[:50]}...")
             
-            # Step 1: Understanding
-            yield {"type": "thought", "data": {"step": "🧠", "label": "Understanding your query...", "status": "active"}}
-            await asyncio.sleep(0.05)
+            # Step 1: Policy Check
+            yield {"type": "thought", "data": {"step": "🛡️", "label": "Checking policies...", "status": "active"}}
+            pack_result = await self.pack_executor.process_with_best_pack(query, user_id)
+            yield {"type": "trace", "data": pack_result.get("trace")}
             
             # Step 2: Memory retrieval
             memory_context = []
             if self.retriever:
                 try:
                     yield {"type": "thought", "data": {"step": "🔍", "label": "Searching memory...", "status": "active"}}
-                    # Assuming retriever has a search method
-                    search_results = await self.retriever.search(query, user_id=user_id)
-                    # Assuming search_results is a list of objects that have content or similar
+                    search_data = await self.retriever.search(query, user_id=user_id)
+                    search_results = search_data.get("results", [])
+                    yield {"type": "trace", "data": search_data.get("trace")}
+                    
                     memory_context = [r.content for r in search_results]
-                    logger.info(f"DEBUG: Retrieved memory items: {memory_context}")
-                    logger.info(f"Retrieved {len(memory_context)} memory items via RetrieverAgent")
+                    
+                    if pack_result["decision"]["policy"] != "no_match":
+                        memory_context.append(f"[POLICY: {pack_result['decision']['policy']}] Decision: {pack_result['decision']['explanation']}")
                 except Exception as e:
                     logger.warning(f"Memory search failed: {e}")
             
@@ -246,44 +246,31 @@ class MultiAgentOrchestrator:
             await self._broadcast_agent_status()
             
             yield {"type": "thought", "data": {"step": "🤖", "label": f"Generating using {provider}...", "status": "active"}}
-            await asyncio.sleep(0.05)
             
-            # Stream from the generator directly
             full_response = ""
             async for chunk in self.generator.generate_stream(query, provider, context=memory_context):
                 if chunk:
                     full_response += chunk
                     yield {"type": "content", "data": chunk}
             
+            # Final trace from generator (since streaming doesn't return full trace easily, we simulate it)
+            gen_trace = self.generator.create_trace(
+                input_data=query,
+                explanation=f"Streamed response via {provider}",
+                confidence=0.8,
+                decision="stream_response"
+            )
+            yield {"type": "trace", "data": gen_trace}
+            
             # Step 4: Complete
             self.agent_activity["generator"] = "idle"
             await self._broadcast_agent_status()
             
             yield {"type": "thought", "data": {"step": "✅", "label": "Complete!", "status": "complete"}}
-            
-            # Store in episodic memory
-            try:
-                if hasattr(self, 'episodic_memory') and self.episodic_memory:
-                    await self.episodic_memory.store({
-                        "query": query,
-                        "response": full_response,
-                        "user_id": user_id,
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    })
-            except Exception as e:
-                logger.debug(f"Failed to store in episodic memory: {e}")
-            
-            # Send session ID if provided
-            if session_id:
-                yield {"type": "session_id", "data": session_id}
-            
-            # Send done signal
-            yield {"type": "done", "data": {"message": "Generation complete"}}
+            yield {"type": "done", "data": {"message": "Generation complete", "decision": pack_result.get("decision")}}
             
         except Exception as e:
             logger.error(f"Stream error: {e}")
-            import traceback
-            traceback.print_exc()
             yield {"type": "error", "data": {"error": str(e)}}
 
 # Singleton instance

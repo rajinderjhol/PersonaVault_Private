@@ -1,0 +1,120 @@
+"""
+Auto-generated Runtime Class for {{ pack_name }}
+Pack: {{ pack_name }}
+Domain: {{ domain }}
+Version: {{ version }}
+Generated: {{ timestamp }}
+Signature: {{ signature }}
+"""
+import logging
+from typing import Dict, Any, Optional, List
+from datetime import datetime
+
+# Generated Components Inline
+{{ signal_normalizer }}
+
+{{ policy_engine }}
+
+{{ action_mapper }}
+
+{{ provenance_tracker }}
+
+logger = logging.getLogger(__name__)
+
+class {{ pack_name_class }}Pack:
+    """
+    {{ pack_name }} Behavior Pack
+    Domain: {{ domain }}
+    Version: {{ version }}
+    """
+    
+    def __init__(self):
+        self.signal_normalizer = {{ pack_name_class }}SignalNormalizer()
+        self.policy_engine = {{ pack_name_class }}PolicyEngine()
+        self.action_mapper = {{ pack_name_class }}ActionMapper()
+        self.provenance_tracker = {{ pack_name_class }}ProvenanceTracker()
+        
+        self.metadata = {
+            "name": "{{ pack_name }}",
+            "domain": "{{ domain }}",
+            "version": "{{ version }}",
+            "signature": "{{ signature }}",
+            "timestamp": "{{ timestamp }}"
+        }
+        
+        logger.info(f"✅ Loaded {{ pack_name }} pack v{{ version }}")
+    
+    async def process(self, raw_input: str, user_id: int, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Process raw input through the complete pack pipeline
+        
+        Args:
+            raw_input: Raw user input or data
+            user_id: User identifier
+            session_id: Optional session identifier
+            
+        Returns:
+            Dict with decision, actions, and provenance
+        """
+        start_time = datetime.now()
+        
+        # 1. Normalize signals
+        signals = self.signal_normalizer.normalize(raw_input)
+        signals['user_id'] = user_id
+        signals['session_id'] = session_id
+        
+        # 2. Evaluate policies
+        policy_result = self.policy_engine.evaluate(signals)
+        
+        # 3. Map to actions
+        actions = self.action_mapper.map_actions(policy_result)
+        
+        # 4. Track provenance
+        provenance = self.provenance_tracker.track(
+            raw_input=raw_input,
+            signals=signals,
+            policy_result=policy_result,
+            actions=actions
+        )
+        
+        # 5. Determine autonomy level
+        autonomy_level = policy_result.autonomy_level
+        needs_approval = autonomy_level in ['recommend', 'approve']
+        
+        return {
+            "decision": {
+                "policy": policy_result.policy_name,
+                "type": policy_result.decision_type,
+                "severity": policy_result.severity,
+                "confidence": policy_result.confidence,
+                "explanation": policy_result.explanation
+            },
+            "actions": actions,
+            "autonomy": {
+                "level": autonomy_level,
+                "needs_approval": needs_approval,
+                "can_execute": autonomy_level in ['execute', 'approve']
+            },
+            "trace": provenance,
+            "metadata": {
+                "pack": self.metadata["name"],
+                "version": self.metadata["version"],
+                "processing_time_ms": (datetime.now() - start_time).total_seconds() * 1000
+            }
+        }
+    
+    def get_metadata(self) -> Dict[str, Any]:
+        """Get pack metadata"""
+        return self.metadata.copy()
+    
+    def get_supported_entities(self) -> Dict[str, Any]:
+        """Get supported entities"""
+        return {{ entities|tojson }}
+    
+    def get_supported_events(self) -> Dict[str, Any]:
+        """Get supported events"""
+        return {{ events|tojson }}
+    
+    def get_policies(self) -> List[Dict[str, Any]]:
+        """Get all policies"""
+        return {{ policies|tojson }}

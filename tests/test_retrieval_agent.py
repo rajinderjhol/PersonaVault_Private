@@ -1,5 +1,5 @@
 """
-Tests for RetrievalAgent - fixed to match actual schema.
+Tests for RetrievalAgent - updated for Auditable Traces.
 """
 import pytest
 from unittest.mock import AsyncMock, MagicMock
@@ -9,11 +9,13 @@ from app.schemas.memory_schemas import RetrievalPlan, MemoryResult
 @pytest.fixture
 def mock_vector_repo():
     mock = AsyncMock()
+    mock.search.return_value = [{"content": "Memory 1", "score": 0.9}]
     return mock
 
 @pytest.fixture
 def mock_graph_repo():
     mock = AsyncMock()
+    mock.search.return_value = []
     return mock
 
 @pytest.fixture
@@ -22,10 +24,6 @@ def agent(mock_vector_repo, mock_graph_repo):
         vector_repo=mock_vector_repo,
         graph_repo=mock_graph_repo
     )
-
-# ============================================================
-# TESTS - Using correct RetrievalPlan schema
-# ============================================================
 
 def test_init(mock_vector_repo, mock_graph_repo):
     """Test RetrievalAgent initialization."""
@@ -40,7 +38,6 @@ def test_init(mock_vector_repo, mock_graph_repo):
 @pytest.mark.asyncio
 async def test_hybrid_search(agent):
     """Test hybrid_search with RetrievalPlan."""
-    # Use the correct schema fields
     plan = RetrievalPlan(
         needs_retrieval=True,
         semantic_queries=["test query"],
@@ -50,10 +47,14 @@ async def test_hybrid_search(agent):
         complexity_score=0.5
     )
     result = await agent.hybrid_search(plan=plan, user_id=1)
-    assert result is not None
+    assert isinstance(result, list)
+    assert len(result) > 0
 
 @pytest.mark.asyncio
-async def test_semantic_search(agent):
-    """Test semantic search."""
-    result = await agent._semantic_search(queries=["test"], user_id=1)
-    assert result is not None
+async def test_search_returns_trace(agent):
+    """Test search method returns results and trace."""
+    result_data = await agent.search(query="test", user_id=1)
+    assert "results" in result_data
+    assert "trace" in result_data
+    assert result_data["trace"]["agent"] == "retriever"
+    assert result_data["trace"]["trace"]["decision"]["type"] == "retrieve_memories"

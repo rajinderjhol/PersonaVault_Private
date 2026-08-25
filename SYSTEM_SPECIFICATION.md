@@ -3,9 +3,11 @@
 ## I. Executive Summary
 
 ### Vision
-PersonaVault is a **model-independent Decision Operating System (DOS)**. It decouples the AI inference engine from the organization’s accumulated, governed, and provenance-backed institutional intelligence.
+PersonaVault is a **model-independent Decision Operating System (DOS)**. It decouples the AI inference engine from the organization’s accumulated, governed, and provenance-backed institutional intelligence. 
 
-**Core Thesis:** AI models generate intelligence; PersonaVault accumulates intelligence. PersonaVault owns institutional continuity.
+The core differentiator is the **Auditable Decision Trace (ADT)**—a verifiable, machine-readable record of the decision process that moves beyond probabilistic natural language into deterministic execution.
+
+**Core Thesis:** AI models generate intelligence; PersonaVault accumulates intelligence. PersonaVault owns institutional continuity through verifiable execution.
 
 ### Roadmap Achievements (Evolutionary Stages)
 1. **Infrastructure**: Established a stable, tested architecture for reliable decision tracking.
@@ -14,10 +16,10 @@ PersonaVault is a **model-independent Decision Operating System (DOS)**. It deco
 4. **Generative Simulation**: Enabled simulation of multiple decision paths with automated tradeoff analysis and recommendations.
 5. **Collaborative Intelligence**: Facilitated team-based learning and cross-domain pattern transfer.
 6. **Multimodal Intelligence**: Expanded input beyond text to include documents, images, and audio.
-7. **Enterprise Governance**: Hardened the system with audit logs, monitoring, and production-ready performance instrumentation.
+7. **Enterprise Governance**: Hardened the system with the **Auditable Decision Trace**, audit logs, and production-ready performance instrumentation.
 8. **DeepSeek-Inspired DOS**: Transitioned to a Service-Oriented architecture with a Cordis-inspired registry.
 9. **Sovereign Control Dashboard**: Centralized management for execution modes and provider swapping.
-10. **Developer Ecosystem**: Launched the Python SDK and `pv` CLI for platform-scale integration.
+10. **Developer Ecosystem**: Launched the Behavior Pack Compiler, Python SDK, and `pv` CLI for platform-scale integration.
 
 ---
 
@@ -26,17 +28,20 @@ PersonaVault is a **model-independent Decision Operating System (DOS)**. It deco
 The system is organized into layers that support the **Decision State**:
 
 1. **Cognitive Swarm (Orchestrator)**: Multi-agent system (Planning, Retrieval, Generation, Judgment).
-2. **Cognitive Memory (Tiered)**: Gas (Working), Liquid (Episodic), Ice (Semantic/Pattern).
-3. **Intelligence Packs**: Declarative, domain-specific behavior configuration.
-4. **Decision Intelligence**: Generation, Simulation, and Audit layers.
-5. **Sovereign Control**: Multi-mode execution (Standard/Restricted/Simulation/Audit).
-6. **Privacy & Security Vault**: Encryption, Tokenization, and Differential Privacy.
+2. **Behavior Pack Compiler**: Transforms declarative domain intelligence into optimized runtime code.
+3. **Cognitive Memory (Tiered)**: Gas (Working), Liquid (Episodic), Ice (Semantic/Pattern).
+4. **Intelligence Packs**: Declarative, domain-specific behavior configuration and ADT mapping.
+5. **Decision Intelligence**: Authoritative Trace generation, Replay, and Audit layers.
+6. **Sovereign Control**: Multi-mode execution (Standard/Restricted/Simulation/Audit).
+7. **Privacy & Security Vault**: Encryption, Tokenization, and Differential Privacy.
 
 ---
 
 ## III. Core Capabilities
 
+- **Auditable Decision Trace (ADT)**: Records the authoritative sequence from `evidence → signal → policy → decision → action`.
 - **Crystallization Loop**: Learns from every interaction via the Judge-Generator loop.
+- **Authoritative vs Explanatory Reasoning**: Distinguishes between the verifiable truth and human-readable summaries.
 - **Predictive**: Proactively anticipates risks and identifies behavior drift.
 - **Generative**: Simulates and ranks multiple decision options.
 - **Collaborative**: Shares insights and transfers intelligence across teams/domains.

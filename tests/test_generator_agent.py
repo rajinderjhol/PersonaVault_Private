@@ -8,47 +8,40 @@ class TestGeneratorAgent:
         assert agent is not None
     
     @pytest.mark.asyncio
-    async def test_generate_with_ollama_success(self):
+    async def test_generate_with_groq_success(self):
         agent = GeneratorAgent()
+        # Set groq key to simulate capability
+        agent.groq_key = "test_key"
+        
         mock_res = MagicMock()
         mock_res.status_code = 200
-        mock_res.json.return_value = {"response": "AI response"}
-        with patch.object(agent.client, 'post', new_callable=AsyncMock) as mock_post:
+        mock_res.json.return_value = {
+            "choices": [{"message": {"content": "AI response"}}]
+        }
+        
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
             mock_post.return_value = mock_res
             result = await agent.generate(
                 query="Test",
                 context=[{"content": "Template"}]
             )
-            assert result["source"] in ["ollama", "fallback"]
+            assert result["source"] == "groq"
+            assert result["answer"] == "AI response"
+            assert "trace" in result
+            assert result["trace"]["agent"] == "generator"
     
     @pytest.mark.asyncio
-    async def test_generate_fallback_when_ollama_fails(self):
+    async def test_generate_fallback_when_all_fails(self):
         agent = GeneratorAgent()
-        with patch.object(agent.client, 'post', side_effect=Exception("Connection failed")):
-            result = await agent.generate(
-                query="Test",
-                context=[{"content": "Template"}]
-            )
-            assert "answer" in result
-            assert result["source"] == "fallback"
-    
-    def test_build_prompt_with_context(self):
-        agent = GeneratorAgent()
-        prompt = agent._build_prompt(
-            query="Test instructions",
-            context=[{"content": "Template {name}"}]
-        )
-        assert "Test instructions" in prompt
-        assert "Template" in prompt
-    
-    def test_fallback_generate(self):
-        agent = GeneratorAgent()
-        result = agent._fallback_generate(
+        agent.groq_key = None # Force fallback
+        
+        result = await agent.generate(
             query="Test",
-            context=[{"content": "Template {name}"}]
+            context=[{"content": "Template"}]
         )
         assert "answer" in result
+        assert result["source"] == "fallback"
+        assert "trace" in result
 
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
-

@@ -1,0 +1,102 @@
+"""
+Auto-generated Policy Engine for {{ pack_name }}
+Generated on: {{ timestamp }}
+Source checksum: {{ source_checksum }}
+"""
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass, field
+
+@dataclass
+class PolicyResult:
+    """Result of policy evaluation"""
+    policy_name: str
+    decision_type: str
+    severity: str
+    autonomy_level: str
+    actions: List[Dict]
+    confidence: float
+    explanation: str
+    matched_conditions: List[str]
+
+class {{ pack_name_class }}PolicyEngine:
+    """Auto-generated policy engine"""
+    
+    def __init__(self):
+        self.policy_handlers = {
+            {% for policy in policies %}
+            '{{ policy.name }}': self._handle_{{ policy.name|replace(' ', '_')|lower }},
+            {% endfor %}
+        }
+    
+    def evaluate(self, signals: Dict[str, Any]) -> PolicyResult:
+        """
+        Evaluate signals against all policies
+        
+        Args:
+            signals: Normalized signals from SignalNormalizer
+            
+        Returns:
+            PolicyResult with decision and actions
+        """
+        # Check each policy in order of severity
+        {% set sorted_policies = policies|sort(attribute='decision.severity', reverse=True) %}
+        {% for policy in sorted_policies %}
+        result = self.policy_handlers['{{ policy.name }}'](signals)
+        if result:
+            return result
+        {% endfor %}
+        
+        # Default: Observe
+        return PolicyResult(
+            policy_name='default',
+            decision_type='observe',
+            severity='low',
+            autonomy_level='observe',
+            actions=[],
+            confidence=0.5,
+            explanation='No policy matched',
+            matched_conditions=[]
+        )
+    
+    {% for policy in policies %}
+    def _handle_{{ policy.name|replace(' ', '_')|lower }}(self, signals: Dict[str, Any]) -> Optional[PolicyResult]:
+        """
+        Policy: {{ policy.name }}
+        {% if policy.description %}
+        Description: {{ policy.description }}
+        {% endif %}
+        """
+        matched_conditions = []
+        
+        # Check required signals
+        {% for signal in policy.when.signals %}
+        if signals.get('{{ signal }}') is None:
+            return None
+        matched_conditions.append('{{ signal }} present')
+        {% endfor %}
+        
+        # Check conditions
+        {% for condition in policy.when.get('conditions', []) %}
+        # Condition: {{ condition }}
+        try:
+            # We use a simple eval here for the conditions defined in YAML
+            # WARNING: In production, use a safer expression parser
+            if not eval({{ condition | tojson }}, {"signals": signals, "signals.get": signals.get}):
+                return None
+            matched_conditions.append({{ condition | tojson }})
+        except Exception:
+            return None
+        {% endfor %}
+        
+        # Policy matched
+        return PolicyResult(
+            policy_name='{{ policy.name }}',
+            decision_type='{{ policy.decision.type }}',
+            severity='{{ policy.decision.severity }}',
+            autonomy_level='{{ policy.autonomy.level }}',
+            actions={{ policy.actions|tojson }},
+            confidence=signals.get('confidence', 0.5),
+            explanation="{{ policy.decision.get('reasoning', 'Policy matched') }}",
+            matched_conditions=matched_conditions
+        )
+    {% endfor %}

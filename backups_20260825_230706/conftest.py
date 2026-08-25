@@ -221,3 +221,4 @@ def valid_pack_file(valid_pack_data):
         yield f.name
     # Cleanup
     Path(f.name).unlink(missing_ok=True)
+

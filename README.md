@@ -35,26 +35,26 @@ A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better 
 
 ### 1. **Decision Timeline**
 Every decision is captured as a 5-step timeline:
-1. 🔍 **Detection** - Event identified
-2. 📋 **Policy Match** - Relevant policies applied
-3. 🤖 **AI Recommendation** - AI suggests action
-4. 👤 **Decision Made** - Human or AI decision
-5. 🔒 **Audit Logged** - Full audit record
+1. 🔍 **Perception** - Event identified and facts extracted
+2. 📋 **Policy Match** - Verifiable, deterministic policies applied
+3. 🤖 **AI Recommendation** - AI suggests action within policy bounds
+4. 👤 **Decision Made** - Human or AI decision with verifiable path
+5. 🔒 **Provenance Logged** - Full auditable trace with traceability
 
 ### 2. **Decision Replay**
-Replay any decision at any point in time to see how policies would have changed.
+Replay any decision at any point in time to see how versioned policies would have changed the outcome.
 
 ### 3. **Trend Analysis**
-Track confidence and decision patterns over time.
+Track confidence, policy hit rates, and decision patterns over time.
 
-### 4. **Cognitive Execution Trace (Explainability)**
-Every decision is explained with context, reasoning, and confidence scores.
+### 4. **Auditable Decision Trace (The "Decision Graph")**
+Every decision is recorded as a structured graph of evidence, signals, and matched rules. This is superior to "Chain of Thought" as it is bit-for-bit reproducible and machine-verifiable.
 
-### 5. **Audit Trail**
-Complete audit of every decision with full traceability.
+### 5. **Provenance Trail**
+Complete, machine-readable audit of every decision with full evidence-to-outcome mapping.
 
 ### 6. **Behaviour Packs**
-Domain-specific intelligence packs that can be installed for any industry.
+Declarative intelligence packs compiled into optimized runtime code for industry-specific governance.
 
 ---
 

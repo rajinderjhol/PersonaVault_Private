@@ -1,0 +1,16 @@
+"""
+Auto-generated Action Mapper for {{ pack_name }}
+Generated on: {{ timestamp }}
+"""
+from typing import Dict, Any, List
+
+class {{ pack_name_class }}ActionMapper:
+    """Map policy decisions to actionable tools"""
+    
+    def __init__(self):
+        pass
+        
+    def map_actions(self, policy_result) -> List[Dict]:
+        """Map policy result to list of actions"""
+        # For now, we just pass through the actions defined in the policy
+        return policy_result.actions

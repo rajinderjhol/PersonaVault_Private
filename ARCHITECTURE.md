@@ -33,17 +33,18 @@ The architecture is designed to convert ephemeral interactions into durable orga
    └──────────────────┘
 ```
 
-## Cognitive Execution Trace
+## Auditable Decision Trace (The "Decision Graph")
 
-PersonaVault utilizes **Cognitive Execution Traces** to provide an auditable explanation of system activity. This trace includes:
-*   Agents involved
-*   Evidence retrieved
-*   Tools invoked
-*   Policies applied
-*   Decisions/recommendations
-*   Validations performed
-*   Confidence and Governance checks
-*   Human interventions
+PersonaVault utilizes **Auditable Decision Traces** to provide a verifiable record of system activity. Unlike standard "Chain of Thought" (which is performative model-generated text), the Decision Trace is a reproducible record of the system's observable decision process.
+
+This trace includes the authoritative sequence:
+*   **Perception**: Structured extraction from raw input (with confidence).
+*   **Evidence**: Verifiable links to retrieved memories and documents.
+*   **Signals**: Canonical, typed facts extracted via the **Signal Normalizer**.
+*   **Policy**: The specific declarative rule matched by the **Policy Engine**.
+*   **Decision**: The deterministic resulting command or recommendation.
+*   **Autonomy**: The human-in-the-loop (HITL) gate or authorization path.
+*   **Action**: The observable tool invocation or system side-effect.
 
 ---
 
@@ -51,31 +52,20 @@ PersonaVault utilizes **Cognitive Execution Traces** to provide an auditable exp
 
 Instead of a simple "Cognitive State," PersonaVault maintains an **Enterprise Decision State** for every interaction:
 
+*   **Authoritative Trace**: The machine-readable truth of the execution path.
+*   **Explanatory Reason**: Human-readable natural language grounded in the trace.
 *   **Evidence State**: Sufficiency and relevance of retrieved memories.
-*   **Policy State**: Active policies applied (P-184, etc.).
+*   **Policy State**: Active behavior packs and specific policies applied.
 *   **Memory State**: Relevant retrieved patterns (Layer 1-3).
-*   **Model State**: The specific AI engine utilized.
-*   **Confidence/Uncertainty**: Numerical metrics.
-*   **Authorization**: Governance and permission status.
+*   **Model State**: The specific AI engine utilized for perception/generation.
+*   **Confidence/Uncertainty**: Numerical metrics derived from the execution.
 *   **Outcome State**: The final real-world result (e.g., successful/failed).
-
----
-
-## The Strategic Moat
-
-The moat is not the Three-Layer Memory architecture; the moat is the **accumulated crystallized state**. As an organization uses PersonaVault, the system learns:
-*   How the organization behaves.
-*   Which policies work in practice.
-*   Where humans override AI.
-*   Empirical outcome evidence.
-
-A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better engine with which to compound the organization's existing intelligence.
 
 ---
 
 ## Platform Architecture Visualization
 
-This diagram illustrates the core functional flow of the PersonaVault Decision Operating System, emphasizing the interaction between the Orchestrator, Swarm Agents, and Memory Layers.
+This diagram illustrates the core functional flow of the PersonaVault Decision Operating System, emphasizing the **Verifiable Execution Pipeline**.
 
 ```mermaid
 graph TD
@@ -85,12 +75,22 @@ graph TD
         Planner[Planner Agent]
         Retriever[Retrieval Agent]
         Generator[Generator Agent]
-        Reasoner[Reasoner Agent]
     end
     
-    Orchestrator -->|Delegates| Planner
-    Orchestrator -->|Delegates| Retriever
-    Orchestrator -->|Delegates| Generator
+    subgraph Compiler_Runtime
+        Compiler[Behavior Pack Compiler]
+        Executor[Pack Executor]
+        Normalizer[Signal Normalizer]
+        PolicyEngine[Policy Engine]
+    end
+
+    Orchestrator -->|Dominant Policy Check| Executor
+    Executor -->|Compile/Execute| Compiler
+    Executor -->|Extract Signals| Normalizer
+    Executor -->|Match Policies| PolicyEngine
+    
+    Orchestrator -->|Planning| Planner
+    Orchestrator -->|Memory Retrieval| Retriever
     
     subgraph Memory_Layer
         VectorRepo[(Vector Store - FAISS)]
@@ -102,10 +102,12 @@ graph TD
     Retriever -->|Search| SQL
     Retriever -->|Search| Graph
     
-    Orchestrator -->|Context Assembly| ContextAssembly[Context Assembly Service]
-    Retriever -->|Retrieved Memories| ContextAssembly
+    Orchestrator -->|Generate Trace| Trace[Auditable Decision Trace]
+    Orchestrator -->|Construct Answer| Generator
     
-    ContextAssembly -->|Formatted Prompt| Generator
+    Trace -->|Evidence Links| Memory_Layer
+    Trace -->|Policy ID| PolicyEngine
+    
     Generator -->|Enriched Prompt| LLM[LLM Provider - Groq/Ollama]
     LLM -->|Streaming Response| User
 ```

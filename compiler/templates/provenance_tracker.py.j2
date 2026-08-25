@@ -1,0 +1,53 @@
+"""
+Auto-generated Provenance Tracker for {{ pack_name }}
+Generated on: {{ timestamp }}
+"""
+from typing import Dict, Any, List
+from datetime import datetime
+
+class {{ pack_name_class }}ProvenanceTracker:
+    """Track evidence and decision lineage (Auditable Decision Trace)"""
+    
+    def __init__(self):
+        pass
+        
+    def track(self, raw_input: str, signals: Dict[str, Any], policy_result: Any, actions: List[Dict]) -> Dict[str, Any]:
+        """
+        Generate an Auditable Decision Trace.
+        This records the verifiable execution path from evidence to outcome.
+        """
+        return {
+            "decision_id": f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(raw_input) % 10000:04d}",
+            "timestamp": datetime.now().isoformat(),
+            "pack": {
+                "name": {{ pack_name | tojson }},
+                "version": "{{ version }}"
+            },
+            # Authoritative Execution Trace
+            "trace": {
+                "perception": {
+                    "source": "raw_input",
+                    "confidence": signals.get('confidence', 0.5)
+                },
+                "signals": [
+                    {
+                        "type": key,
+                        "value": signals[key]
+                    }
+                    for key in signals.keys()
+                    if key not in ['user_id', 'session_id', 'timestamp', 'confidence', 'raw_input']
+                ],
+                "policy": {
+                    "matched": policy_result.policy_name,
+                    "conditions": policy_result.matched_conditions
+                },
+                "decision": {
+                    "type": policy_result.decision_type,
+                    "severity": policy_result.severity,
+                    "autonomy_level": policy_result.autonomy_level
+                },
+                "actions": [a.get('action') for a in actions]
+            },
+            # Explanatory Reasoning (for humans)
+            "explanation": policy_result.explanation
+        }

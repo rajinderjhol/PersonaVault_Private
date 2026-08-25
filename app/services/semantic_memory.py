@@ -22,3 +22,13 @@ class SemanticMemory:
         except Exception as e:
             logger.warning(f"Semantic search failed: {e}")
             return []
+
+    async def get_patterns(self) -> List[SemanticPattern]:
+        """Retrieve all active semantic patterns"""
+        try:
+            stmt = select(SemanticPattern).where(SemanticPattern.is_active == True)
+            result = await self.db.execute(stmt)
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.error(f"Failed to get patterns: {e}")
+            return []

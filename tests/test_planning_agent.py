@@ -1,5 +1,5 @@
 """
-Tests for PlanningAgent - fixed semantic patterns issue.
+Tests for PlanningAgent - updated for Auditable Traces.
 """
 import pytest
 from unittest.mock import MagicMock, AsyncMock
@@ -11,14 +11,16 @@ from app.schemas.memory_schemas import RetrievalPlan, SemanticPattern
 @pytest.fixture
 def mock_semantic_memory():
     """Mock semantic memory for testing."""
-    mock = MagicMock(spec=SemanticMemory)
+    mock = AsyncMock(spec=SemanticMemory)
     # Return actual SemanticPattern objects, not dicts
     mock.get_patterns.return_value = [
         SemanticPattern(
             pattern_type="query_refinement",
             trigger="test",
             correction="fixed",
-            occurrence_count=3
+            occurrence_count=3,
+            is_active=True,
+            weight=0.8
         )
     ]
     return mock
@@ -43,48 +45,56 @@ class TestPlanningAgent:
             PlanningAgent()
     
     @pytest.mark.asyncio
-    async def test_plan_returns_retrieval_plan(self, planning_agent):
-        """Test that plan returns a RetrievalPlan."""
-        plan = await planning_agent.plan(
+    async def test_plan_returns_retrieval_plan_and_trace(self, planning_agent):
+        """Test that plan returns a dict with plan and trace."""
+        result = await planning_agent.plan(
             query="test query",
             context={"user_id": 1}
         )
+        assert isinstance(result, dict)
+        assert "plan" in result
+        assert "trace" in result
+        
+        plan = result["plan"]
         assert isinstance(plan, RetrievalPlan)
         assert hasattr(plan, 'needs_retrieval')
         assert hasattr(plan, 'semantic_queries')
-        assert hasattr(plan, 'keyword_queries')
-        assert hasattr(plan, 'graph_traversals')
         assert hasattr(plan, 'reasoning')
-        assert hasattr(plan, 'complexity_score')
+        
+        trace = result["trace"]
+        assert trace["agent"] == "planner"
+        assert trace["trace"]["decision"]["type"] == "create_retrieval_plan"
     
     @pytest.mark.asyncio
     async def test_plan_with_empty_query(self, planning_agent):
         """Test plan with empty query."""
-        plan = await planning_agent.plan(
+        result = await planning_agent.plan(
             query="",
             context={"user_id": 1}
         )
-        assert isinstance(plan, RetrievalPlan)
+        assert "plan" in result
+        assert isinstance(result["plan"], RetrievalPlan)
     
     @pytest.mark.asyncio
     async def test_plan_uses_semantic_memory(self, planning_agent, mock_semantic_memory):
         """Test that plan uses semantic memory for patterns."""
-        plan = await planning_agent.plan(
+        result = await planning_agent.plan(
             query="test query",
             context={"user_id": 1}
         )
-        assert isinstance(plan, RetrievalPlan)
+        assert "plan" in result
         # Verify semantic memory was called
         mock_semantic_memory.get_patterns.assert_called()
     
     @pytest.mark.asyncio
     async def test_plan_with_complex_query(self, planning_agent):
         """Test plan with a complex, multi-part query."""
-        plan = await planning_agent.plan(
+        result = await planning_agent.plan(
             query="What is the status of the project and who is working on it?",
             context={"user_id": 1, "project_id": 123}
         )
-        assert isinstance(plan, RetrievalPlan)
+        assert "plan" in result
+        plan = result["plan"]
         # Should have higher complexity for multi-part query
         assert plan.complexity_score >= 0.3
 

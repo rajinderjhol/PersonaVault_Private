@@ -161,7 +161,7 @@ async def lifespan(app: FastAPI):
     app.state.hitl_service = HITLService(SessionLocal)
     app.state.approval_service = ApprovalService(SessionLocal)
 
-    app.state.orchestrator = MultiAgentOrchestrator(db_session=SessionLocal, blackboard=app.state.blackboard, agents={
+    app.state.orchestrator = MultiAgentOrchestrator(db_session=SessionLocal, blackboard=app.state.blackboard, confidence_threshold=0.5, agents={
         "planner": app.state.planning_agent,
         "retriever": app.state.retrieval_agent,
         "reasoner": app.state.reasoner_agent,

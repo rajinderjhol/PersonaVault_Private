@@ -1,0 +1,58 @@
+# packs/source/legal_intelligence.yaml
+pack:
+  name: Legal Intelligence
+  domain: legal
+  version: 1.0.0
+  description: "Legal case tracking and compliance"
+
+entities:
+  legal_case:
+    pattern: "legal case \\$(?P<value>[\\d,]+)"
+    fields:
+      value: number
+      case_number: string
+      status: string
+      filed_date: date
+      description: string
+
+events:
+  case_filed:
+    fields:
+      case_number: string
+      filed_date: date
+      court: string
+
+policies:
+  - name: "High Value Case Review"
+    description: "Flag cases over $1M for executive review"
+    when:
+      signals: ["legal_case"]
+      conditions: ["signals.get('legal_case', {}).get('value', 0) > 1000000"]
+    decision:
+      type: "review_required"
+      severity: "high"
+      reasoning: "The value of this legal case ($signals.get('legal_case', {}).get('value')) exceeds the $1,000,000 executive review threshold."
+    actions:
+      - action: "notify_executive"
+        priority: "high"
+      - action: "schedule_review"
+        priority: "medium"
+    autonomy:
+      level: "recommend"
+    confidence_threshold: 0.7
+
+  - name: "Urgent Case Priority"
+    description: "Flag urgent cases for immediate attention"
+    when:
+      signals: ["legal_case"]
+      conditions: ["signals.get('legal_case', {}).get('status', '') == 'urgent'"]
+    decision:
+      type: "urgent_action"
+      severity: "critical"
+      reasoning: "Urgent case requires immediate attention"
+    actions:
+      - action: "immediate_review"
+        priority: "critical"
+    autonomy:
+      level: "approve"
+    confidence_threshold: 0.8

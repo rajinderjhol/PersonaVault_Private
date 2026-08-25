@@ -1,0 +1,97 @@
+"""
+Auto-generated Signal Normalizer for {{ pack_name }}
+Generated on: {{ timestamp }}
+Source checksum: {{ source_checksum }}
+"""
+import re
+from typing import Dict, Any, Optional
+from datetime import datetime
+
+class {{ pack_name_class }}SignalNormalizer:
+    """Normalize raw input to structured signals"""
+    
+    def __init__(self):
+        self.patterns = self._compile_patterns()
+    
+    def _compile_patterns(self) -> Dict[str, re.Pattern]:
+        """Compile regex patterns for entity extraction"""
+        return {
+            {% for entity_name, entity_def in entities.items() %}
+            '{{ entity_name }}': re.compile(r'{{ entity_def.get('pattern', '.*') }}'),
+            {% endfor %}
+        }
+    
+    def normalize(self, raw_input: str) -> Dict[str, Any]:
+        """
+        Normalize raw input into structured signals
+        
+        Args:
+            raw_input: Raw text or structured data
+            
+        Returns:
+            Dictionary of normalized signals
+        """
+        signals = {}
+        
+        {% for entity_name, entity_def in entities.items() %}
+        # Extract {{ entity_name }}
+        {{ entity_name }}_matches = self._extract_{{ entity_name }}(raw_input)
+        if {{ entity_name }}_matches:
+            signals['{{ entity_name }}'] = {{ entity_name }}_matches
+        {% endfor %}
+        
+        # Add raw input as fallback
+        signals['raw_input'] = raw_input
+        signals['timestamp'] = datetime.now().isoformat()
+        signals['confidence'] = self._calculate_confidence(signals)
+        
+        return signals
+    
+    {% for entity_name, entity_def in entities.items() %}
+    def _extract_{{ entity_name }}(self, raw_input: str) -> Optional[Dict]:
+        """Extract {{ entity_name }} from raw input"""
+        # Entity definition: {{ entity_def }}
+        match = self.patterns['{{ entity_name }}'].search(raw_input)
+        if not match:
+            return None
+        
+        result = {}
+        {% for field_name, field_type in entity_def.get('fields', {}).items() %}
+        try:
+            # Simple named group extraction if pattern has it
+            value = match.group('{{ field_name }}') if '{{ field_name }}' in match.groupdict() else None
+            if value:
+                {% if field_type == 'number' %}
+                # Clean numeric value (remove commas)
+                clean_val = value.replace(',', '')
+                result['{{ field_name }}'] = float(clean_val) if '.' in clean_val else int(clean_val)
+                {% elif field_type == 'boolean' %}
+                result['{{ field_name }}'] = value.lower() in ['true', 'yes', '1']
+                {% elif field_type == 'date' %}
+                result['{{ field_name }}'] = datetime.fromisoformat(value).isoformat()
+                {% else %}
+                result['{{ field_name }}'] = value
+                {% endif %}
+        except Exception:
+            # Fallback to group index if name not found
+            try:
+                # This is a bit of a hack since we don't know group indices
+                pass
+            except Exception:
+                pass
+        {% endfor %}
+        
+        return result
+    {% endfor %}
+    
+    def _calculate_confidence(self, signals: Dict[str, Any]) -> float:
+        """Calculate confidence score for extracted signals"""
+        # Base confidence
+        confidence = 0.5
+        
+        # Boost for each entity found
+        found_entities = [k for k, v in signals.items() if k != 'raw_input' and k != 'timestamp' and k != 'confidence' and v]
+        confidence += 0.1 * len(found_entities)
+        
+        # Cap at 1.0
+        return min(confidence, 1.0)
