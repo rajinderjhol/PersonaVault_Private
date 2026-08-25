@@ -1,0 +1,127 @@
+/* Trace Chat UI Styling */
+
+/* Decision Trace Sidebar */
+.trace-sidebar {
+    background: var(--bs-dark);
+    border-left: 2px solid var(--bs-border-color);
+    padding: 1rem;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+.trace-sidebar h6 {
+    color: var(--bs-info);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding-bottom: 0.5rem;
+}
+
+.trace-step {
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+}
+
+.trace-step.perception { border-left-color: #4CAF50; }
+.trace-step.signals { border-left-color: #2196F3; }
+.trace-step.policy { border-left-color: #FF9800; }
+.trace-step.decision { border-left-color: #9C27B0; }
+.trace-step.autonomy { border-left-color: #F44336; }
+
+.trace-step .step-label {
+    font-weight: 600;
+    color: var(--bs-light);
+}
+
+.trace-step .step-content {
+    color: var(--bs-secondary);
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Chat Message with Trace */
+.chat-message {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.chat-message.user-message {
+    background: rgba(13, 110, 253, 0.1);
+    margin-left: 2rem;
+}
+
+.chat-message.assistant-message {
+    background: rgba(255, 255, 255, 0.05);
+    margin-right: 2rem;
+}
+
+.toggle-trace-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.trace-collapse {
+    margin-top: 0.5rem;
+}
+
+.trace-collapse .card {
+    background: var(--bs-dark);
+    border-color: var(--bs-border-color);
+}
+
+.trace-collapse pre {
+    margin: 0;
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Verification Badge */
+.verification-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    margin-left: 0.5rem;
+}
+
+.verification-badge.verified {
+    background: #2e7d32;
+    color: #a5d6a7;
+}
+
+.verification-badge.pending {
+    background: #e65100;
+    color: #ffcc80;
+}
+
+/* Decision Graph Placeholder */
+.decision-graph-container {
+    min-height: 200px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+/* Loading Animation */
+.trace-loading {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--bs-secondary);
+    border-radius: 50%;
+    border-top-color: var(--bs-light);
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

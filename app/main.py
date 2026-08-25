@@ -29,6 +29,7 @@ from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
     robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion
 )
+from app.routes import decisions
 from app.api.v1.endpoints.ingestion import router as ingestion_router
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
@@ -422,6 +423,7 @@ app.include_router(chat_stream_router)
 app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
 app.include_router(mcp_tools_router)
+app.include_router(decisions.router)
 
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])

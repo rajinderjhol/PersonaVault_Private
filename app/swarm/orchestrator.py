@@ -12,6 +12,8 @@ from app.services.episodic_memory import EpisodicMemory
 from app.services.semantic_memory import SemanticMemory
 from app.utils.websocket import manager
 from runtime.pack_executor import PackExecutor
+from app.services.trace_service import get_trace_service, DecisionTrace
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class MultiAgentOrchestrator:
         self.agents = agents or {}
         self.working_memory = WorkingMemory()
         self.pack_executor = PackExecutor()  # ✅ Integrated Behavior Pack Compiler
+        self.trace_service = get_trace_service(db_session) # ✅ Integrated Trace Service
         logger.info(f"Agents initialized: {list(self.agents.keys())}")
 
         # Fallback to agents if available, otherwise initialize defaults
@@ -92,6 +95,7 @@ class MultiAgentOrchestrator:
         logger.info(f"Processing query: {query[:50]}...")
         
         all_traces = []
+        start_time = datetime.now()
         
         try:
             # Step 1: Get user ID
@@ -156,13 +160,32 @@ class MultiAgentOrchestrator:
             except Exception as e:
                 logger.debug(f"Failed to store in episodic memory: {e}")
             
+            # Store Trace
+            decision_id = f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(query) % 10000:04d}"
+            latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+            
+            trace_obj = DecisionTrace(
+                decision_id=decision_id,
+                timestamp=datetime.now().isoformat(),
+                user_id=user_id,
+                query=query,
+                response=response_text,
+                trace={"all_traces": all_traces},
+                explanation=pack_result["decision"].get("explanation", "Agent response generated"),
+                pack_name=pack_result["metadata"].get("pack", "unknown"),
+                pack_version=pack_result["metadata"].get("version", "1.0.0"),
+                latency_ms=latency_ms
+            )
+            self.trace_service.store_trace(trace_obj)
+            
             return {
                 "answer": response_text,
                 "confidence": confidence,
                 "traces": all_traces,
                 "decision": pack_result.get("decision"),
                 "autonomy": pack_result.get("autonomy"),
-                "source": generation.get("source", provider)
+                "source": generation.get("source", provider),
+                "decision_id": decision_id
             }
             
         except Exception as e:
@@ -197,7 +220,8 @@ class MultiAgentOrchestrator:
                 "traces": result.get("traces", []),
                 "decision": result.get("decision"),
                 "autonomy": result.get("autonomy"),
-                "confidence": result.get("confidence", 0.5)
+                "confidence": result.get("confidence", 0.5),
+                "decision_id": result.get("decision_id")
             }
         except Exception as e:
             logger.error(f"Error in process_query: {e}")
@@ -217,22 +241,25 @@ class MultiAgentOrchestrator:
     ):
         """Process query with streaming output and Auditable Traces"""
         
+        start_time = datetime.now()
+        
         try:
             logger.info(f"Streaming process for user {user_id}: {query[:50]}...")
             
             # Step 1: Policy Check
             yield {"type": "thought", "data": {"step": "🛡️", "label": "Checking policies...", "status": "active"}}
             pack_result = await self.pack_executor.process_with_best_pack(query, user_id)
-            yield {"type": "trace", "data": pack_result.get("trace")}
+            # pack_result already contains trace
             
             # Step 2: Memory retrieval
             memory_context = []
+            retrieval_trace = None
             if self.retriever:
                 try:
                     yield {"type": "thought", "data": {"step": "🔍", "label": "Searching memory...", "status": "active"}}
                     search_data = await self.retriever.search(query, user_id=user_id)
                     search_results = search_data.get("results", [])
-                    yield {"type": "trace", "data": search_data.get("trace")}
+                    retrieval_trace = search_data.get("trace")
                     
                     memory_context = [r.content for r in search_results]
                     
@@ -253,24 +280,52 @@ class MultiAgentOrchestrator:
                     full_response += chunk
                     yield {"type": "content", "data": chunk}
             
-            # Final trace from generator (since streaming doesn't return full trace easily, we simulate it)
+            # Final trace from generator
             gen_trace = self.generator.create_trace(
                 input_data=query,
                 explanation=f"Streamed response via {provider}",
                 confidence=0.8,
                 decision="stream_response"
             )
-            yield {"type": "trace", "data": gen_trace}
             
-            # Step 4: Complete
+            # Step 4: Complete and Store Trace
+            
+            # Aggregate traces
+            all_traces = [pack_result.get("trace"), retrieval_trace, gen_trace]
+            
+            decision_id = f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(query) % 10000:04d}"
+            latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+            
+            # Store in TraceService
+            trace_obj = DecisionTrace(
+                decision_id=decision_id,
+                timestamp=datetime.now().isoformat(),
+                user_id=user_id,
+                query=query,
+                response=full_response,
+                trace={"all_traces": all_traces},
+                explanation=pack_result["decision"].get("explanation", "Agent response generated"),
+                pack_name=pack_result["metadata"].get("pack", "unknown"),
+                pack_version=pack_result["metadata"].get("version", "1.0.0"),
+                latency_ms=latency_ms
+            )
+            
+            self.trace_service.store_trace(trace_obj)
+            
             self.agent_activity["generator"] = "idle"
             await self._broadcast_agent_status()
             
             yield {"type": "thought", "data": {"step": "✅", "label": "Complete!", "status": "complete"}}
-            yield {"type": "done", "data": {"message": "Generation complete", "decision": pack_result.get("decision")}}
+            yield {"type": "done", "data": {
+                "message": "Generation complete", 
+                "decision": pack_result.get("decision"),
+                "decision_id": decision_id
+            }}
             
         except Exception as e:
             logger.error(f"Stream error: {e}")
+            import traceback
+            traceback.print_exc()
             yield {"type": "error", "data": {"error": str(e)}}
 
 # Singleton instance
