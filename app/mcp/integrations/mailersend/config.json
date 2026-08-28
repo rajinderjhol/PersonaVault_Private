@@ -1,0 +1,1 @@
+{"id": "email", "name": "Email", "description": "Send emails via MailerSend", "icon": "📧", "category": "communication", "auth_type": "api_key", "auth_fields": ["api_key", "from_email", "from_name"], "tools": ["send_email", "list_emails"]}

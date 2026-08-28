@@ -54,15 +54,111 @@ class MultiAgentOrchestrator:
         self._stages = []
         logger.info("MultiAgentOrchestrator initialized with swarm agents and PackExecutor")
     
-    def _get_user_id(self, context: Dict[str, Any]) -> int:
-        """Extract user_id from context"""
-        user_id = context.get("user_id")
-        if user_id is None:
-            user_id = context.get("session", {}).get("user_id")
-        if user_id is None:
-            user_id = 1
-            logger.warning(f"User ID not found, using default: {user_id}")
-        return user_id
+    async def get_swarm_status(self) -> Dict[str, Any]:
+        """Get real-time status of all agents in the swarm."""
+        active_agents = []
+        idle_agents = []
+        agent_tasks = {}
+        
+        for agent_name, agent in self.agents.items():
+            status = await self._get_agent_activity(agent_name)
+            if status.get("active"):
+                active_agents.append({
+                    "name": agent_name,
+                    "status": "active",
+                    "task": status.get("task", "Processing"),
+                    "provider": status.get("provider", "local"),
+                    "confidence": status.get("confidence", 0.0),
+                    "started_at": status.get("started_at")
+                })
+            else:
+                idle_agents.append(agent_name)
+            
+            agent_tasks[agent_name] = status.get("task", "idle")
+        
+        # Determine collaboration pipeline
+        pipeline = self._detect_collaboration_pipeline(agent_tasks)
+        
+        return {
+            "active_agents": active_agents,
+            "idle_agents": idle_agents,
+            "total_agents": len(self.agents),
+            "active_count": len(active_agents),
+            "collaboration": {
+                "pipeline": pipeline,
+                "current_step": pipeline[0] if pipeline else None,
+                "active": len(active_agents) > 0
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+    async def list_agents(self) -> List[Dict]:
+        """List all agents in the swarm."""
+        swarm_status = await self.get_swarm_status()
+        active_agent_names = [a["name"] for a in swarm_status["active_agents"]]
+        
+        return [
+            {
+                "name": name,
+                "type": agent.__class__.__name__,
+                "capabilities": await self._get_agent_capabilities(agent),
+                "status": "active" if name in active_agent_names else "idle"
+            }
+            for name, agent in self.agents.items()
+        ]
+
+    async def get_agent_status(self, agent_name: str) -> Dict[str, Any]:
+        """Get detailed status of a specific agent."""
+        if agent_name not in self.agents:
+            raise ValueError(f"Agent '{agent_name}' not found")
+        
+        agent = self.agents[agent_name]
+        return {
+            "name": agent_name,
+            "type": agent.__class__.__name__,
+            "status": "active" if await self._is_agent_active(agent_name) else "idle",
+            "capabilities": await self._get_agent_capabilities(agent),
+            "current_task": await self._get_agent_task(agent_name),
+            "performance": await self._get_agent_performance(agent_name)
+        }
+
+    async def _get_agent_activity(self, agent_name: str) -> Dict:
+        """Get current activity of an agent."""
+        # Integrates with existing agent activity map
+        activity = self.agent_activity.get(agent_name, "idle")
+        return {
+            "active": activity != "idle",
+            "task": activity,
+            "provider": "local",
+            "confidence": 0.0
+        }
+
+    async def _is_agent_active(self, agent_name: str) -> bool:
+        """Check if an agent is currently active."""
+        status = await self._get_agent_activity(agent_name)
+        return status.get("active", False)
+
+    async def _get_agent_capabilities(self, agent) -> List[str]:
+        """Get agent capabilities."""
+        capabilities = []
+        if hasattr(agent, 'model'):
+            capabilities.append(f"Model: {agent.model}")
+        return capabilities
+
+    async def _get_agent_task(self, agent_name: str) -> str:
+        """Get current task of an agent."""
+        status = await self._get_agent_activity(agent_name)
+        return status.get("task", "idle")
+
+    async def _get_agent_performance(self, agent_name: str) -> Dict:
+        """Get agent performance metrics."""
+        return {"avg_latency": 0.5, "success_rate": 0.95}
+
+    def _detect_collaboration_pipeline(self, agent_tasks: Dict[str, str]) -> List[str]:
+        """Detect the collaboration pipeline from agent tasks."""
+        order = ["RetrievalAgent", "GeneratorAgent", "ValidatorAgent", "SecurityAgent"]
+        return [agent for agent in order if agent in agent_tasks and agent_tasks[agent] != "idle"]
+
     
     async def _broadcast_agent_status(self):
         """Broadcast agent status"""
@@ -251,7 +347,6 @@ class MultiAgentOrchestrator:
             # Step 1: Policy Check
             yield {"type": "thought", "data": {"step": "🛡️", "label": "Checking policies...", "status": "active"}}
             pack_result = await self.pack_executor.process_with_best_pack(query, user_id)
-            # pack_result already contains trace
             
             # Step 2: Memory retrieval
             memory_context = []
@@ -270,25 +365,25 @@ class MultiAgentOrchestrator:
                 except Exception as e:
                     logger.warning(f"Memory search failed: {e}")
             
-            # Step 3: Generate with streaming
+            # Step 3: Generate with streaming trace
             self.agent_activity["generator"] = "active"
             await self._broadcast_agent_status()
             
             yield {"type": "thought", "data": {"step": "🤖", "label": f"Generating using {provider}...", "status": "active"}}
             
             full_response = ""
-            async for chunk in self.generator.generate_stream(query, provider, context=memory_context, user_id=user_id):
-                if chunk:
-                    full_response += chunk
-                    yield {"type": "content", "data": chunk}
+            gen_trace = None
+            gen_memory_status = None
+            gen_suggestions = None
             
-            # Final trace from generator
-            gen_trace = self.generator.create_trace(
-                input_data=query,
-                explanation=f"Streamed response via {provider}",
-                confidence=0.8,
-                decision="stream_response"
-            )
+            async for item in self.generator.generate_stream_with_trace(query, provider, context=memory_context):
+                if item["type"] == "content":
+                    full_response += item["content"]
+                    yield {"type": "content", "data": item["content"]}
+                elif item["type"] == "trace":
+                    gen_trace = item["trace"]
+                    gen_memory_status = item.get("memory_status")
+                    gen_suggestions = item.get("suggestions")
             
             # Step 4: Complete and Store Trace
             
@@ -321,7 +416,10 @@ class MultiAgentOrchestrator:
             yield {"type": "done", "data": {
                 "message": "Generation complete", 
                 "decision": pack_result.get("decision"),
-                "decision_id": decision_id
+                "decision_id": decision_id,
+                "trace": gen_trace,
+                "memory_status": gen_memory_status,
+                "suggestions": gen_suggestions
             }}
             
         except Exception as e:

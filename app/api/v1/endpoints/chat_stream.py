@@ -60,8 +60,8 @@ async def stream_chat(
                     yield f"event: error\ndata: {json.dumps({'error': event_data})}\n\n"
                 
                 elif event_type == "done":
-                    # Send done event
-                    yield f"event: done\ndata: {json.dumps({'message': 'Generation complete'})}\n\n"
+                    # Send done event with trace, memory, and suggestions
+                    yield f"data: {json.dumps({'type': 'done', 'data': event_data})}\n\n"
                 
                 await asyncio.sleep(0.001)
                 

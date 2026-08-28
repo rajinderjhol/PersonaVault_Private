@@ -1,0 +1,1 @@
+{"id": "discord", "name": "Discord", "description": "View your Discord profile and connected servers", "icon": "💬", "category": "communication", "auth_type": "api_key", "auth_fields": ["bot_token"], "tools": ["send_message", "get_status"]}

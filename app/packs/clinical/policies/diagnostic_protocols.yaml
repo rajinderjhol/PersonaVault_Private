@@ -1,0 +1,48 @@
+name: Diagnostic Protocols
+version: 1.0.0
+domain: clinical
+description: "Evidence-based diagnostic protocols"
+
+protocols:
+  - name: "Triage Assessment"
+    id: DGN-001
+    steps:
+      - "Airway assessment"
+      - "Breathing assessment"
+      - "Circulation assessment"
+      - "Disability assessment"
+      - "Exposure assessment"
+    
+  - name: "Differential Diagnosis"
+    id: DGN-002
+    steps:
+      - "Symptom analysis"
+      - "Risk factor identification"
+      - "Possible conditions list"
+      - "Evidence weighting"
+      - "Most likely diagnosis"
+    
+  - name: "Treatment Planning"
+    id: DGN-003
+    steps:
+      - "Diagnosis confirmation"
+      - "Treatment options evaluation"
+      - "Evidence-based selection"
+      - "Patient factors consideration"
+      - "Plan documentation"
+
+guidelines:
+  - source: "National Institutes of Health"
+    url: "https://www.nih.gov/guidelines"
+    evidence_level: "A"
+    last_updated: "2026-01-15"
+    
+  - source: "World Health Organization"
+    url: "https://www.who.int/guidelines"
+    evidence_level: "A"
+    last_updated: "2026-01-15"
+    
+  - source: "American Medical Association"
+    url: "https://www.ama-assn.org/guidelines"
+    evidence_level: "A"
+    last_updated: "2026-01-15"

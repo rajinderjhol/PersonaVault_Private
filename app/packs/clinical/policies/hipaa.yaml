@@ -1,0 +1,43 @@
+name: HIPAA Compliance
+version: 1.0.0
+domain: clinical
+description: "HIPAA compliance rules for clinical reasoning"
+
+rules:
+  - id: HIPAA-001
+    name: "PHI Redaction"
+    description: "PHI must be redacted or anonymized"
+    severity: critical
+    if: "contains_phi"
+    then: "redact_and_anonymize"
+    enforcement: mandatory
+    
+  - id: HIPAA-002
+    name: "Clinical Disclaimer"
+    description: "Must include clinical decision support disclaimer"
+    severity: medium
+    if: "contains_clinical_advice"
+    then: "include_disclaimer"
+    enforcement: mandatory
+    
+  - id: HIPAA-003
+    name: "Audit Trail"
+    description: "All clinical decisions must have audit trail"
+    severity: critical
+    if: "clinical_decision"
+    then: "generate_audit_trail"
+    enforcement: mandatory
+    
+  - id: HIPAA-004
+    name: "Data Sovereignty"
+    description: "Clinical data must stay within jurisdiction"
+    severity: critical
+    if: "contains_patient_data"
+    then: "ensure_data_sovereignty"
+    enforcement: mandatory
+
+compliance_requirements:
+  - "Patient data must be encrypted at rest and in transit"
+  - "All access to clinical data must be logged"
+  - "Data retention policies must be enforced"
+  - "Breach notification procedures must be in place"

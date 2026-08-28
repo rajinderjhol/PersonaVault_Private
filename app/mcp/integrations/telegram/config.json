@@ -1,0 +1,1 @@
+{"id": "telegram", "name": "Telegram", "description": "Chat with PersonaVault on Telegram", "icon": "💬", "category": "communication", "auth_type": "api_key", "auth_fields": ["bot_token", "chat_id"], "tools": ["send_message", "get_status"]}

@@ -1,0 +1,1 @@
+{"id": "twilio", "name": "SMS Messaging", "description": "Send SMS messages via Twilio", "icon": "📱", "category": "communication", "auth_type": "api_key", "auth_fields": ["account_sid", "auth_token", "from_number"], "tools": ["send_sms", "get_status"]}

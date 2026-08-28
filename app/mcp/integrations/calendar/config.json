@@ -1,0 +1,1 @@
+{"id": "calendar", "name": "Google Calendar", "description": "View, create, and manage calendar events", "icon": "📅", "category": "productivity", "auth_type": "oauth2", "auth_fields": ["client_id", "client_secret", "refresh_token"], "tools": ["list_events", "create_event"]}

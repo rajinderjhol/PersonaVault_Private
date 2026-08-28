@@ -1,0 +1,22 @@
+name: clinical
+version: 1.0.0
+domain: healthcare
+description: "Clinical decision support with HIPAA-compliant reasoning"
+
+agents:
+  - class: ClinicalReasoningAgent
+    model: frontier
+    fallback: ollama/clinical-qwen
+    
+  - class: ClinicalValidatorAgent
+    model: local
+    fallback: local
+
+crystallized:
+  - source: evidence_based_medicine
+    file: crystallized/diagnosis_patterns.json
+
+compiler:
+  target: airgap
+  optimization: high
+  signing: required

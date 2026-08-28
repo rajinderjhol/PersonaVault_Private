@@ -1,0 +1,154 @@
+# {{ config.name }} Runtime v{{ config.version }}
+# Domain: {{ config.domain }}
+# Compiled: {{ timestamp }}
+# Target: {{ target }}
+# Pattern Count: {{ pattern_count }}
+# Agent Count: {{ agent_count }}
+# Policy Count: {{ policy_count }}
+#
+# This runtime is AUTO-GENERATED. Do not edit manually.
+# To modify, update the source DIU and recompile.
+
+import asyncio
+import json
+import logging
+from typing import Dict, Any, Optional, List
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+CONFIG = {{ config | tojson }}
+
+# ============================================================
+# POLICIES (Compiled from declarative YAML)
+# ============================================================
+
+POLICIES = {{ policies | tojson }}
+
+# ============================================================
+# CRYSTALLIZED PATTERNS (Pre-loaded from JSON)
+# ============================================================
+
+CRYSTALLIZED_PATTERNS = {{ patterns | tojson }}
+
+# ============================================================
+# AGENTS (Bundled code)
+# ============================================================
+
+{% for agent_name, agent_data in agents.items() %}
+# Agent: {{ agent_name }}
+# Model: {{ agent_data.config.model }}
+# Source: {{ agent_data.config.class }}.py
+{{ agent_data.code }}
+
+# Agent instance wrapper
+_{{ agent_name }}_instance = None
+
+def get_{{ agent_name }}():
+    global _{{ agent_name }}_instance
+    if _{{ agent_name }}_instance is None:
+        _{{ agent_name }}_instance = {{ agent_data.config.class }}()
+    return _{{ agent_name }}_instance
+
+{% endfor %}
+
+# ============================================================
+# RUNTIME EXECUTOR
+# ============================================================
+
+class {{ config.name | title }}Runtime:
+    """
+    Runtime executor for the {{ config.name }} Domain Intelligence Unit.
+    """
+    
+    def __init__(self):
+        self.config = CONFIG
+        self.policies = POLICIES
+        self.patterns = CRYSTALLIZED_PATTERNS
+        self.name = "{{ config.name }}"
+        self.version = "{{ config.version }}"
+        self.target = "{{ target }}"
+        self.logger = logging.getLogger(f"runtime.{{ config.name }}")
+        
+        # Initialize agents
+        self.agents = {}
+        {% for agent_name in agents.keys() %}
+        self.agents["{{ agent_name }}"] = get_{{ agent_name }}()
+        {% endfor %}
+    
+    async def execute(self, query: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Execute the DIU on a query.
+        
+        Fast Path: Check crystallized patterns first (Ice Layer)
+        Reasoning Path: Use agent swarm if no pattern found
+        """
+        context = context or {}
+        
+        # Step 1: Check crystallized patterns (FAST PATH)
+        matched_pattern = await self._match_crystallized_pattern(query)
+        if matched_pattern and matched_pattern.get("confidence", 0) > 0.8:
+            self.logger.info(f"✅ Crystallized pattern hit (confidence: {matched_pattern['confidence']})")
+            return {
+                "response": matched_pattern.get("response"),
+                "source": "crystallized",
+                "confidence": matched_pattern["confidence"],
+                "pattern_id": matched_pattern.get("id"),
+                "latency": 0.005  # 5ms
+            }
+        
+        # Step 2: Reasoning Path - Agent Swarm
+        self.logger.info("🧠 No crystallized pattern found, entering reasoning path")
+        
+        # Get reasoning agent
+        reasoning_agent = self.agents.get("ClinicalReasoningAgent")
+        
+        if not reasoning_agent:
+            return {
+                "response": "No reasoning agent available",
+                "source": "error",
+                "confidence": 0.0,
+                "error": "NO_AGENT_AVAILABLE"
+            }
+        
+        # Step 3: Generate reasoning
+        try:
+            # Step 4: Validate with validator agent
+            # (Validation logic simplified for PoC)
+            
+            # Simplified execution
+            response_text = "Clinical reasoning response (Mock)"
+            confidence = 0.9
+            
+            return {
+                "response": response_text,
+                "source": "reasoning",
+                "confidence": confidence,
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Reasoning failed: {e}")
+            return {
+                "response": f"Error during reasoning: {str(e)}",
+                "source": "error",
+                "confidence": 0.0,
+                "error": str(e)
+            }
+    
+    async def _match_crystallized_pattern(self, query: str) -> Optional[Dict]:
+        """Find the best matching crystallized pattern."""
+        return None
+    
+    def get_statistics(self) -> Dict:
+        return {
+            "name": self.name,
+            "version": self.version,
+            "target": self.target,
+            "patterns_loaded": len(self.patterns),
+            "agents_available": list(self.agents.keys()),
+            "policies_loaded": list(self.policies.keys())
+        }

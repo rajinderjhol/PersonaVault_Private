@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 from sqlalchemy.future import select
 from sqlalchemy import delete
 from app.models import SemanticPattern as SemanticPatternModel
@@ -19,6 +19,60 @@ class SQLSemanticPatternRepository(SQLBaseRepository, ISemanticPatternRepository
             return result.scalars().all()
         finally:
             await self._close_session(session)
+
+    async def list_patterns(self, limit: int, offset: int, domain: Optional[str] = None, min_confidence: float = 0.0, search: Optional[str] = None, sort_by: str = "weight", sort_order: str = "desc") -> List[SemanticPatternModel]:
+        session = await self._get_session()
+        try:
+            stmt = select(SemanticPatternModel)
+            
+            if domain:
+                stmt = stmt.where(SemanticPatternModel.pattern_type == domain)
+            if min_confidence > 0:
+                stmt = stmt.where(SemanticPatternModel.weight >= min_confidence)
+            if search:
+                stmt = stmt.where(SemanticPatternModel.trigger.contains(search))
+            
+            # Apply sorting
+            order_by = getattr(SemanticPatternModel, sort_by)
+            if sort_order == "desc":
+                stmt = stmt.order_by(order_by.desc())
+            else:
+                stmt = stmt.order_by(order_by.asc())
+                
+            stmt = stmt.limit(limit).offset(offset)
+            
+            result = await session.execute(stmt)
+            return result.scalars().all()
+        finally:
+            await self._close_session(session)
+
+    async def count_patterns(self, domain: Optional[str] = None, min_confidence: float = 0.0, search: Optional[str] = None) -> int:
+        session = await self._get_session()
+        try:
+            from sqlalchemy import func
+            stmt = select(func.count(SemanticPatternModel.id))
+            
+            if domain:
+                stmt = stmt.where(SemanticPatternModel.pattern_type == domain)
+            if min_confidence > 0:
+                stmt = stmt.where(SemanticPatternModel.weight >= min_confidence)
+            if search:
+                stmt = stmt.where(SemanticPatternModel.trigger.contains(search))
+                
+            result = await session.execute(stmt)
+            return result.scalar_one()
+        finally:
+            await self._close_session(session)
+
+    async def get_by_id(self, pattern_id: int) -> Optional[SemanticPatternModel]:
+        session = await self._get_session()
+        try:
+            stmt = select(SemanticPatternModel).where(SemanticPatternModel.id == pattern_id)
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+        finally:
+            await self._close_session(session)
+
 
     async def add(self, pattern: Any) -> SemanticPatternModel:
         session = await self._get_session()

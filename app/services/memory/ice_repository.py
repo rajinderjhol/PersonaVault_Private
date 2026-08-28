@@ -66,3 +66,19 @@ class IceMemoryRepository:
         except Exception as e:
             logger.error(f"IceMemoryRepository Search Error: {e}")
             return []
+
+    async def list_patterns(self, limit=50, offset=0, domain=None, min_confidence=0.0, search=None, sort_by="weight", sort_order="desc") -> List[Dict[str, Any]]:
+        """List crystallized patterns."""
+        patterns = await self.sql_repo.list_patterns(limit, offset, domain, min_confidence, search, sort_by, sort_order)
+        return [p.__dict__ for p in patterns]
+    
+    async def count_patterns(self, domain=None, min_confidence=0.0, search=None) -> int:
+        """Count crystallized patterns."""
+        return await self.sql_repo.count_patterns(domain, min_confidence, search)
+    
+    async def get_pattern(self, pattern_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific crystallized pattern."""
+        pattern = await self.sql_repo.get_by_id(int(pattern_id))
+        return pattern.__dict__ if pattern else None
+
+

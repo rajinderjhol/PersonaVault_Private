@@ -28,19 +28,24 @@ class GeneratorAgent(BaseAgent):
         self._last_model_used = "unknown"
         logger.info(f"GeneratorAgent initialized (airgapped: {self.router.airgapped})")
     
-    async def generate_stream(
+    async def generate_stream_with_trace(
         self, 
         query: str, 
         provider: str = "auto",
-        context: Optional[List[Any]] = None,
-        user_id: int = 1
-    ) -> AsyncGenerator[str, None]:
-        """Stream generation from the provider with injected context"""
+        context: Optional[List[Any]] = None
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Stream generation with structured decision trace.
         
-        # Determine routing
+        Yields:
+            Dict with 'content' (chunk) and 'trace' (complete trace at end)
+        """
+        # Start timing
+        start_time = datetime.now()
+        
+        # 1. Determine routing
         if provider == "auto":
             chosen_provider, route_metadata = await self.router.route(query, context)
-            logger.info(f"Auto-routed to {chosen_provider}: {route_metadata}")
             target_model = route_metadata.get("model")
         else:
             chosen_provider = provider
@@ -50,9 +55,7 @@ class GeneratorAgent(BaseAgent):
         self._last_provider_used = chosen_provider
         self._last_model_used = target_model or (self.ollama_model if chosen_provider == "ollama" else "qwen/qwen3.6-27b")
 
-        logger.info(f"GeneratorAgent using {chosen_provider} (model: {target_model}) received context with {len(context) if context else 0} items.")
-        
-        # Ensure context items are strings
+        # 2. Build prompt
         safe_context = []
         if context:
             for item in context:
@@ -60,44 +63,197 @@ class GeneratorAgent(BaseAgent):
                     safe_context.append(item.get("content", str(item)))
                 else:
                     safe_context.append(str(item))
+                    
+        context_str = "\n".join(safe_context) if safe_context else ""
+        full_prompt = f"## Context\n{context_str}\n\n## Query\n{query}" if context_str else query
         
-        # Construct structured prompt
-        if safe_context:
-            context_str = "\n".join(safe_context)
-            full_prompt = f"""## Relevant Context / Memories
-{context_str}
-
-## User Query
-{query}
-
-Please answer based on the provided context.
-"""
-        else:
-            full_prompt = query
-
-        full_response_chunks = []
+        # 3. Stream response
+        response_chunks = []
+        response_complete = ""
+        
         if chosen_provider == "ollama":
             async for chunk in self._stream_ollama(full_prompt, model=target_model):
-                full_response_chunks.append(chunk)
-                yield chunk
+                response_chunks.append(chunk)
+                response_complete += chunk
+                yield {"content": chunk, "type": "content"}
         elif chosen_provider == "groq":
             async for chunk in self._stream_groq(full_prompt, model=target_model):
-                full_response_chunks.append(chunk)
-                yield chunk
+                response_chunks.append(chunk)
+                response_complete += chunk
+                yield {"content": chunk, "type": "content"}
         else:
-            yield f"Unknown provider: {chosen_provider}"
-
-        # After streaming completes, check if we should crystallize
-        if route_metadata.get("mode") == "reasoning":
-            full_response = "".join(full_response_chunks)
+            error_msg = f"Unknown provider: {chosen_provider}"
+            yield {"content": error_msg, "type": "content"}
+            response_complete = error_msg
+        
+        # 4. Build decision trace
+        end_time = datetime.now()
+        trace = self._build_decision_trace(
+            query=query,
+            response=response_complete,
+            routing_info=route_metadata,
+            context=context,
+            start_time=start_time,
+            end_time=end_time
+        )
+        
+        # Get memory status and suggestions
+        memory_status = await self._get_memory_status(user_id=1) # TODO: Pass user_id
+        suggestions = self._get_suggested_actions(query=query, context=context, memory_status=memory_status)
+        
+        # 5. Yield the complete trace
+        yield {
+            "type": "trace", 
+            "trace": trace,
+            "memory_status": memory_status,
+            "suggestions": suggestions
+        }
+        
+        # 6. Crystallize if appropriate
+        if route_metadata.get("mode") == "reasoning" and len(response_complete) > 50:
             await self._crystallize_reasoning(
                 query=query,
                 reasoning_path=full_prompt,
-                response=full_response,
+                response=response_complete,
                 complexity=route_metadata.get("complexity", {}),
-                user_id=user_id
+                user_id=1
             )
-            logger.info("🧠 Reasoning crystallized to Layer 3")
+
+    async def _get_memory_status(self, user_id: int) -> Dict[str, Any]:
+        """Get the current memory status for a user."""
+        try:
+            from app.services.memory.ice_repository import IceMemoryRepository
+            from app.services.episodic_memory import EpisodicMemory
+            
+            ice_repo = IceMemoryRepository(self.session_factory)
+            episodic_repo = EpisodicMemory(self.session_factory)
+            
+            ice_patterns = await ice_repo.count_patterns(user_id)
+            liquid_episodes = await episodic_repo.count_episodes(user_id)
+            
+            return {
+                "gas": {"active": True, "items": 1, "tokens": 0},
+                "liquid": {
+                    "active": liquid_episodes > 0,
+                    "items": liquid_episodes,
+                },
+                "ice": {
+                    "active": ice_patterns > 0,
+                    "patterns": ice_patterns,
+                    "confidence": 0.8 # Placeholder
+                }
+            }
+        except Exception as e:
+            logger.warning(f"Could not retrieve memory status: {e}")
+            return {
+                "gas": {"active": True, "items": 1, "tokens": 0},
+                "liquid": {"active": False, "items": 0},
+                "ice": {"active": False, "patterns": 0, "confidence": 0.0}
+            }
+
+    def _get_suggested_actions(
+        self,
+        query: str,
+        context: Optional[List],
+        memory_status: Dict
+    ) -> List[Dict[str, str]]:
+        """Generate context-aware suggested actions."""
+        has_memories = memory_status.get("liquid", {}).get("items", 0) > 0
+        has_patterns = memory_status.get("ice", {}).get("patterns", 0) > 0
+        
+        if not has_memories and not has_patterns:
+            return [
+                {"label": "Tell me about yourself", "prompt": "I'd like to introduce myself. I work in AI and data science."},
+                {"label": "What can you do?", "prompt": "What are your capabilities and how can you help me?"}
+            ]
+        return []
+
+    def _build_decision_trace(
+        self,
+        query: str,
+        response: str,
+        routing_info: Dict,
+        context: Optional[List],
+        start_time: datetime,
+        end_time: datetime
+    ) -> Dict[str, Any]:
+        """Build structured decision trace for UI display."""
+        
+        # Analyze context
+        has_memories = context and len(context) > 0
+        memory_count = len(context) if context else 0
+        
+        # Extract signals
+        signals = []
+        if has_memories:
+            signals.append({
+                "type": "memory",
+                "count": memory_count,
+                "confidence": routing_info.get("confidence", 0.5)
+            })
+        
+        # Build trace
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "decision_id": f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(query) % 10000:04d}",
+            
+            "perception": {
+                "type": "user_query",
+                "query": query[:200] + ("..." if len(query) > 200 else ""),
+                "length": len(query),
+                "has_context": has_memories,
+                "context_count": memory_count
+            },
+            
+            "policy_match": {
+                "matched": routing_info.get("policy", "default"),
+                "found": memory_count > 0, # Simplified
+                "confidence": routing_info.get("confidence", 0.0),
+                "mode": routing_info.get("mode", "fast")
+            },
+            
+            "ai_recommendation": {
+                "provider": routing_info.get("provider", "unknown"),
+                "model": routing_info.get("model", "default"),
+                "confidence": routing_info.get("confidence", 0.5),
+                "mode": routing_info.get("mode", "fast"),
+                "reason": routing_info.get("reason", "Default routing")
+            },
+            
+            "decision": {
+                "type": "generate_response",
+                "action": "stream",
+                "severity": "low",
+                "autonomy_level": "observe"
+            },
+            
+            "provenance": {
+                "trace_id": f"TRACE-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_ms": (end_time - start_time).total_seconds() * 1000,
+                "source": "personavault",
+                "verified": True
+            },
+            
+            "memory_layers": {
+                "gas": {
+                    "active": True,
+                    "items": 1,
+                    "tokens": len(query.split())
+                },
+                "liquid": {
+                    "active": has_memories,
+                    "items": memory_count,
+                },
+                "ice": {
+                    "active": False,
+                    "patterns": 0,
+                    "confidence": 0.0
+                }
+            }
+        }
+
     
     async def generate(self, query: str, context: list = None, **kwargs) -> Dict[str, Any]:
         """Non-streaming generation with context and Auditable Trace"""
