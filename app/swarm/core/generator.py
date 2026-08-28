@@ -128,3 +128,78 @@ Please answer based on the provided context.
             "confidence": confidence,
             "trace": trace
         }
+
+    async def _stream_groq(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Internal helper for streaming from Groq API"""
+        if not self.groq_key:
+            yield "[Error: Groq API Key not found]"
+            return
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.groq_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "qwen/qwen3.6-27b",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.7,
+                        "max_tokens": 1024,
+                        "stream": True
+                    }
+                ) as response:
+                    if response.status_code != 200:
+                        yield f"[Error: Groq API returned {response.status_code}]"
+                        return
+
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                data = json.loads(data_str)
+                                chunk = data.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                if chunk:
+                                    yield chunk
+                            except json.JSONDecodeError:
+                                continue
+        except Exception as e:
+            logger.error(f"Groq stream failed: {e}")
+            yield f"[Error: {str(e)}]"
+
+    async def _stream_ollama(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Internal helper for streaming from Ollama local API"""
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.ollama_url}/api/generate",
+                    json={
+                        "model": self.ollama_model,
+                        "prompt": prompt,
+                        "stream": True
+                    }
+                ) as response:
+                    if response.status_code != 200:
+                        yield f"[Error: Ollama API returned {response.status_code}]"
+                        return
+
+                    async for line in response.aiter_lines():
+                        if line:
+                            try:
+                                data = json.loads(line)
+                                chunk = data.get("response", "")
+                                if chunk:
+                                    yield chunk
+                                if data.get("done"):
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+        except Exception as e:
+            logger.error(f"Ollama stream failed: {e}")
+            yield f"[Error: {str(e)}]"

@@ -43,5 +43,64 @@ class TestGeneratorAgent:
         assert result["source"] == "fallback"
         assert "trace" in result
 
+    @pytest.mark.asyncio
+    async def test_generate_stream_groq_success(self):
+        agent = GeneratorAgent()
+        agent.groq_key = "test_key"
+        
+        # Mock SSE response for Groq
+        mock_response_lines = [
+            'data: {"choices": [{"delta": {"content": "Hello"}}]}',
+            'data: {"choices": [{"delta": {"content": " world"}}]}',
+            'data: [DONE]'
+        ]
+        
+        async def mock_aiter_lines():
+            for line in mock_response_lines:
+                yield line
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.aiter_lines = mock_aiter_lines
+        
+        mock_stream_ctx = MagicMock()
+        mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_response)
+        
+        with patch("httpx.AsyncClient.stream", return_value=mock_stream_ctx):
+            chunks = []
+            async for chunk in agent.generate_stream(query="Hi", provider="groq"):
+                chunks.append(chunk)
+            
+            assert "".join(chunks) == "Hello world"
+
+    @pytest.mark.asyncio
+    async def test_generate_stream_ollama_success(self):
+        agent = GeneratorAgent()
+        
+        # Mock Ollama streaming response
+        mock_response_lines = [
+            '{"response": "Ollama", "done": false}',
+            '{"response": " says", "done": false}',
+            '{"response": " hi", "done": true}'
+        ]
+        
+        async def mock_aiter_lines():
+            for line in mock_response_lines:
+                yield line
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.aiter_lines = mock_aiter_lines
+        
+        mock_stream_ctx = MagicMock()
+        mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_response)
+        
+        with patch("httpx.AsyncClient.stream", return_value=mock_stream_ctx):
+            chunks = []
+            async for chunk in agent.generate_stream(query="Hi", provider="ollama"):
+                chunks.append(chunk)
+            
+            assert "".join(chunks) == "Ollama says hi"
+
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
