@@ -117,7 +117,7 @@ class MultiAgentOrchestrator:
                     search_data = await self.retriever.search(query, user_id, limit=5)
                     search_results = search_data.get("results", [])
                     all_traces.append(search_data.get("trace"))
-                    memory_context = [r.content for r in search_results]
+                    memory_context = [r.dict() for r in search_results]
                     logger.info(f"Retrieved {len(memory_context)} memory items")
                 except Exception as e:
                     logger.warning(f"Memory search failed: {e}")
@@ -135,7 +135,9 @@ class MultiAgentOrchestrator:
             # Call the generator
             generation = await self.generator.generate(
                 query=query,
-                context=memory_context
+                context=memory_context,
+                provider=provider,
+                user_id=user_id
             )
             
             all_traces.append(generation.get("trace"))
@@ -237,7 +239,7 @@ class MultiAgentOrchestrator:
         query: str, 
         user_id: int,
         session_id: int = None,
-        provider: str = "groq"
+        provider: str = "auto"
     ):
         """Process query with streaming output and Auditable Traces"""
         
@@ -261,7 +263,7 @@ class MultiAgentOrchestrator:
                     search_results = search_data.get("results", [])
                     retrieval_trace = search_data.get("trace")
                     
-                    memory_context = [r.content for r in search_results]
+                    memory_context = [r.dict() for r in search_results]
                     
                     if pack_result["decision"]["policy"] != "no_match":
                         memory_context.append(f"[POLICY: {pack_result['decision']['policy']}] Decision: {pack_result['decision']['explanation']}")
@@ -275,7 +277,7 @@ class MultiAgentOrchestrator:
             yield {"type": "thought", "data": {"step": "🤖", "label": f"Generating using {provider}...", "status": "active"}}
             
             full_response = ""
-            async for chunk in self.generator.generate_stream(query, provider, context=memory_context):
+            async for chunk in self.generator.generate_stream(query, provider, context=memory_context, user_id=user_id):
                 if chunk:
                     full_response += chunk
                     yield {"type": "content", "data": chunk}

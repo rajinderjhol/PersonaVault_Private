@@ -33,7 +33,8 @@ class RetrievalAgent(BaseAgent):
                         results.append(MemoryResult(
                             content=res['content'],
                             source='faiss',
-                            score=res['score']
+                            score=res['score'],
+                            layer=3
                         ))
                     else:
                         logger.debug(f"Filtered low-confidence result: score={res.get('score', 0)}")

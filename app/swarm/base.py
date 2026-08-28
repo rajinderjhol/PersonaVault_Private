@@ -24,28 +24,30 @@ class BaseAgent:
                      policy: Optional[str] = None, 
                      decision: Optional[str] = None,
                      explanation: Optional[str] = None,
-                     confidence: float = 0.5) -> Dict[str, Any]:
-        """Generate a structured Auditable Decision Trace for this agent's action."""
-        return {
-            "decision_id": f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(str(input_data)) % 10000:04d}",
-            "timestamp": datetime.now().isoformat(),
-            "agent": self.name,
-            "trace": {
-                "perception": {
-                    "source": "raw_input",
-                    "confidence": confidence
-                },
-                "signals": signals or [],
-                "policy": {
-                    "matched": policy or "default",
-                    "conditions": []
-                },
-                "decision": {
-                    "type": decision or "observe",
-                    "severity": "low",
-                    "autonomy_level": "observe"
-                },
-                "actions": []
-            },
-            "explanation": explanation or "Agent processed input"
-        }
+                     confidence: float = 0.5,
+                     metadata: Optional[Dict] = None) -> Dict[str, Any]:
+                     """Generate a structured Auditable Decision Trace for this agent's action."""
+                     return {
+                     "decision_id": f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(str(input_data)) % 10000:04d}",
+                     "timestamp": datetime.now().isoformat(),
+                     "agent": self.name,
+                     "trace": {
+                     "perception": {
+                     "source": "raw_input",
+                     "confidence": confidence
+                     },
+                     "signals": signals or [],
+                     "policy": {
+                     "matched": policy or "default",
+                     "conditions": []
+                     },
+                     "decision": {
+                     "type": decision or "observe",
+                     "severity": "low",
+                     "autonomy_level": "observe",
+                     "metadata": metadata or {}
+                     },
+                     "actions": []
+                     },
+                     "explanation": explanation or "Agent processed input"
+                     }

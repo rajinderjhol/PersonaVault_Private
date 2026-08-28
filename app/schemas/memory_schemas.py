@@ -53,6 +53,7 @@ class MemoryResult(BaseModel):
     content: str
     source: str  # 'faiss', 'bm25', or 'neo4j'
     score: float
+    layer: Optional[int] = 2  # Default to Layer 2 (Episodic)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 class GenerationResult(BaseModel):
