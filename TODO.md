@@ -1,35 +1,27 @@
-# 📝 PersonaVault Strategic Todo List (Post-Leapfrog)
+# 📝 PersonaVault Strategic Todo List
 
-## ✅ Foundational Achievements (100% COMPLETE)
-- [x] **Service-Oriented Architecture**: Cordis-inspired `ServiceRegistry` for runtime provider swapping.
-- [x] **Sovereign Execution Modes**: Implementation of Standard, Restricted, Simulation, and Audit modes.
-- [x] **Observability Layer**: Middleware for Memory Hit Rate and Latency tracking.
-- [x] **Developer Ecosystem (Alpha)**: Python SDK and `pv` CLI tool launch.
-- [x] **Three-Layer Memory**: Operational Gas → Liquid → Ice crystallization loop.
-- [x] **Intelligence Packs**: Active packs for Security, Legal, Compliance, Procurement, Insurance, Robotics, and Healthcare.
-- [x] **VeriLink Integration**: Initial cryptographic proof for institutional decisions.
+## ✅ Completed Milestones
+- [x] **Service-Oriented Architecture**: ServiceRegistry and provider swapping.
+- [x] **Sovereign Execution Modes**: All modes implemented and verified.
+- [x] **Three-Layer Memory**: Operational Gas → Liquid → Ice crystallization.
+- [x] **Domain Awareness (Stage 2)**: Detector, Router, and Domain-Aware Generator complete.
+- [x] **Intelligence Marketplace (Stage 3)**: Backend registry, file management, and UI implementation complete.
 
 ---
 
-## 🎯 Active Strategic Horizons (2026-2027)
+## 🎯 Active Strategic Horizons (Stage 4+)
 
-### Horizon 1: Performance & Observability Hardening (🔴 HIGH)
-- [ ] **Governance Latency Tracking**: Granular timing for policy matching and circuit breaking.
-- [ ] **Provider Benchmarking**: Automated testing for Ollama, Groq, and Gemini.
-- [ ] **Live Observability Dashboard**: Real-time charts for latency and hit rates in the UI.
+### Horizon: Compression Evolution (🔴 HIGH)
+- [ ] **Meta-Pattern Generation**: Synthesize high-level patterns from individual domain patterns.
+- [ ] **Compression Benchmarking**: Measure 100,000:1 and 1,000,000:1 ratios.
+- [ ] **Self-Synthesis Research**: Investigate autonomous pattern compounding.
 
-### Horizon 2: SDK & CLI Maturity (🔴 HIGH)
+### Horizon: SDK & CLI Maturity (🔴 HIGH)
 - [ ] **Memory Client**: Add programmatic context search and crystallization to the SDK.
 - [ ] **WebSocket SDK**: Native token-by-token streaming in the client.
-- [ ] **CLI Instance Management**: `pv instance [start|stop]` utilities for DevOps.
-- [ ] **Node.js/TypeScript SDK**: Core SDK for web/mobile ecosystems.
+- [ ] **CLI Instance Management**: `pv instance [start|stop]` utilities.
 
-### Horizon 3: Marketplace & Ecosystem Expansion (🟡 MEDIUM)
-- [ ] **Behaviour Pack Registry**: Federated repository for domain packs (`pv pack install`).
-- [ ] **Pack Development Kit (PDK)**: Tools for building and signing custom intelligence packs.
-- [ ] **Cross-Domain Transfer**: Logic for inter-domain reinforcement learning.
-
-### Horizon 4: Enterprise Productionization (🟡 MEDIUM)
+### Horizon: Enterprise Productionization (🟡 MEDIUM)
 - [ ] **High Availability (HA)**: Multi-node clusters with shared intelligence state.
 - [ ] **HSM Integration**: Secure hardware-level storage for VeriLink keys.
 - [ ] **Kubernetes Operator**: Native lifecycle management in K8s clusters.

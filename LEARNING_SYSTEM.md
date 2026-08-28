@@ -35,5 +35,13 @@ The Learning Matrix and **Sovereign Control Center** provide a real-time dashboa
 *   `GET /api/v1/mode/current`: Sovereign execution constraints.
 *   `GET /api/v1/registry/services`: Active learning providers.
 
-## 🛡️ Governance & Safety
-All learning and policy promotion is moderated by the `Local Guardian Constitution` and subject to Human-In-The-Loop (HITL) overrides when confidence in the **Decision State** is low (< 0.6).
+## 🧠 Domain-Aware Learning
+The system now incorporates domain-specific intelligence.
+*   **Domain Intelligence Units (DIUs)**: Self-contained packs of domain-specific agents, policies, and crystallized memory.
+*   **Domain-Aware Routing**: The system detects the domain (e.g., 'clinical', 'security') to route queries to appropriate DIUs, ensuring persona-specific and evidence-based reasoning.
+*   **Crystallization-in-Context**: Patterns are crystallized with domain-specific tagging, improving the quality of future domain-specific retrievals.
+
+## 🏪 Intelligence Marketplace
+The intelligence ecosystem is expanded through the **Intelligence Marketplace**:
+*   **Intelligence Sharing**: Users can upload domain intelligence packs, allowing crystallized patterns and domain policies to compound across the ecosystem.
+*   **Community Validation**: Rating and review systems enable crowdsourced verification of pattern confidence and accuracy, further hardening the system's learning loop.

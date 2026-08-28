@@ -15,9 +15,14 @@
 | **9** | Sovereign Control (DeepSeek-Inspired) | ✅ Complete |
 | **10** | Developer Ecosystem (SDK/CLI Alpha) | ✅ Complete |
 
-## 🎯 Current Status
-**PersonaVault is now a fully functional, verifiable Decision Operating System!**
-The core foundational roadmap is 100% complete as of August 25, 2026.
+## 🎯 Strategic Evolution (Phase II)
+
+| Stage | Focus | Status |
+|-------|-------|--------|
+| **S1** | Domain Awareness (Detection/Routing) | ✅ Complete |
+| **S2** | Intelligence Marketplace | ✅ Complete |
+| **S3** | Compression Evolution (1M:1) | 🚀 In Progress |
+| **S4** | Self-Synthesis & Compounding | 📅 Planned |
 
 ## 📈 Key Capabilities
 - **Intelligence**: Self-improving with reinforcement learning loop.
@@ -26,6 +31,5 @@ The core foundational roadmap is 100% complete as of August 25, 2026.
 - **Sovereign**: 4 Execution Modes (Standard, Restricted, Simulation, Audit).
 - **Extensible**: Cordis-inspired Service Registry for runtime provider swapping.
 - **Developer-Ready**: Python SDK and `pv` CLI for programmatic integration.
-- **Observable**: Real-time tracking of Memory Hit Rate and Latency.
-
-*Next Strategic Focus: Performance Hardening & Behaviour Pack Marketplace.*
+- **Domain-Aware**: Dynamic routing and specialized personas (7+ domains).
+- **Marketplace**: Sovereign intelligence sharing economy live.

@@ -6,6 +6,24 @@ PersonaVault is a **model-independent Decision Operating System (DOS)**. It deco
 
 **Core Thesis:** AI models generate intelligence; PersonaVault accumulates intelligence. PersonaVault owns institutional continuity.
 
+## Stage 2: Domain Awareness Architecture
+
+PersonaVault now supports **domain-aware intelligence** by routing queries to specialized Behavior Packs.
+
+### Domain Intelligence Pipeline
+1.  **Domain Detector**: Scans `pack.yaml` files for domain-specific keywords and patterns.
+2.  **Domain Router**: Maintains conversation continuity and routes queries to relevant domains.
+3.  **Domain-Aware Generator**: Injects domain personas and crystallized patterns into the generation prompt.
+
+## Stage 3: Intelligence Marketplace Architecture
+
+The Marketplace enables a decentralized economy for intelligence packs.
+
+### Key Components
+1.  **PackManager**: Manages installation/uninstallation/validation of packs on the filesystem.
+2.  **MarketplaceRegistry**: A central registry for discovery, statistics, and reviews.
+3.  **API Integration**: Secure endpoints for uploading, listing, and installing packs.
+
 ---
 
 ## The Decision Intelligence Architecture: The Crystallization Loop

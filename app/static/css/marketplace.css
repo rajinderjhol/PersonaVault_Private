@@ -1,0 +1,630 @@
+/* ================================================================
+   INTELLIGENCE MARKETPLACE STYLES
+   ================================================================ */
+
+.marketplace-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header */
+.marketplace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.marketplace-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.marketplace-header .header-left .icon {
+    font-size: 32px;
+}
+
+.marketplace-header .header-left .title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+}
+
+.marketplace-header .header-left .badge {
+    padding: 4px 12px;
+    background: #e3f2fd;
+    border-radius: 16px;
+    font-size: 13px;
+    color: #0d47a1;
+    font-weight: 500;
+}
+
+.marketplace-header .header-right {
+    display: flex;
+    gap: 8px;
+}
+
+.marketplace-header .upload-btn {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.marketplace-header .upload-btn:hover {
+    background: #388E3C;
+}
+
+/* Filters */
+.marketplace-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.marketplace-filters .search-bar {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    gap: 8px;
+}
+
+.marketplace-filters .search-input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    background: white;
+}
+
+.marketplace-filters .search-input:focus {
+    outline: none;
+    border-color: #2196F3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.marketplace-filters .filter-select {
+    padding: 10px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    min-width: 140px;
+}
+
+.marketplace-filters .filter-select:focus {
+    outline: none;
+    border-color: #2196F3;
+}
+
+/* Stats Bar */
+.marketplace-stats {
+    display: flex;
+    gap: 24px;
+    padding: 16px 20px;
+    background: #f5f6f8;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.marketplace-stats .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #555;
+}
+
+.marketplace-stats .stat-item .stat-value {
+    font-weight: 700;
+    color: #333;
+}
+
+.marketplace-stats .stat-item .stat-label {
+    color: #888;
+}
+
+/* Pack Grid */
+.pack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+/* Pack Card */
+.pack-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e8e8e8;
+    padding: 20px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.pack-card:hover {
+    border-color: #2196F3;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.pack-card .pack-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.pack-card .pack-badge.clinical {
+    background: #e3f2fd;
+    color: #0d47a1;
+}
+
+.pack-card .pack-badge.security {
+    background: #ffebee;
+    color: #b71c1c;
+}
+
+.pack-card .pack-badge.compliance {
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.pack-card .pack-badge.contracts {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.pack-card .pack-badge.education {
+    background: #f3e5f5;
+    color: #4a148c;
+}
+
+.pack-card .pack-badge.procurement {
+    background: #e0f7fa;
+    color: #00695c;
+}
+
+.pack-card .pack-badge.insurance {
+    background: #fce4ec;
+    color: #880e4f;
+}
+
+.pack-card .pack-badge.robotics {
+    background: #e8eaf6;
+    color: #1a237e;
+}
+
+.pack-card .pack-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.pack-card .pack-version {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.pack-card .pack-description {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.pack-card .pack-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+.pack-card .pack-meta .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pack-card .pack-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 12px;
+}
+
+.pack-card .pack-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #555;
+}
+
+.pack-card .pack-stats .stat .stat-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.pack-card .pack-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pack-card .pack-actions .action-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.pack-card .pack-actions .action-btn.install {
+    background: #2196F3;
+    color: white;
+}
+
+.pack-card .pack-actions .action-btn.install:hover {
+    background: #1976D2;
+}
+
+.pack-card .pack-actions .action-btn.installed {
+    background: #e8f5e9;
+    color: #2e7d32;
+    cursor: default;
+}
+
+.pack-card .pack-actions .action-btn.installed:hover {
+    background: #e8f5e9;
+}
+
+.pack-card .pack-actions .action-btn.details {
+    background: #f5f5f5;
+    color: #555;
+}
+
+.pack-card .pack-actions .action-btn.details:hover {
+    background: #e0e0e0;
+}
+
+.pack-card .pack-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    color: #ff9800;
+}
+
+.pack-card .pack-rating .rating-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.pack-card .pack-rating .rating-count {
+    font-size: 12px;
+    color: #888;
+}
+
+/* Installed Badge */
+.pack-card .installed-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Loading & Empty States */
+.loading-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+}
+
+.loading-state .spinner {
+    font-size: 40px;
+    animation: spin 1s linear infinite;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-state .empty-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.empty-state .empty-desc {
+    font-size: 14px;
+    color: #888;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Upload Modal */
+.upload-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.upload-modal .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: scaleIn 0.2s ease;
+}
+
+.upload-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.upload-modal .modal-header .title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.upload-modal .modal-header .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #888;
+}
+
+.upload-modal .modal-header .close-btn:hover {
+    color: #333;
+}
+
+.upload-modal .form-group {
+    margin-bottom: 16px;
+}
+
+.upload-modal .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.upload-modal .form-group input,
+.upload-modal .form-group textarea,
+.upload-modal .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.upload-modal .form-group input:focus,
+.upload-modal .form-group textarea:focus,
+.upload-modal .form-group select:focus {
+    outline: none;
+    border-color: #2196F3;
+}
+
+.upload-modal .form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.upload-modal .form-group .file-input {
+    padding: 12px;
+    border: 2px dashed #e0e0e0;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.upload-modal .form-group .file-input:hover {
+    border-color: #2196F3;
+}
+
+.upload-modal .form-group .file-input .file-name {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #888;
+}
+
+.upload-modal .submit-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background: #4CAF50;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.upload-modal .submit-btn:hover {
+    background: #388E3C;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    .marketplace-header .header-left .title {
+        color: #eee;
+    }
+    
+    .marketplace-stats {
+        background: #2d2d2d;
+    }
+    
+    .marketplace-stats .stat-item {
+        color: #aaa;
+    }
+    
+    .marketplace-stats .stat-item .stat-value {
+        color: #eee;
+    }
+    
+    .pack-card {
+        background: #2d2d2d;
+        border-color: #444;
+    }
+    
+    .pack-card:hover {
+        border-color: #2196F3;
+    }
+    
+    .pack-card .pack-name {
+        color: #eee;
+    }
+    
+    .pack-card .pack-description {
+        color: #aaa;
+    }
+    
+    .pack-card .pack-meta {
+        color: #888;
+    }
+    
+    .pack-card .pack-stats {
+        border-color: #444;
+    }
+    
+    .pack-card .pack-stats .stat {
+        color: #aaa;
+    }
+    
+    .pack-card .pack-stats .stat .stat-value {
+        color: #eee;
+    }
+    
+    .pack-card .pack-rating .rating-value {
+        color: #eee;
+    }
+    
+    .marketplace-filters .search-input {
+        background: #2d2d2d;
+        border-color: #444;
+        color: #eee;
+    }
+    
+    .marketplace-filters .filter-select {
+        background: #2d2d2d;
+        border-color: #444;
+        color: #eee;
+    }
+    
+    .pack-card .pack-actions .action-btn.details {
+        background: #3d3d3d;
+        color: #aaa;
+    }
+    
+    .pack-card .pack-actions .action-btn.details:hover {
+        background: #4d4d4d;
+    }
+    
+    .upload-modal .modal-content {
+        background: #2d2d2d;
+    }
+    
+    .upload-modal .modal-header .title {
+        color: #eee;
+    }
+    
+    .upload-modal .form-group label {
+        color: #aaa;
+    }
+    
+    .upload-modal .form-group input,
+    .upload-modal .form-group textarea,
+    .upload-modal .form-group select {
+        background: #2d2d2d;
+        border-color: #444;
+        color: #eee;
+    }
+    
+    .upload-modal .form-group .file-input {
+        border-color: #444;
+    }
+    
+    .empty-state .empty-title {
+        color: #eee;
+    }
+    
+    .empty-state .empty-desc {
+        color: #888;
+    }
+}

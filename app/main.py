@@ -427,6 +427,8 @@ app.include_router(decisions.router)
 
 app.include_router(swarm.router)
 app.include_router(integrations.router)
+from app.api.v1.endpoints.marketplace import router as marketplace_router
+app.include_router(marketplace_router)
 
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
@@ -457,6 +459,16 @@ app.include_router(clinical_router, tags=["clinical"])
 async def admin_dashboard_redirect(request: Request):
     """Redirect to the actual dashboard location."""
     return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=302)
+
+@app.get("/admin/marketplace", response_class=HTMLResponse)
+async def marketplace_page(request: Request):
+    """Render the marketplace dashboard page."""
+    from fastapi.templating import Jinja2Templates
+    templates = Jinja2Templates(directory="app/templates")
+    return templates.TemplateResponse(
+        "dashboard/marketplace.html",
+        {"request": request}
+    )
 
 # Global Exception Handler for Graceful Degradation
 @app.exception_handler(Exception)
