@@ -902,14 +902,18 @@ async function sendChatMessage(query) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullContent = '';
+        let visibleContent = '';
         let buffer = '';
+        let isThinking = false;
+        let thoughtContent = '';
+
+        let finalTrace = null;
+        let finalMemoryStatus = null;
+        let finalSuggestions = null;
         
         while (true) {
             const { done, value } = await reader.read();
-            if (done) {
-                console.log('📡 Stream complete');
-                break;
-            }
+            if (done) break;
         
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
@@ -926,34 +930,51 @@ async function sendChatMessage(query) {
                     try {
                         const data = JSON.parse(dataStr);
         
-                        if (data.content !== undefined && data.content !== null && data.content !== 'undefined') {
-                            fullContent += data.content;
-                            contentDiv.textContent = fullContent + '▍';
+                        if (data.content !== undefined && data.content !== null) {
+                            const chunk = data.content;
+                            fullContent += chunk;
+                            
+                            // --- THOUGHT EXTRACTION LOGIC ---
+                            if (fullContent.includes('<think>') && !fullContent.includes('</think>')) {
+                                isThinking = true;
+                                const startIdx = fullContent.indexOf('<think>') + 7;
+                                thoughtContent = fullContent.substring(startIdx);
+                                // Show thought process UI automatically if not already
+                                const thoughtContainer = document.getElementById('thought-steps');
+                                if (thoughtContainer && thoughtContainer.style.display === 'none') {
+                                    toggleThoughtProcess();
+                                }
+                                updateThoughtProcessUI([{ label: 'Reasoning...', status: 'active', data: thoughtContent }]);
+                            } else if (fullContent.includes('</think>')) {
+                                isThinking = false;
+                                const endIdx = fullContent.indexOf('</think>') + 8;
+                                visibleContent = fullContent.substring(endIdx);
+                                // Complete the thought process UI
+                                completeAllThoughtSteps();
+                            } else {
+                                visibleContent = fullContent;
+                            }
+
+                            if (!isThinking) {
+                                contentDiv.textContent = visibleContent.trim() + '▍';
+                            } else {
+                                contentDiv.textContent = '🧠 System is reasoning...';
+                            }
+
                             if (autoScroll) container.scrollTop = container.scrollHeight;
                         }
         
                         if (data.thought) {
-                            updateThoughtProcessUI([data.thought]);
+                            addThoughtStep(data.thought);
                         }
-                        if (data.thought_process) {
-                            updateThoughtProcessUI(data.thought_process);
-                        }
-        
-                        if (data.session_id) {
-                            currentSessionId = data.session_id;
-                            const idEl = document.getElementById('session-id-display');
-                            if (idEl) idEl.textContent = '#' + data.session_id;
-                        }
-        
-                        if (data.error) {
-                            console.error('Stream error:', data.error);
+                        
+                        if (data.type === 'done') {
+                            finalTrace = data.data.trace;
+                            finalMemoryStatus = data.data.memory_status;
+                            finalSuggestions = data.data.suggestions;
                         }
                     } catch (e) {
-                        if (dataStr && !dataStr.startsWith('{')) {
-                            fullContent += dataStr;
-                            contentDiv.textContent = fullContent + '▍';
-                            if (autoScroll) container.scrollTop = container.scrollHeight;
-                        }
+                        console.error('Stream parsing error:', e);
                     }
                 }
             }
@@ -965,26 +986,35 @@ async function sendChatMessage(query) {
             if (cursor) cursor.remove();
         
             if (fullContent) {
-        console.log("DEBUG: fullContent is:", fullContent);
+                // Final cleanup: ensure no tags remain
+                const cleanContent = fullContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                
                 if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
                     try {
-                        let html = marked.parse(fullContent, markdownConfig);
+                        let html = marked.parse(cleanContent, markdownConfig);
                         html = html.replace(/<pre><code>/g, '<pre><code style="display: block; padding: 12px; overflow-x: auto;">');
                         contentDiv.innerHTML = html;
                     } catch (e) {
-                        contentDiv.textContent = fullContent;
+                        contentDiv.textContent = cleanContent;
                     }
                 } else {
-                    contentDiv.textContent = fullContent;
+                    contentDiv.textContent = cleanContent;
                 }
             }
         }
         
-        highlightCodeBlocks(messageDiv);
+        // --- INJECT INTELLIGENCE UI ---
+        const intelligenceHtml = renderIntelligenceContainer(finalTrace, finalMemoryStatus, finalSuggestions);
+        if (intelligenceHtml) {
+            messageDiv.appendChild(new DOMParser().parseFromString(intelligenceHtml, 'text/html').body.firstChild);
+        }
+
+                highlightCodeBlocks(messageDiv);
         completeAllThoughtSteps();
         hideTyping();
         stopThoughtTimer();
         await loadSessions();
+
         
     } catch (e) {
         console.error('Chat error:', e);
@@ -1090,3 +1120,101 @@ window.loadProviderIntoUI = loadProviderIntoUI;
 window.getPrimaryProvider = getPrimaryProvider;
 
 console.log('✅ chat.js loaded - All chat functions available');
+
+// ============ RENDER INTELLIGENCE UI ============
+function renderIntelligenceContainer(finalTrace, finalMemoryStatus, finalSuggestions) {
+    if (!finalTrace && !finalMemoryStatus && !finalSuggestions) return '';
+    
+    let html = '<div class="intelligence-panel-container">';
+    
+    if (finalTrace) {
+        html += `<div class="intel-card-panel">${renderDecisionTrace(finalTrace)}</div>`;
+    }
+    if (finalMemoryStatus) {
+        html += `
+            <div class="intel-card-panel">
+                <div class="intel-card-header">📊 Memory Status</div>
+                ${renderMemoryStatus(finalMemoryStatus)}
+            </div>`;
+    }
+    if (finalSuggestions) {
+        html += `
+            <div class="intel-card-panel">
+                <div class="intel-card-header">💡 Suggested Actions</div>
+                ${renderSuggestedActions(finalSuggestions)}
+            </div>`;
+    }
+    
+    return html + '</div>';
+}
+
+// ============ RENDER INTELLIGENCE UI ============
+function renderIntelligenceContainer(finalTrace, finalMemoryStatus, finalSuggestions) {
+    if (!finalTrace && !finalMemoryStatus && !finalSuggestions) return '';
+    
+    let html = '<div class="intelligence-panel-container">';
+    
+    if (finalTrace) {
+        html += `<div class="intel-card-panel">${renderDecisionTrace(finalTrace)}</div>`;
+    }
+    if (finalMemoryStatus) {
+        html += `
+            <div class="intel-card-panel">
+                <div class="intel-card-header">📊 Memory Status</div>
+                ${renderMemoryStatus(finalMemoryStatus)}
+            </div>`;
+    }
+    if (finalSuggestions) {
+        html += `
+            <div class="intel-card-panel">
+                <div class="intel-card-header">💡 Suggested Actions</div>
+                ${renderSuggestedActions(finalSuggestions)}
+            </div>`;
+    }
+    
+    return html + '</div>';
+}
+
+function renderDecisionTrace(trace) {
+    if (!trace) return '';
+    const confidence = trace.ai_recommendation?.confidence || 0.5;
+    const confidencePercent = Math.round(confidence * 100);
+    
+    return `
+        <details class="decision-trace">
+            <summary>🧠 Decision Trace (${confidencePercent}%)</summary>
+            <div class="trace-steps">
+                <div class="trace-step perception">🔍 <b>Perception:</b> ${trace.perception?.query || 'User query'}</div>
+                <div class="trace-step policy">📋 <b>Policy:</b> ${trace.policy_match?.matched || 'Default'}</div>
+                <div class="trace-step reasoning">🤖 <b>AI:</b> ${trace.ai_recommendation?.provider || 'Unknown'}</div>
+                <div class="trace-step decision">👤 <b>Decision:</b> ${trace.decision?.type || 'Response generated'}</div>
+                <div class="trace-step provenance">🔒 <b>Provenance:</b> ${trace.provenance?.trace_id || 'Signed'}</div>
+            </div>
+        </details>
+    `;
+}
+
+function renderMemoryStatus(memoryStatus) {
+    if (!memoryStatus) return '';
+    return `<div class="memory-layers">
+        <div class="memory-layer ${memoryStatus.gas?.active ? 'active' : 'empty'}">💨 <span class="layer-name">Gas:</span> <span class="layer-status">${memoryStatus.gas?.active ? 'Active' : 'Empty'}</span></div>
+        <div class="memory-layer ${memoryStatus.liquid?.active ? 'active' : 'empty'}">💧 <span class="layer-name">Liquid:</span> <span class="layer-status">${memoryStatus.liquid?.active ? memoryStatus.liquid.items + ' episodes' : 'Empty'}</span></div>
+        <div class="memory-layer ${memoryStatus.ice?.active ? 'active' : 'empty'}">🧊 <span class="layer-name">Ice:</span> <span class="layer-status">${memoryStatus.ice?.active ? memoryStatus.ice.patterns + ' patterns' : 'Empty'}</span></div>
+    </div>`;
+}
+
+function renderSuggestedActions(suggestions) {
+    if (!suggestions || suggestions.length === 0) return '';
+    let html = '<div class="suggested-actions">';
+    suggestions.forEach(s => {
+        html += `<button onclick="document.getElementById('chat-input').value = '${s.prompt}'; sendMessage();" class="action-btn">${s.label}</button>`;
+    });
+    return html + '</div>';
+}
+
+
+// Add these to global exposure
+window.renderIntelligenceContainer = renderIntelligenceContainer;
+window.renderDecisionTrace = renderDecisionTrace;
+window.renderMemoryStatus = renderMemoryStatus;
+window.renderSuggestedActions = renderSuggestedActions;

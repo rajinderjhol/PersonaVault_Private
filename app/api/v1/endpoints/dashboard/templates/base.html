@@ -9,6 +9,10 @@
     <script src="/static/js/websocket_manager.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/swarm-status.css">
+    <link rel="stylesheet" href="/static/css/pattern-explorer.css">
+    <link rel="stylesheet" href="/static/css/integrations.css">
+    <link rel="stylesheet" href="/static/css/intelligence-card.css">
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -140,41 +144,35 @@
     </script>
     <div class="layout">
         <nav class="sidebar">
-            <div class="nav-group"><div class="nav-label">Core</div>
-                <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 System Overview</div>
-                <div class="nav-item" data-tab="models" onclick="switchTab('models')">📦 Model Management</div>
+            <div class="nav-group"><div class="nav-label">System State</div>
+                <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</div>
+                <div class="nav-item" data-tab="models" onclick="switchTab('models')">📦 Model Mgmt</div>
                 <div class="nav-item" data-tab="logs" onclick="switchTab('logs')">📜 System Logs</div>
-                <div class="nav-item" data-tab="chat" onclick="switchTab('chat')">💬 PersonaVault Chat</div>
             </div>
-            <div class="nav-group"><div class="nav-label">Cognitive Architecture</div>
+
+            <div class="nav-group"><div class="nav-label">Intelligence Center</div>
+                <div class="nav-item" data-tab="chat" onclick="switchTab('chat')">💬 Chat Console</div>
+                <div class="nav-item" data-tab="swarm" onclick="switchTab('swarm')">🐝 Swarm Monitor</div>
+                <div class="nav-item" data-tab="patterns" onclick="switchTab('patterns')">💎 Pattern Explorer</div>
                 <div class="nav-item" data-tab="lattices" onclick="switchTab('lattices')">🕸️ Memory Lattices</div>
-                <div class="nav-item" data-tab="learning_dashboard" onclick="switchTab('learning_dashboard')">📊 Learning Dashboard</div>
-                <div class="nav-item" data-tab="learning" onclick="switchTab('learning')">⚡ Graduation Logic</div>
-                <div class="nav-item" data-tab="agents" onclick="switchTab('agents')">🤖 Agent Orchestration</div>
             </div>
-            <div class="nav-group"><div class="nav-label">Behaviour Packs</div>
-                <div class="nav-item" data-tab="packs" onclick="switchTab('packs')">📦 Domain Intelligence</div>
-                <div class="nav-item" data-tab="mcp" onclick="switchTab('mcp')">🔌 MCP Registry</div>
+
+            <div class="nav-group"><div class="nav-label">Ecosystem</div>
+                <div class="nav-item" data-tab="integrations" onclick="switchTab('integrations')">🔌 Integrations</div>
+                <div class="nav-item" data-tab="packs" onclick="switchTab('packs')">📦 Domain Packs</div>
+                <div class="nav-item" data-tab="mcp" onclick="switchTab('mcp')">🌐 MCP Registry</div>
             </div>
-            <div class="nav-group"><div class="nav-label">Decision Intelligence</div>
+
+            <div class="nav-group"><div class="nav-label">Governance</div>
                 <div class="nav-item" data-tab="timeline" onclick="switchTab('timeline')">⏱️ Decision Timeline</div>
-                <div class="nav-item" data-tab="replay" onclick="switchTab('replay')">🔄 Decision Replay</div>
-                <div class="nav-item" data-tab="trends" onclick="switchTab('trends')">📈 Trend Analysis</div>
-                <div class="nav-item" data-tab="evidence" onclick="switchTab('evidence')">📋 Evidence Pipeline</div>
-            </div>
-            <div class="nav-group"><div class="nav-label">Enterprise & Safety</div>
-                <div class="nav-item" data-tab="governance" onclick="switchTab('governance')">⚖️ Governance & Audit</div>
+                <div class="nav-item" data-tab="governance" onclick="switchTab('governance')">⚖️ Compliance & Audit</div>
                 <div class="nav-item" data-tab="security" onclick="switchTab('security')">🔐 Privacy Vault</div>
             </div>
+
             <div class="nav-group">
-                <div class="nav-label">🏥 USB Clinical Intelligence</div>
-                <div class="nav-item" data-tab="clinical-chat" onclick="switchTab('clinical-chat')">🏥 Clinical Intelligence Gateway</div>
-                <div class="nav-item" data-tab="clinical" onclick="switchTab('clinical')">
-                    <i class="fas fa-heartbeat"></i> Clinical Decisions
-                </div>
-                <div class="nav-item" data-tab="clinical-audit" onclick="switchTab('clinical-audit')">
-                    <i class="fas fa-file-medical-alt"></i> Clinical Audit
-                </div>
+                <div class="nav-label">🏥 Clinical</div>
+                <div class="nav-item" data-tab="clinical-chat" onclick="switchTab('clinical-chat')">🏥 Clinical Gateway</div>
+                <div class="nav-item" data-tab="clinical" onclick="switchTab('clinical')">⚕️ Clinical Decisions</div>
             </div>
         </nav>
         <main class="main-content" id="main-content">
@@ -460,10 +458,14 @@
             const container = document.getElementById('tab-content-container');
             container.innerHTML = '<div style="text-align:center; padding:50px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
             try {
+                console.log(`Loading tab: ${tabId}`);
                 const res = await fetch(`/api/v1/admin/dashboard/tab/${tabId}`);
+                console.log(`Fetch status: ${res.status}`);
                 if (res.ok) {
                     const html = await res.text();
-                    // Update active state in UI
+                    console.log(`Loaded ${html.length} bytes for tab ${tabId}`);
+                    console.log(`Tab HTML content preview: ${html.substring(0, 100)}...`);
+                    
                     document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
                     const el = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
                     if (el) el.classList.add('active');
@@ -472,6 +474,7 @@
                     
                     // 1. Inject HTML
                     container.innerHTML = html;
+                    console.log(`HTML injected into container. Container innerHTML length: ${container.innerHTML.length}`);
                     
                     // 2. Find and execute script tags manually
                     const scripts = container.getElementsByTagName('script');
@@ -729,6 +732,15 @@
                         console.error("loadEvidenceStats not defined on window after delay");
                     }
                 }, 300);
+            }
+            else if (tabId === 'swarm') {
+                if (window.swarmStatus) window.swarmStatus.init();
+            }
+            else if (tabId === 'patterns') {
+                if (window.patternExplorer) window.patternExplorer.init();
+            }
+            else if (tabId === 'integrations') {
+                if (window.integrationsPanel) window.integrationsPanel.init();
             }
             else if (tabId === 'learning') fetchLearningConfig();
             else if (tabId === 'chat') {
@@ -1951,6 +1963,9 @@
     <script src="/static/js/reload.js" defer></script>
     <script src="/static/js/models.js" defer></script>
     <script src="/static/js/chat.js" defer></script>
+    <script src="/static/js/swarm-status.js" defer></script>
+    <script src="/static/js/pattern-explorer.js" defer></script>
+    <script src="/static/js/integrations.js" defer></script>
 
 <!-- Global Error Handler -->
 <script>

@@ -131,26 +131,24 @@ The PersonaVault dashboard provides a professional, "Mission Control" style inte
 - **User Personalization** - Learn and adapt to individual user preferences
 - **Trust Tracking** - Measure and improve user trust over time
 
+## 🚀 Roadmap: From Intelligence Engine to Ecosystem
+
+PersonaVault is evolving from an intelligence-accumulation engine into an **actionable intelligence ecosystem**.
+
+### Phase 1: Chat UX Enhancement
+*   **Interactive Decision Traces**: Collapsible UI elements in chat to inspect perception, policy matches, and provenance for every decision.
+*   **Memory Attribution**: Explicit UI indicators when a response is based on a crystallized (Layer 3) pattern.
+*   **Intelligent Suggested Actions**: Context-aware action buttons based on the system's confidence and current task.
+
+### Phase 2: MCP Integration Layer
+*   **Standardized Connectivity**: Utilizing the **Model Context Protocol (MCP)** to securely connect with third-party tools (Calendar, Discord, SMS/Twilio, etc.).
+*   **Actionable Reasoning**: Enabling the swarm to not just "think" but to "do" by routing tasks to connected service agents.
+
+### Phase 3: Integration Marketplace
+*   **Plugin Architecture**: A secure environment for installing community or organization-specific plugins.
+*   **Integration Discovery**: A marketplace UI for discovering and connecting new services with one click.
+
 ---
-
-## 🚀 **Leapfrog Roadmap Summary**
-
-PersonaVault has evolved into the ultimate **Decision Operating System (DOS)** through a 9-phase implementation.
-
-### Status: 100% Complete ✅
-
-| Phase | Focus | Status |
-|-------|-------|--------|
-| **1** | Foundation Hardening | ✅ Complete |
-| **2** | Self-Improving Intelligence | ✅ Complete |
-| **3** | Predictive Intelligence | ✅ Complete |
-| **4** | Generative Decision Making | ✅ Complete |
-| **5** | Collaborative Intelligence | ✅ Complete |
-| **6** | Multimodal Intelligence | ✅ Complete |
-| **7** | Enterprise Polish | ✅ Complete |
-| **8** | DeepSeek-Inspired DOS | ✅ Complete |
-| **9** | Sovereign Control Dashboard | ✅ Complete |
-| **10** | Developer Ecosystem (SDK/CLI) | 🧪 Alpha |
 
 ## 🆕 New Enhancements (2026)
 

@@ -1,0 +1,44 @@
+/* ================================================================
+   SWARM STATUS STYLES - DASHBOARD ALIGNED
+   ================================================================ */
+
+.swarm-status-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.swarm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: var(--accent);
+}
+
+.swarm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.swarm-agent {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.swarm-agent.active {
+    border-color: var(--success);
+}
+
+.agent-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f1f5f9;
+}

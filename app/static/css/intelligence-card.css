@@ -1,0 +1,112 @@
+/* ================================================================
+   INTELLIGENCE CARD STYLES - HUMAN-FIRST REFACTOR
+   ================================================================ */
+
+.intelligence-panel-container {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two column layout */
+    gap: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 15px;
+}
+
+.intel-card-panel {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    color: #f1f5f9;
+    display: flex;
+    flex-direction: column;
+}
+
+.intel-card-header {
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Trace Summary Fix */
+.decision-trace summary {
+    list-style: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 0;
+}
+
+.decision-trace summary:hover {
+    color: var(--accent);
+}
+
+.trace-steps {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+/* Suggested Actions Grid */
+.suggested-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+}
+
+.action-btn {
+    background: #1e293b;
+    border: 1px solid var(--border);
+    color: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 20px; /* Pill style */
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.action-btn:hover {
+    border-color: var(--accent);
+    background: #0f172a;
+    transform: translateY(-1px);
+}
+
+/* Memory Layer Chips */
+.memory-layers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.memory-layer {
+    background: #1e293b;
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 10px;
+}
+
+.memory-layer .layer-status {
+    display: block;
+    font-weight: 700;
+    margin-top: 4px;
+    color: #f1f5f9;
+}
+
+.memory-layer.active { border-bottom: 2px solid var(--success); }
+.memory-layer.empty { opacity: 0.5; }
+
+/* Full width for suggestions */
+.intelligence-panel-container > .intel-card-panel:last-child {
+    grid-column: span 2;
+}
+
