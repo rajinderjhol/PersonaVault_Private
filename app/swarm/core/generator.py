@@ -1,5 +1,5 @@
 """
-Generator Agent - Supports streaming and Auditable Traces
+Generator Agent - Supports streaming and Auditable Traces with Domain Awareness
 """
 import logging
 import json
@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, AsyncGenerator, List
 from app.swarm.base import BaseAgent
 from app.swarm.routing.reasoning_router import ReasoningRouter
+from app.swarm.routing.domain_router import DomainRouter
 from app.services.memory.ice_repository import IceMemoryRepository
 
 logger = logging.getLogger(__name__)
@@ -23,25 +24,35 @@ class GeneratorAgent(BaseAgent):
         self.ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.ollama_model = os.getenv("OLLAMA_LLM_MODEL", "tinydolphin")
         self.router = ReasoningRouter()
+        self.domain_router = DomainRouter()
         self.ice_repo = IceMemoryRepository(self.session_factory)
         self._last_provider_used = "unknown"
         self._last_model_used = "unknown"
         logger.info(f"GeneratorAgent initialized (airgapped: {self.router.airgapped})")
+        logger.info(f"Available domains: {list(self.domain_router.detector.pack_keywords.keys())}")
     
     async def generate_stream_with_trace(
         self, 
         query: str, 
         provider: str = "auto",
-        context: Optional[List[Any]] = None
+        context: Optional[List[Any]] = None,
+        user_id: Optional[int] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Stream generation with structured decision trace.
+        Stream generation with structured decision trace and domain awareness.
         
         Yields:
             Dict with 'content' (chunk) and 'trace' (complete trace at end)
         """
         # Start timing
         start_time = datetime.now()
+        user_id = user_id or 1
+        
+        # 0. DOMAIN DETECTION FIRST
+        domain_result = await self.domain_router.route(query=query)
+        logger.info(f"Domain detected: {domain_result.domain} ({domain_result.confidence:.2%})")
+        if domain_result.matched_keywords:
+            logger.debug(f"Matched keywords: {domain_result.matched_keywords}")
         
         # 1. Determine routing
         if provider == "auto":
@@ -55,17 +66,12 @@ class GeneratorAgent(BaseAgent):
         self._last_provider_used = chosen_provider
         self._last_model_used = target_model or (self.ollama_model if chosen_provider == "ollama" else "qwen/qwen3.6-27b")
 
-        # 2. Build prompt
-        safe_context = []
-        if context:
-            for item in context:
-                if isinstance(item, dict):
-                    safe_context.append(item.get("content", str(item)))
-                else:
-                    safe_context.append(str(item))
-                    
-        context_str = "\n".join(safe_context) if safe_context else ""
-        full_prompt = f"## Context\n{context_str}\n\n## Query\n{query}" if context_str else query
+        # 2. Build DOMAIN-AWARE prompt
+        full_prompt = self._build_domain_prompt(
+            query=query,
+            domain_result=domain_result,
+            context=context
+        )
         
         # 3. Stream response
         response_chunks = []
@@ -97,27 +103,146 @@ class GeneratorAgent(BaseAgent):
             end_time=end_time
         )
         
-        # Get memory status and suggestions
-        memory_status = await self._get_memory_status(user_id=1) # TODO: Pass user_id
-        suggestions = self._get_suggested_actions(query=query, context=context, memory_status=memory_status)
+        # 5. Get memory status and suggestions
+        memory_status = await self._get_memory_status(user_id=user_id)
+        suggestions = self._get_suggested_actions(
+            query=query,
+            context=context,
+            memory_status=memory_status
+        )
         
-        # 5. Yield the complete trace
+        # 6. Yield the complete trace with domain info
         yield {
             "type": "trace", 
             "trace": trace,
             "memory_status": memory_status,
-            "suggestions": suggestions
+            "suggestions": suggestions,
+            "domain": domain_result.domain,
+            "domain_confidence": domain_result.confidence,
+            "domain_matched_keywords": domain_result.matched_keywords[:5] if domain_result.matched_keywords else []
         }
         
-        # 6. Crystallize if appropriate
+        # 7. Crystallize if appropriate
         if route_metadata.get("mode") == "reasoning" and len(response_complete) > 50:
             await self._crystallize_reasoning(
                 query=query,
                 reasoning_path=full_prompt,
                 response=response_complete,
                 complexity=route_metadata.get("complexity", {}),
-                user_id=1
+                user_id=user_id
             )
+
+    def _build_domain_prompt(
+        self,
+        query: str,
+        domain_result: Any,
+        context: Optional[List]
+    ) -> str:
+        """Build a domain-aware prompt with persona and context."""
+        
+        prompt_parts = []
+        
+        # 1. Domain context and persona
+        if domain_result.domain != "general":
+            prompt_parts.append(f"[Domain: {domain_result.domain} - Confidence: {domain_result.confidence:.2%}]")
+            
+            # Add domain persona
+            persona = self._get_domain_persona(domain_result.domain)
+            if persona:
+                prompt_parts.append(persona)
+        else:
+            prompt_parts.append("You are a helpful AI assistant. Provide clear, accurate, and helpful responses.")
+        
+        # 2. Domain patterns (crystallized insights)
+        if domain_result.patterns:
+            prompt_parts.append("\n## Relevant Crystallized Patterns")
+            prompt_parts.append("Use these patterns to inform your response:")
+            for i, pattern in enumerate(domain_result.patterns[:3], 1):
+                query_text = pattern.get("query", f"Pattern {i}")
+                response_text = pattern.get("response", "")[:150]
+                prompt_parts.append(f"- {i}. {query_text}: {response_text}...")
+        
+        # 3. User context
+        if context:
+            safe_context = []
+            for item in context:
+                if isinstance(item, dict):
+                    safe_context.append(item.get("content", str(item)))
+                else:
+                    safe_context.append(str(item))
+            
+            if safe_context:
+                prompt_parts.append("\n## Context")
+                prompt_parts.append("Here is relevant information to consider:")
+                for ctx in safe_context:
+                    prompt_parts.append(f"- {ctx}")
+        
+        # 4. User query
+        prompt_parts.append(f"\n## Query\n{query}")
+        
+        return "\n\n".join(prompt_parts)
+    
+    def _get_domain_persona(self, domain: str) -> str:
+        """Get the persona for a domain."""
+        personas = {
+            "clinical": """You are a Clinical Intelligence Assistant. 
+Provide evidence-based, cautious clinical insights. 
+Always consider:
+- Patient safety as the top priority
+- HIPAA and medical privacy compliance
+- Evidence-based medicine and clinical guidelines
+- Clear, actionable recommendations
+- Appropriate disclaimers for clinical decisions""",
+
+            "security": """You are a Security Intelligence Assistant. 
+Provide actionable security insights with clear risk assessments. 
+Always consider:
+- NIST frameworks and security best practices
+- Risk assessment and mitigation strategies
+- Compliance requirements (GDPR, HIPAA, PCI, etc.)
+- Threat modeling and vulnerability assessment""",
+
+            "compliance": """You are a Compliance Intelligence Assistant. 
+Provide clear compliance guidance with verifiable policy matches. 
+Always consider:
+- Regulatory frameworks (GDPR, HIPAA, SOX, etc.)
+- Compliance verification and audit readiness
+- Risk-based compliance approach
+- Clear documentation and evidence requirements""",
+
+            "contracts": """You are a Legal Intelligence Assistant. 
+Provide clear legal insights with contract expertise. 
+Always consider:
+- Legal frameworks and contract law
+- Risk allocation and liability
+- Key contract terms and conditions
+- Best practices for contract negotiation""",
+
+            "education": """You are an Education Intelligence Assistant. 
+Provide clear explanations with appropriate examples. 
+Always consider:
+- Learning objectives and outcomes
+- Student engagement and understanding
+- Clear, progressive explanations
+- Examples and analogies""",
+
+            "procurement": """You are a Procurement Intelligence Assistant. 
+Provide supply chain insights with procurement expertise. 
+Always consider:
+- Cost optimization and value analysis
+- Vendor management and relationships
+- Supply chain risk assessment
+- Contract negotiation best practices""",
+
+            "insurance": """You are an Insurance Intelligence Assistant. 
+Provide actuarial and risk management insights. 
+Always consider:
+- Insurance frameworks and underwriting principles
+- Risk assessment and quantification
+- Policy coverage and exclusions
+- Claims management best practices"""
+        }
+        return personas.get(domain, "You are a helpful intelligence assistant.")
 
     async def _get_memory_status(self, user_id: int) -> Dict[str, Any]:
         """Get the current memory status for a user."""
@@ -140,7 +265,7 @@ class GeneratorAgent(BaseAgent):
                 "ice": {
                     "active": ice_patterns > 0,
                     "patterns": ice_patterns,
-                    "confidence": 0.8 # Placeholder
+                    "confidence": 0.8
                 }
             }
         except Exception as e:
@@ -164,9 +289,21 @@ class GeneratorAgent(BaseAgent):
         if not has_memories and not has_patterns:
             return [
                 {"label": "Tell me about yourself", "prompt": "I'd like to introduce myself. I work in AI and data science."},
-                {"label": "What can you do?", "prompt": "What are your capabilities and how can you help me?"}
+                {"label": "What can you do?", "prompt": "What are your capabilities and how can you help me?"},
+                {"label": "Set up my preferences", "prompt": "I want to set up my preferences for how we work together."}
             ]
-        return []
+        elif not has_patterns:
+            return [
+                {"label": "Test your reasoning", "prompt": "I want to test your reasoning capabilities. Here's a complex question..."},
+                {"label": "Save this conversation", "prompt": "Please save this conversation to my memory."},
+                {"label": "View my memories", "prompt": "What do you remember about me?"}
+            ]
+        else:
+            return [
+                {"label": "Deep reasoning test", "prompt": "Let's do a deep reasoning test. Here's a complex scenario..."},
+                {"label": "Find patterns", "prompt": "What patterns have you crystallized about me?"},
+                {"label": "Export intelligence", "prompt": "Can you export my crystallized patterns?"}
+            ]
 
     def _build_decision_trace(
         self,
@@ -183,15 +320,6 @@ class GeneratorAgent(BaseAgent):
         has_memories = context and len(context) > 0
         memory_count = len(context) if context else 0
         
-        # Extract signals
-        signals = []
-        if has_memories:
-            signals.append({
-                "type": "memory",
-                "count": memory_count,
-                "confidence": routing_info.get("confidence", 0.5)
-            })
-        
         # Build trace
         return {
             "timestamp": datetime.now().isoformat(),
@@ -207,7 +335,7 @@ class GeneratorAgent(BaseAgent):
             
             "policy_match": {
                 "matched": routing_info.get("policy", "default"),
-                "found": memory_count > 0, # Simplified
+                "found": memory_count > 0,
                 "confidence": routing_info.get("confidence", 0.0),
                 "mode": routing_info.get("mode", "fast")
             },
@@ -254,13 +382,15 @@ class GeneratorAgent(BaseAgent):
             }
         }
 
-    
     async def generate(self, query: str, context: list = None, **kwargs) -> Dict[str, Any]:
         """Non-streaming generation with context and Auditable Trace"""
         
         user_id = kwargs.get("user_id", 1)
-        # Auto-route if provider not specified or is 'auto'
         provider = kwargs.get("provider", "auto")
+        
+        # Domain detection
+        domain_result = await self.domain_router.route(query=query)
+        
         if provider == "auto":
             chosen_provider, route_metadata = await self.router.route(query, context)
             target_model = route_metadata.get("model")
@@ -281,19 +411,12 @@ class GeneratorAgent(BaseAgent):
                 else:
                     safe_context.append(str(item))
         
-        # Construct structured prompt
-        if safe_context:
-            context_str = "\n".join(safe_context)
-            full_prompt = f"""## Relevant Context / Memories
-{context_str}
-
-## User Query
-{query}
-
-Please answer based on the provided context.
-"""
-        else:
-            full_prompt = query
+        # Build domain-aware prompt
+        full_prompt = self._build_domain_prompt(
+            query=query,
+            domain_result=domain_result,
+            context=context
+        )
             
         answer = "I'm having trouble generating a response. Please try again."
         source = "fallback"
@@ -354,20 +477,26 @@ Please answer based on the provided context.
             )
             logger.info("🧠 Reasoning crystallized to Layer 3")
 
-        # Generate trace with routing metadata
+        # Generate trace with routing metadata and domain info
         trace = self.create_trace(
             input_data=query,
-            explanation=f"Generated answer via {source}",
+            explanation=f"Generated answer via {source} (domain: {domain_result.domain})",
             confidence=confidence,
             decision="generate_response",
-            metadata=route_metadata
+            metadata={
+                "routing": route_metadata,
+                "domain": domain_result.domain,
+                "domain_confidence": domain_result.confidence
+            }
         )
 
         return {
             "answer": answer, 
             "source": source, 
             "confidence": confidence,
-            "trace": trace
+            "trace": trace,
+            "domain": domain_result.domain,
+            "domain_confidence": domain_result.confidence
         }
 
     async def _crystallize_reasoning(
@@ -399,7 +528,7 @@ Please answer based on the provided context.
                 "type": "crystallized_reasoning",
                 "layer": 3,  # Ice
                 "user_id": user_id,
-                "trigger": query[:200], # Trigger for SQL search
+                "trigger": query[:200],
                 "correction": response,
                 "confidence": self._calculate_pattern_confidence(reasoning_path),
                 "raw_text": f"Query: {query}\nReasoning: {reasoning_path}\nAnswer: {response}",
@@ -437,10 +566,7 @@ Please answer based on the provided context.
         reasoning_path: str, 
         response: str
     ) -> Dict[str, Any]:
-        """
-        Extract the essential reasoning pattern from a deep thought session.
-        """
-        # Simple keyword extraction
+        """Extract the essential reasoning pattern from a deep thought session."""
         keywords = re.findall(r'\b\w{4,}\b', query + " " + reasoning_path)
         
         return {
@@ -451,24 +577,18 @@ Please answer based on the provided context.
         }
     
     def _calculate_reasoning_depth(self, reasoning_path: str) -> float:
-        """
-        Calculate how "deep" the reasoning was.
-        """
+        """Calculate how 'deep' the reasoning was."""
         decision_markers = ["therefore", "however", "moreover", "consequently", "because", "since", "so"]
         count = sum(1 for marker in decision_markers if marker in reasoning_path.lower())
         return min(count / 10, 1.0)
     
     def _calculate_pattern_confidence(self, reasoning_path: str) -> float:
-        """
-        Calculate confidence based on reasoning path coherence.
-        """
+        """Calculate confidence based on reasoning path coherence."""
         base = min(len(reasoning_path) / 1000, 0.8)
         return min(base + 0.1, 1.0)
     
     async def _find_similar_crystallized_pattern(self, pattern: Dict[str, Any], user_id: int) -> Optional[Dict]:
-        """
-        Check if a similar reasoning pattern already exists in Layer 3.
-        """
+        """Check if a similar reasoning pattern already exists in Layer 3."""
         try:
             similar = await self.ice_repo.search_similar(
                 query=pattern["summary"],

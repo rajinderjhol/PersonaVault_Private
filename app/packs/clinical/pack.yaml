@@ -1,7 +1,8 @@
-name: clinical
-version: 1.0.0
-domain: healthcare
-description: "Clinical decision support with HIPAA-compliant reasoning"
+pack:
+  name: clinical
+  version: 1.0.0
+  domain: healthcare
+  description: "Clinical decision support with HIPAA-compliant reasoning"
 
 agents:
   - class: ClinicalReasoningAgent
