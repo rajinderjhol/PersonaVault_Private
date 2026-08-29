@@ -24,6 +24,16 @@ The Marketplace enables a decentralized economy for intelligence packs.
 2.  **MarketplaceRegistry**: A central registry for discovery, statistics, and reviews.
 3.  **API Integration**: Secure endpoints for uploading, listing, and installing packs.
 
+## Stage 4: Privacy & GDPR Framework Architecture
+
+The Privacy Framework ensures sovereign control over data and regulatory compliance.
+
+### Key Components
+1.  **Data Lineage Service**: Tracks provenance of all data nodes (`LineageService`) and manages relationships (`LineageEdge`).
+2.  **Right to Forget Workflow**: Automated deletion engine that propagates deletions through dependencies and invalidates crystallized patterns.
+3.  **Pattern Invalidation**: Ensures crystallized patterns in the `IceMemoryRepository` are marked as invalid and excluded from retrieval upon deletion requests.
+4.  **Privacy Dashboard**: API and UI components to view data, manage deletion requests, and monitor audit trails.
+
 ---
 
 ## The Decision Intelligence Architecture: The Crystallization Loop

@@ -1,6 +1,6 @@
-# 🚀 Strategic Roadmap: From Intelligence Engine to Ecosystem
+# 🚀 Strategic Roadmap: From Engine to Adoption
 
-This document outlines the strategic leapfrog path for PersonaVault: moving from a passive memory vault to an **Actionable, Compounding Intelligence Ecosystem**.
+This document outlines the strategic leapfrog path for PersonaVault: moving from a technical intelligence engine to a user-centric **Decision Operating System (DOS)**.
 
 ---
 
@@ -8,35 +8,37 @@ This document outlines the strategic leapfrog path for PersonaVault: moving from
 
 | Stage | Objective | Strategic Advantage |
 | :--- | :--- | :--- |
-| **Stage 1: Foundation** | Intelligence Engine | Memory, Crystallization, Swarm, DIUs |
-| **Stage 2: Domain Awareness** | Domain Detection & Routing | System-wide context awareness |
-| **Stage 3: Intelligence Marketplace** | Intelligence Sharing | Intelligence Network Effects |
-| **Stage 4: Compression Evolution** | 1,000,000:1 Compression | Cost & Portability Advantage |
-| **Stage 5: Self-Synthesis** | Autonomous Compounding | Self-Sustaining OS for Intelligence |
+| **Stage 1** | Foundation | Memory, Crystallization, Swarm |
+| **Stage 2** | Domain Awareness | System-wide context awareness |
+| **Stage 3** | Marketplace | Intelligence Network Effects |
+| **Stage 4** | **Proactive Intelligence**| Agentic behaviors, proactive suggestions, autonomy |
+| **Stage 5** | Compression Evolution | 1,000,000:1 Compression |
 
 ---
 
-## 📋 Priority Matrix (Next 2-3 Months)
+## 📋 Priority Matrix (Current Focus)
 
 | Priority | Phase | Goal |
 | :--- | :--- | :--- |
-| **1. Domain Foundation** | Stage 2 | Implement Domain Detector & Domain-Aware Generator |
-| **2. Intelligence Routing** | Stage 2 | Synthesize responses across multi-domain packs |
-| **3. Marketplace Foundation** | Stage 3 | Enable Pack Upload/Download & Versioning |
-| **4. Compression Evolution** | Stage 4 | Meta-Pattern Generation & Benchmarking |
+| **1. Proactive Intelligence**| Stage 4 | Suggestions, Autonomous Actions, Identity (In Progress) |
+| **2. Premium UX** | Stage 4 | Three-Column Sovereign Workbench (Live) |
+| **3. Ingestion Engine** | Stage 4 | Web Search & Folder/Document Ingestion |
+| **4. Marketplace** | Stage 3 | Pack registry & management |
+| **5. Compression** | Stage 5 | Meta-pattern synthesis |
 
 ---
 
-## 🎯 Stage 2 Implementation Goals (Current Sprint)
+## 🎯 Current Sprint Goals
 
-### 2.1 Domain Intelligence Foundation
-*   **Domain Detector**: Semantic similarity analysis to route queries to appropriate packs.
-*   **Domain-Aware Generator**: Inject domain context dynamically into the generation pipeline.
-*   **Pack Management UI**: Visual registry for installed domain intelligence units.
+### 4.1 Proactive Intelligence (Stage 4)
+*   **Proactive Suggestions**: Intelligent memory, time, context, and pattern-based suggestions (Live).
+*   **Autonomous Actions**: Action verification system, audit trails, and execution (Next).
+*   **Identity Layer**: Multi-device sync and user profiles (Next).
 
-### 2.2 Intelligence Router
-*   **Cross-Domain Synthesis**: Logic to resolve conflicts and synthesize insights when a query hits multiple packs (e.g., Clinical + Security).
-*   **Router Dashboard**: Real-time observability of the routing engine's decisions.
+### 4.2 Premium UX & Ingestion
+*   **Three-Column Workbench**: Responsive, sidebar-controlled, intelligence-panel architecture.
+*   **Intelligence Aura**: Streaming responses with real-time status feedback.
+*   **Ingestion Pipeline**: Web search, bulk document ingestion, and auto-crystallization.
 
 ---
 
@@ -44,10 +46,10 @@ This document outlines the strategic leapfrog path for PersonaVault: moving from
 
 | Metric | Target |
 | :--- | :--- |
-| **Domain Detection Accuracy** | >95% |
-| **Routing Latency** | <100ms |
-| **Intelligence Compound Rate** | +15% patterns/month |
-| **Compression Ratio** | 100,000:1 |
+| **User Onboarding Time** | < 2 minutes |
+| **Data Ingestion Friction** | Near-zero (Folder drag-drop) |
+| **Intelligence Transparency** | 100% (Traceability of answers) |
+| **Proactive Adoption Rate** | +30% interaction rate with suggestions |
 
 ---
 
