@@ -10,13 +10,16 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+from app.services.trace_service import TraceService, TraceStep
+
 class PackExecutor:
     """Execute compiled behavior packs"""
     
-    def __init__(self, pack_dir: str = "packs/compiled"):
+    def __init__(self, pack_dir: str = "packs/compiled", trace_service: Optional[TraceService] = None):
         self.pack_dir = Path(pack_dir)
         self.loaded_packs: Dict[str, Any] = {}
         self.pack_metadata: Dict[str, Dict] = {}
+        self.trace_service = trace_service
         
         # Auto-load all compiled packs
         self._load_all_packs()
@@ -129,35 +132,52 @@ class PackExecutor:
             pack_scores[pack_name] = score
         
         # Select best match
+        result = None
         if pack_scores:
             best_pack = max(pack_scores, key=pack_scores.get)
             if pack_scores[best_pack] > 0:
-                return await self.process_with_pack(best_pack, raw_input, user_id, session_id)
+                result = await self.process_with_pack(best_pack, raw_input, user_id, session_id)
         
-        # No pack matched
-        return {
-            "decision": {
-                "policy": "no_match",
-                "type": "observe",
-                "severity": "low",
-                "confidence": 0.0,
-                "reasoning": "No pack matched the input"
-            },
-            "actions": [],
-            "autonomy": {
-                "level": "observe",
-                "needs_approval": False,
-                "can_execute": False
-            },
-            "provenance": {
-                "raw_input": raw_input,
-                "timestamp": datetime.now().isoformat()
-            },
-            "metadata": {
-                "pack": "none",
-                "version": "1.0.0"
+        if not result:
+            # No pack matched
+            result = {
+                "decision": {
+                    "policy": "no_match",
+                    "type": "observe",
+                    "severity": "low",
+                    "confidence": 0.0,
+                    "reasoning": "No pack matched the input"
+                },
+                "actions": [],
+                "autonomy": {
+                    "level": "observe",
+                    "needs_approval": False,
+                    "can_execute": False
+                },
+                "provenance": {
+                    "raw_input": raw_input,
+                    "timestamp": datetime.now().isoformat()
+                },
+                "metadata": {
+                    "pack": "none",
+                    "version": "1.0.0"
+                }
             }
-        }
+
+        # Persist trace if service available
+        if self.trace_service and session_id:
+            try:
+                await self.trace_service.capture_step(
+                    session_id=int(session_id) if isinstance(session_id, str) and session_id.isdigit() else (session_id if isinstance(session_id, int) else 1),
+                    step=TraceStep.POLICY_MATCH,
+                    data=result,
+                    agent_id="pack_executor",
+                    confidence_score=result["decision"].get("confidence", 0.0)
+                )
+            except Exception as e:
+                logger.error(f"Failed to persist policy trace: {e}")
+
+        return result
     
     def list_packs(self) -> List[Dict[str, Any]]:
         """List all loaded packs with metadata"""
