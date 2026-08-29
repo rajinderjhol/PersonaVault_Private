@@ -1,118 +1,70 @@
 /**
- * Sidebar Customization - Manage user sidebar elements
+ * Sidebar Manager - Navigation and customization
  */
 
 class SidebarManager {
     constructor() {
-        this.prefs = null;
-        this.dragging = null;
+        this.elements = [];
+        this.init();
     }
 
-    async init() {
-        console.log("SidebarManager: initializing...");
-        await this.loadPrefs();
+    init() {
+        console.log('SidebarManager: initializing...');
+        this.loadElements();
         this.renderElements();
-        console.log("SidebarManager: initialized.");
+        console.log('SidebarManager: initialized.');
     }
 
-    async loadPrefs() {
-        console.log("SidebarManager: loading prefs...");
-        try {
-            const response = await fetch('/api/v1/user/preferences/sidebar');
-            console.log("SidebarManager: prefs response status:", response.status);
-            if (response.ok) {
-                this.prefs = await response.json();
-                console.log("SidebarManager: prefs loaded:", this.prefs);
-            } else {
-                console.warn('SidebarManager: API failed, using default sidebar preferences');
-                this.prefs = this.getDefaultPrefs();
-            }
-        } catch (error) {
-            console.warn('SidebarManager: Failed to load sidebar prefs, using defaults:', error);
-            this.prefs = this.getDefaultPrefs();
-        }
-        this.renderElements();
-    }
-
-    getDefaultPrefs() {
-        return {
-            elements: [
-                { id: 'dashboard', type: 'navigation', label: 'Dashboard', icon: '📊' },
-                { id: 'chat', type: 'navigation', label: 'Chat', icon: '💬' },
-                { id: 'swarm', type: 'navigation', label: 'Swarm', icon: '🐝' }
-            ],
-            order: ['dashboard', 'chat', 'swarm'],
-            collapsed: false
-        };
+    loadElements() {
+        // Default navigation elements
+        this.elements = [
+            { id: 'dashboard', icon: '📊', label: 'Dashboard', url: '/admin/dashboard/v2' },
+            { id: 'chat', icon: '💬', label: 'Chat', url: '/admin/dashboard/v2?tab=chat' },
+            { id: 'swarm', icon: '🐝', label: 'Swarm', url: '/admin/swarm' },
+            { id: 'compliance', icon: '⚖️', label: 'Compliance', url: '/admin/compliance' },
+            { id: 'security', icon: '🔒', label: 'Security', url: '/admin/security' }
+        ];
     }
 
     renderElements() {
         const container = document.getElementById('sidebar-nav');
-        if (!container) {
-            console.error("SidebarManager: sidebar-nav not found");
-            return;
-        }
+        if (!container) return;
 
-        const ordered = this.prefs.order
-            .map(id => this.prefs.elements.find(e => e.id === id))
-            .filter(e => e && e.visible !== false);
-
-        container.innerHTML = ordered.map(el => `
-            <div class="sidebar-item ${el.type}" data-id="${el.id}" onclick="console.log('Sidebar clicked: ${el.id}'); loadTab('${el.id}')">
-                <span class="icon">${el.icon || '📄'}</span>
-                <span class="label">${el.label}</span>
-            </div>
+        container.innerHTML = this.elements.map(el => `
+            <a href="${el.url}" class="nav-item" data-id="${el.id}">
+                <span class="nav-icon">${el.icon}</span>
+                <span class="nav-label">${el.label}</span>
+            </a>
         `).join('');
-        console.log("SidebarManager: rendered elements:", ordered.length);
-    }
 
-    async addElement(type, label) {
-        const id = `${type}-${label.toLowerCase().replace(/\s+/g, '-')}`;
-        const element = { id, type, label, icon: this.getIcon(type, label) };
-        
-        try {
-            const response = await fetch('/api/v1/user/preferences/sidebar/elements', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(element)
-            });
-            if (response.ok) {
-                this.prefs.elements.push(element);
-                this.prefs.order.push(id);
-                this.renderElements();
-            } else {
-                console.warn('SidebarManager: API failed, adding element locally');
-                this.prefs.elements.push(element);
-                this.prefs.order.push(id);
-                this.renderElements();
+        // Mark active based on current URL
+        const currentPath = window.location.pathname;
+        container.querySelectorAll('.nav-item').forEach(item => {
+            if (currentPath.includes(item.getAttribute('href').split('?')[0])) {
+                item.classList.add('active');
             }
-        } catch (error) {
-            console.warn('SidebarManager: Network error, adding element locally:', error);
-            this.prefs.elements.push(element);
-            this.prefs.order.push(id);
-            this.renderElements();
-        }
+        });
     }
 
-    getIcon(type, label) {
+    addElement(type, label) {
         const icons = {
             'Security': '🔒',
             'Compliance': '⚖️',
             'Contract': '📄',
-            'Procurement': '📦',
-            'Robotics': '🤖',
-            'Snowflakes': '❄️',
-            'Metrics': '📊',
-            'Pattern': '📌'
+            'Procurement': '📦'
         };
-        return icons[label] || '📄';
+        const icon = icons[label] || '📌';
+        const id = `${type}-${label.toLowerCase()}`;
+        
+        this.elements.push({ id, icon, label, url: '#' });
+        this.renderElements();
+        
+        // Close the modal
+        closeSidebarEditor();
     }
 }
 
-// Global instance
-const sidebarManager = new SidebarManager();
-document.addEventListener('DOMContentLoaded', () => sidebarManager.init());
-
-function closeSidebarEditor() {
-    document.getElementById('sidebar-editor').style.display = 'none';
-}
+// Initialize sidebar manager
+document.addEventListener('DOMContentLoaded', function() {
+    window.sidebarManager = new SidebarManager();
+});

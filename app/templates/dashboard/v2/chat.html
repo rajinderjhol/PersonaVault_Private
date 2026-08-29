@@ -1,0 +1,521 @@
+<!-- Central Chat Panel -->
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <div class="chat-title">
+            <span class="chat-icon">💬</span>
+            <span class="chat-title-text">PersonaVault Chat</span>
+        </div>
+        <div class="chat-header-actions">
+            <button class="btn-new-chat" onclick="chatIntegration.newChat()">+ New Chat</button>
+        </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="chat-messages" id="chat-messages">
+        <!-- Messages rendered by JavaScript, reusing existing message styles -->
+    </div>
+
+    <!-- Chat Input Area (reuse existing chat input) -->
+    <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+            <textarea 
+                id="chat-input" 
+                placeholder="Ask me anything..." 
+                rows="1"
+                aria-label="Chat input"
+            ></textarea>
+            <div class="chat-actions">
+                <button class="btn-attach" title="Attach file">📎</button>
+                <button class="send-btn" id="send-btn" aria-label="Send message">
+                    ➤
+                </button>
+            </div>
+        </div>
+        <div class="chat-controls">
+            <label class="control-toggle">
+                <input type="checkbox" id="thought-toggle">
+                Show thought process
+            </label>
+            <select id="provider-select" class="provider-select">
+                <option value="groq">Groq</option>
+                <option value="ollama">Ollama</option>
+                <option value="gemini">Gemini</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Reuse existing chat CSS -->
+<style>
+/* Chat Panel Styles - Extends existing dashboard.css */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.chat-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #0f172a;
+}
+
+.btn-new-chat {
+    padding: 6px 14px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.btn-new-chat:hover {
+    background: #2563eb;
+}
+
+/* Reuse existing message styles from chat.css */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #ffffff;
+}
+
+/* Quick actions in empty state */
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.quick-actions button {
+    padding: 6px 16px;
+    background: #f1f5f9;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.quick-actions button:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+/* Attribution badge - reuse existing */
+.message-attribution {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 12px;
+    margin-top: 4px;
+    background: #fef3c7;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #92400e;
+}
+
+.attribution-pattern {
+    font-weight: 500;
+    background: #fde68a;
+    padding: 0 8px;
+    border-radius: 4px;
+}
+
+/* Reuse existing chat input styles */
+.chat-input-area {
+    padding: 12px 20px 16px;
+    border-top: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.chat-input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 8px 12px;
+}
+
+.chat-input-wrapper textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+    padding: 4px 0;
+    font-family: inherit;
+    max-height: 100px;
+}
+
+.chat-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-attach {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: #94a3b8;
+    transition: background 0.2s;
+}
+
+.btn-attach:hover {
+    background: #f1f5f9;
+}
+
+.send-btn {
+    padding: 6px 14px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.send-btn:hover {
+    background: #2563eb;
+}
+
+.chat-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding: 0 4px;
+}
+
+.control-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.provider-select {
+    padding: 4px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 12px;
+    background: white;
+    color: #0f172a;
+}
+</style>
+
+<!-- Reuse existing chat JavaScript -->
+<script src="{{ url_for('static', path='js/chat_stream.js') }}"></script>
+<script src="{{ url_for('static', path='js/trace-viewer.js') }}"></script>
+<script>
+/**
+ * Chat Integration - Reuses existing chat_stream.js and trace-viewer.js
+ */
+class ChatIntegration {
+    constructor() {
+        this.messages = [];
+        this.provider = document.getElementById('provider-select')?.value || 'groq';
+        this.sessionId = null;
+        this.init();
+    }
+
+    init() {
+        this.loadChatHistory();
+        this.setupEventListeners();
+        this.setupStreaming();
+    }
+
+    async loadChatHistory() {
+        try {
+            const response = await fetch('/api/v1/chat/history?limit=50');
+            if (response.ok) {
+                const data = await response.json();
+                this.messages = data.messages || [];
+                this.sessionId = data.session_id;
+                this.renderMessages();
+            }
+        } catch (error) {
+            console.error('Failed to load chat history:', error);
+        }
+    }
+
+    renderMessages() {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+
+        if (this.messages.length === 0) {
+            container.innerHTML = `
+                <div class="chat-empty">
+                    <div class="empty-icon">👋</div>
+                    <h3>Welcome to PersonaVault!</h3>
+                    <p>Create a new chat session or select an existing one to get started.</p>
+                    <div class="quick-actions">
+                        <button onclick="chatIntegration.sendQuickAction('summarize')">📝 Summarize</button>
+                        <button onclick="chatIntegration.sendQuickAction('keypoints')">🎯 Key Points</button>
+                        <button onclick="chatIntegration.sendQuickAction('actions')">✅ Actions</button>
+                        <button onclick="chatIntegration.sendQuickAction('simplify')">📖 Simplify</button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.messages.map(msg => `
+            <div class="message ${msg.role}">
+                <div class="message-content">${msg.content}</div>
+                ${msg.trace_ids ? this.renderTraces(msg.trace_ids) : ''}
+                ${msg.attribution ? this.renderAttribution(msg.attribution) : ''}
+            </div>
+        `).join('');
+
+        container.scrollTop = container.scrollHeight;
+    }
+
+    renderTraces(traceIds) {
+        // Reuse existing trace-viewer.js components
+        return Object.values(traceIds).filter(id => id).map(id => `
+            <div id="trace-${id}" data-trace-viewer data-trace-id="${id}"></div>
+        `).join('');
+    }
+
+    renderAttribution(attribution) {
+        const icons = { gas: '💨', liquid: '💧', ice: '🧊', snowflake: '❄️' };
+        return `
+            <div class="message-attribution">
+                <span>${icons[attribution.phase] || '🧊'}</span>
+                <span>${attribution.phase} memory applied</span>
+                ${attribution.pattern ? `<span class="attribution-pattern">${attribution.pattern}</span>` : ''}
+            </div>
+        `;
+    }
+
+    toggleTrace(traceId) {
+        const container = document.getElementById(`trace-${traceId}`);
+        if (container) {
+            const isVisible = container.style.display === 'block';
+            container.style.display = isVisible ? 'none' : 'block';
+            const toggle = container.parentElement.querySelector('.trace-toggle');
+            if (toggle) toggle.textContent = isVisible ? '▶' : '▼';
+        }
+    }
+
+    async sendMessage(message) {
+        const input = document.getElementById('chat-input');
+        if (!message) message = input?.value?.trim();
+        if (!message) return;
+
+        this.addMessage('user', message);
+        if (input) input.value = '';
+        this.showTyping();
+
+        try {
+            // Use existing chat_stream.js streaming
+            const response = await fetch('/api/v1/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: message,
+                    session_id: this.sessionId,
+                    provider: this.provider,
+                    stream: true
+                })
+            });
+
+            if (response.ok) {
+                await this.handleStream(response);
+            } else {
+                const error = await response.json();
+                this.addMessage('assistant', `❌ Error: ${error.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            this.addMessage('assistant', `❌ Error: ${error.message}`);
+        } finally {
+            this.hideTyping();
+        }
+    }
+
+    async handleStream(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let assistantMessage = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.content) {
+                            assistantMessage += data.content;
+                            this.updateTyping(assistantMessage);
+                        }
+                        if (data.trace_ids) {
+                            this.traceIds = data.trace_ids;
+                        }
+                        if (data.attribution) {
+                            this.attribution = data.attribution;
+                        }
+                        if (data.done) {
+                            this.finalizeMessage(assistantMessage, data);
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse stream data:', e);
+                    }
+                }
+            }
+        }
+    }
+
+    addMessage(role, content, traceIds = null, attribution = null) {
+        this.messages.push({ role, content, trace_ids: traceIds, attribution });
+        this.renderMessages();
+        // Initialize trace viewers
+        if (traceIds) {
+            setTimeout(() => {
+                document.querySelectorAll('[data-trace-viewer]').forEach(el => {
+                    const traceId = el.dataset.traceId;
+                    if (traceId && window.DecisionTraceViewer) {
+                        const viewer = new DecisionTraceViewer(el.id, traceId, { isExpanded: false });
+                        viewer.render();
+                    }
+                });
+            }, 100);
+        }
+    }
+
+    showTyping() {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+
+        this.typingElement = document.createElement('div');
+        this.typingElement.className = 'message assistant typing';
+        this.typingElement.innerHTML = `
+            <div class="message-content">
+                <span class="typing-dot">●</span>
+                <span class="typing-dot">●</span>
+                <span class="typing-dot">●</span>
+            </div>
+        `;
+        container.appendChild(this.typingElement);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    updateTyping(content) {
+        if (this.typingElement) {
+            const contentEl = this.typingElement.querySelector('.message-content');
+            if (contentEl) {
+                contentEl.textContent = content;
+            }
+        }
+    }
+
+    hideTyping() {
+        if (this.typingElement) {
+            this.typingElement.remove();
+            this.typingElement = null;
+        }
+    }
+
+    finalizeMessage(content, data) {
+        this.hideTyping();
+        this.addMessage('assistant', content, data.trace_ids || this.traceIds, data.attribution || this.attribution);
+        this.traceIds = null;
+        this.attribution = null;
+        
+        // Update context panel
+        if (data.trace_ids) {
+            document.dispatchEvent(new CustomEvent('chat-update', { detail: { trace_ids: data.trace_ids } }));
+        }
+    }
+
+    setupEventListeners() {
+        const input = document.getElementById('chat-input');
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
+
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => this.sendMessage());
+        }
+
+        const providerSelect = document.getElementById('provider-select');
+        if (providerSelect) {
+            providerSelect.addEventListener('change', (e) => {
+                this.provider = e.target.value;
+            });
+        }
+    }
+
+    setupStreaming() {
+        // Reuse existing chat_stream.js functionality
+        // The streaming is handled in sendMessage
+    }
+
+    sendQuickAction(type) {
+        const actions = {
+            summarize: 'Summarize this conversation',
+            keypoints: 'Extract key points',
+            actions: 'Show recommended actions',
+            simplify: 'Explain in simple terms'
+        };
+        this.sendMessage(actions[type] || type);
+    }
+
+    newChat() {
+        this.messages = [];
+        this.sessionId = null;
+        this.renderMessages();
+        document.dispatchEvent(new CustomEvent('chat-update', { detail: { reset: true } }));
+    }
+}
+
+// Initialize chat
+document.addEventListener('DOMContentLoaded', () => {
+    window.chatIntegration = new ChatIntegration();
+});
+</script>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PersonaVault Intelligence Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="/static/css/three_panel/theme.css">
+    <link rel="stylesheet" href="/static/css/three_panel/dashboard.css">
+    <link rel="stylesheet" href="/static/css/three_panel/chat.css">
+    <link rel="stylesheet" href="/static/css/three_panel/context.css">
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- SIDEBAR (Dark Theme) -->
+        <aside class="sidebar" id="main-sidebar">
+            <div class="brand">
+                <span class="logo-icon">🛡️</span>
+                <span class="brand-text">PersonaVault</span>
+            </div>
+            
+            <nav id="sidebar-nav">
+                <!-- Populated by JavaScript -->
+            </nav>
+
+            <!-- Session List -->
+            <div class="session-section">
+                <div class="session-header">
+                    <span>💬 Chat History</span>
+                    <button class="btn-new-session" onclick="window.chatIntegration?.createNewSession()">+ New</button>
+                </div>
+                <div id="session-list" class="session-list">
+                    <div class="session-loading">Loading sessions...</div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <span class="user-avatar">👤</span>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER PANEL -->
+        <main class="chat-panel">
+            <header>
+                <button onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+                <h2>Command Center</h2>
+            </header>
+
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <span class="chat-icon">💬</span>
+                        <span class="chat-title-text">PersonaVault Chat</span>
+                    </div>
+                    <div class="chat-header-actions">
+                        <button class="btn-new-chat" onclick="window.chatIntegration?.newChat()">+ New Chat</button>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-empty">
+                        <div class="empty-icon">👋</div>
+                        <h3>Welcome to PersonaVault!</h3>
+                        <p>Start a new conversation to begin.</p>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="chat-input-wrapper">
+                        <textarea id="chat-input" placeholder="Ask me anything..." rows="1"></textarea>
+                        <div class="chat-actions">
+                            <button class="btn-attach" title="Attach file">📎</button>
+                            <button class="send-btn" id="send-btn">➤</button>
+                        </div>
+                    </div>
+                    <div class="chat-controls">
+                        <label class="control-toggle">
+                            <input type="checkbox" id="thought-toggle"> Show thought process
+                        </label>
+                        <select id="provider-select" class="provider-select">
+                            <option value="groq">Groq</option>
+                            <option value="ollama">Ollama</option>
+                            <option value="gemini">Gemini</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- CONTEXT PANEL -->
+        <section class="context-panel">
+            <header>
+                <button onclick="toggleContextPanel()" title="Toggle context panel">🔍</button>
+            </header>
+            <div class="right-sidebar">
+                <div class="context-section">
+                    <h4 class="context-title">🔍 Current Decision</h4>
+                    <div id="context-decision"></div>
+                </div>
+                <div class="context-section">
+                    <h4 class="context-title">📊 Memory Phases</h4>
+                    <div id="thermo-distribution"></div>
+                </div>
+                <div class="context-section">
+                    <h4 class="context-title">🔄 Recent Transitions</h4>
+                    <div id="thermo-transitions"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sidebar Editor Modal -->
+        <div id="sidebar-editor" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>✏️ Customize Sidebar</h3>
+                    <button onclick="closeSidebarEditor()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="element-grid">
+                        <button class="element-btn" onclick="window.sidebarManager?.addElement('domain', 'Security')">🔒 Security</button>
+                        <button class="element-btn" onclick="window.sidebarManager?.addElement('domain', 'Compliance')">⚖️ Compliance</button>
+                        <button class="element-btn" onclick="window.sidebarManager?.addElement('domain', 'Contract')">📄 Contract</button>
+                        <button class="element-btn" onclick="window.sidebarManager?.addElement('domain', 'Procurement')">📦 Procurement</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/three_panel/dashboard.js"></script>
+    <script src="/static/js/three_panel/sidebar.js"></script>
+    <script src="/static/js/three_panel/context.js"></script>
+    <script src="/static/js/three_panel/chat_integration.js"></script>
+</body>
+</html>

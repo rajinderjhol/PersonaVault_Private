@@ -1,0 +1,83 @@
+<!-- Contextual Right Sidebar - Thermodynamic Intelligence Panel -->
+<div class="right-sidebar">
+    <!-- Current Decision Context -->
+    <div class="context-section">
+        <h4 class="context-title">🔍 Current Decision</h4>
+        <div id="context-decision">
+            <div class="context-empty">
+                <span class="empty-icon">🔍</span>
+                <p>No active decision</p>
+                <span class="empty-sub">Start a chat to see context</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thermodynamic Phase Distribution -->
+    <div class="context-section">
+        <h4 class="context-title">📊 Memory Phases</h4>
+        <div id="thermo-distribution">
+            <div class="phase-bars">
+                <div class="phase-bar gas">
+                    <span class="phase-icon">💨</span>
+                    <span class="phase-label">Gas</span>
+                    <span class="phase-count" id="phase-gas">0</span>
+                    <div class="phase-track">
+                        <div class="phase-fill" id="phase-gas-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="phase-bar liquid">
+                    <span class="phase-icon">💧</span>
+                    <span class="phase-label">Liquid</span>
+                    <span class="phase-count" id="phase-liquid">0</span>
+                    <div class="phase-track">
+                        <div class="phase-fill" id="phase-liquid-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="phase-bar ice">
+                    <span class="phase-icon">🧊</span>
+                    <span class="phase-label">Ice</span>
+                    <span class="phase-count" id="phase-ice">0</span>
+                    <div class="phase-track">
+                        <div class="phase-fill" id="phase-ice-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="phase-bar snowflake">
+                    <span class="phase-icon">❄️</span>
+                    <span class="phase-label">Snowflakes</span>
+                    <span class="phase-count" id="phase-snowflake">0</span>
+                    <div class="phase-track">
+                        <div class="phase-fill" id="phase-snowflake-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transitions Feed -->
+    <div class="context-section">
+        <h4 class="context-title">🔄 Recent Transitions</h4>
+        <div id="thermo-transitions">
+            <div class="transition-feed">
+                <div class="transition-empty">No recent transitions</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Snowflakes -->
+    <div class="context-section">
+        <h4 class="context-title">❄️ Active Snowflakes</h4>
+        <div id="active-snowflakes">
+            <div class="snowflake-empty">No active snowflakes</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="context-actions">
+        <button class="action-btn" onclick="window.contextPanel?.loadContext()">
+            🔄 Refresh
+        </button>
+        <button class="action-btn primary" onclick="window.location.href='/dashboard/thermodynamics'">
+            📊 Full Dashboard
+        </button>
+    </div>
+</div>

@@ -105,10 +105,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 @router.get("/phase-distribution")
 async def get_phase_distribution(db: AsyncSession = Depends(get_db)):
-    """
-    Get current memory phase distribution from real data.
-    Maps DecisionTrace.step to thermodynamic phases.
-    """
+    """Get current memory phase distribution from real data."""
     try:
         # Count by step
         result = await db.execute(
@@ -117,10 +114,10 @@ async def get_phase_distribution(db: AsyncSession = Depends(get_db)):
         )
         counts = result.all()
         
-        # Map steps to thermodynamic phases
+        # Map steps to phases
         step_to_phase = {
             "perception": "liquid",
-            "policy_match": "liquid",
+            "policy_match": "liquid", 
             "ai_recommendation": "liquid",
             "action": "ice",
             "outcome": "ice",
@@ -133,7 +130,7 @@ async def get_phase_distribution(db: AsyncSession = Depends(get_db)):
             "SUMMARY": "ice"
         }
         
-        distribution = {"gas": 3, "liquid": 0, "ice": 0, "snowflakes": 0}
+        distribution = {"gas": 0, "liquid": 0, "ice": 0, "snowflakes": 0}
         
         for step, count in counts:
             step_str = step.value if hasattr(step, 'value') else str(step)
@@ -141,13 +138,24 @@ async def get_phase_distribution(db: AsyncSession = Depends(get_db)):
             if phase in distribution:
                 distribution[phase] += count
         
-        # Get snowflake count from Snowflake table
+        # Count snowflakes
         try:
             snowflake_count = await db.execute(select(func.count()).select_from(Snowflake))
             distribution["snowflakes"] = snowflake_count.scalar() or 0
-        except Exception as e:
-            logger.warning(f"Could not count snowflakes: {e}")
-            distribution["snowflakes"] = 0
+        except:
+            pass
+        
+        return {
+            "gas": distribution["gas"],
+            "liquid": distribution["liquid"],
+            "ice": distribution["ice"],
+            "snowflakes": distribution["snowflakes"],
+            "total": sum(distribution.values()),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get phase distribution: {e}")
+        return {"gas": 0, "liquid": 0, "ice": 0, "snowflakes": 0, "total": 0, "timestamp": datetime.utcnow().isoformat()}
         
         return {
             "gas": distribution["gas"],

@@ -1,0 +1,46 @@
+<!-- Sidebar Editor Modal -->
+<div id="sidebar-editor" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ Customize Sidebar</h3>
+            <button class="modal-close" onclick="closeSidebarEditor()">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Available Elements -->
+            <div class="editor-section">
+                <h4>Add Elements</h4>
+                <div class="element-grid">
+                    <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Security')">
+                        🔒 Security
+                    </button>
+                    <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Compliance')">
+                        ⚖️ Compliance
+                    </button>
+                    <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Contract')">
+                        📄 Contract
+                    </button>
+                    <button class="element-btn" onclick="sidebarManager.addElement('widget', 'Snowflakes')">
+                        ❄️ Snowflakes
+                    </button>
+                    <button class="element-btn" onclick="sidebarManager.addElement('widget', 'Metrics')">
+                        📊 Metrics
+                    </button>
+                    <button class="element-btn" onclick="sidebarManager.addElement('bookmark', 'Pattern #42')">
+                        📌 Pattern #42
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Current Elements -->
+            <div class="editor-section">
+                <h4>Current Elements</h4>
+                <div class="element-list" id="sidebar-element-list">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeSidebarEditor()">Close</button>
+        </div>
+    </div>
+</div>
