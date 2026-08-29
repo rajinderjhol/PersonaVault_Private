@@ -1,0 +1,181 @@
+<!-- Decision Trace Viewer Component -->
+<div class="trace-viewer" id="trace-{{ trace_id }}" data-trace-id="{{ trace_id }}">
+    <div class="trace-loading">⏳ Loading trace...</div>
+</div>
+
+<style>
+.trace-viewer {
+    margin: 8px 0;
+}
+.trace-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+}
+.trace-card:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.trace-header {
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.trace-header:hover {
+    background: #f9fafb;
+}
+.trace-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.trace-icon { font-size: 18px; }
+.trace-step-label {
+    font-weight: 500;
+    font-size: 13px;
+}
+.trace-step-description {
+    font-size: 11px;
+    color: #6b7280;
+}
+.trace-badge {
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 9999px;
+}
+.trace-confidence {
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 9999px;
+}
+.confidence-high { background: #d1fae5; color: #065f46; }
+.confidence-medium { background: #fef3c7; color: #92400e; }
+.confidence-low { background: #fee2e2; color: #991b1b; }
+.confidence-unknown { background: #f3f4f6; color: #6b7280; }
+.trace-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.trace-time {
+    font-size: 11px;
+    color: #9ca3af;
+}
+.trace-toggle {
+    font-size: 12px;
+    color: #9ca3af;
+    transition: transform 0.2s;
+}
+.trace-toggle.expanded {
+    transform: rotate(180deg);
+}
+.trace-body {
+    padding: 12px 14px 14px;
+    border-top: 1px solid #f3f4f6;
+    display: none;
+}
+.trace-body.expanded {
+    display: block;
+}
+.trace-section-title {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+.trace-data {
+    background: #f9fafb;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.trace-json {
+    font-size: 11px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.trace-provenance-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    background: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 4px;
+}
+.trace-provenance-type {
+    font-weight: 500;
+    color: #2563eb;
+    min-width: 70px;
+}
+.trace-provenance-text {
+    color: #4b5563;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.trace-provenance-score {
+    color: #9ca3af;
+    min-width: 50px;
+    text-align: right;
+}
+.trace-crystallize-btn {
+    width: 100%;
+    padding: 6px 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.trace-crystallize-btn:hover {
+    background: #fef3c7;
+}
+.trace-loading {
+    padding: 10px;
+    color: #6b7280;
+    font-size: 13px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+.trace-error {
+    padding: 10px;
+    color: #dc2626;
+    font-size: 13px;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.border-blue-300 { border-left: 3px solid #93c5fd; }
+.border-purple-300 { border-left: 3px solid #d8b4fe; }
+.border-green-300 { border-left: 3px solid #86efac; }
+.border-orange-300 { border-left: 3px solid #fdba74; }
+.border-teal-300 { border-left: 3px solid #5eead4; }
+.border-gray-300 { border-left: 3px solid #d1d5db; }
+</style>
