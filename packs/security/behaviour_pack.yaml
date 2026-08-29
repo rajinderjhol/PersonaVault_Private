@@ -4,6 +4,32 @@ pack:
   version: 1.0.0
   domain: security
   description: Learn your SOC team's incident response patterns
+  focus:
+    - threat detection
+    - incident response
+    - vulnerability assessment
+  keywords:
+    - security
+    - incident
+    - threat
+    - breach
+    - vulnerability
+    - attack
+    - malware
+  actions:
+    - block_ip
+    - alert_security_team
+    - investigate_incident
+    - update_firewall
+  patterns:
+    - failed_login_attempts
+    - suspicious_traffic
+    - unauthorized_access
+  rules:
+    - if: failed_login_attempts > 5 in 1 minute
+      then: block_ip
+    - if: suspicious_traffic detected
+      then: alert_security_team
 
 entities:
   - name: incident

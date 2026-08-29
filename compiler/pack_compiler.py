@@ -185,7 +185,8 @@ class BehaviorPackCompiler:
             policies=pack_data.get('policies', []),
             entities=pack_data.get('entities', {}),
             events=pack_data.get('events', {}),
-            autonomy_levels=pack_data.get('autonomy', {})
+            autonomy_levels=pack_data.get('autonomy', {}),
+            pack_data=pack_data
         )
     
     def _generate_signature(self, compiled: CompiledPack) -> str:

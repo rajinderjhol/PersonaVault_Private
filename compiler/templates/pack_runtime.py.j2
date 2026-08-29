@@ -118,3 +118,15 @@ class {{ pack_name_class }}Pack:
     def get_policies(self) -> List[Dict[str, Any]]:
         """Get all policies"""
         return {{ policies|tojson }}
+
+    def get_snowflake_template(self) -> Dict[str, Any]:
+        """Generate snowflake template for this pack"""
+        return {
+            "domain": "{{ domain }}",
+            "focus": {{ pack_data.focus | default([]) | tojson }},
+            "keywords": {{ pack_data.keywords | default([]) | tojson }},
+            "actions": {{ pack_data.actions | default([]) | tojson }},
+            "patterns": {{ pack_data.patterns | default([]) | tojson }},
+            "rules": {{ pack_data.rules | default([]) | tojson }},
+            "version": "{{ version }}"
+        }

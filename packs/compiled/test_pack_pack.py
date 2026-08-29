@@ -1,9 +1,9 @@
 """
-Auto-generated Runtime Class for Legal Intelligence
-Pack: Legal Intelligence
-Domain: legal
+Auto-generated Runtime Class for Test Pack
+Pack: Test Pack
+Domain: test
 Version: 1.0.0
-Generated: 2026-08-29T17:29:12.086700
+Generated: 2026-08-29T17:29:12.056982
 Signature: 
 """
 import logging
@@ -12,15 +12,15 @@ from datetime import datetime
 
 # Generated Components Inline
 """
-Auto-generated Signal Normalizer for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
-Source checksum: cf50e56a31b2d3fc
+Auto-generated Signal Normalizer for Test Pack
+Generated on: 2026-08-29T17:29:12.056982
+Source checksum: 2abea2dbc5a378d9
 """
 import re
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-class LegalIntelligenceSignalNormalizer:
+class TestPackSignalNormalizer:
     """Normalize raw input to structured signals"""
     
     def __init__(self):
@@ -29,7 +29,7 @@ class LegalIntelligenceSignalNormalizer:
     def _compile_patterns(self) -> Dict[str, re.Pattern]:
         """Compile regex patterns for entity extraction"""
         return {
-            'legal_case': re.compile(r'legal case \$(?P<value>[\d,]+)'),
+            'test_entity': re.compile(r'test value \$(?P<value>[\d,]+)'),
         }
     
     def normalize(self, raw_input: str) -> Dict[str, Any]:
@@ -44,10 +44,10 @@ class LegalIntelligenceSignalNormalizer:
         """
         signals = {}
         
-        # Extract legal_case
-        legal_case_matches = self._extract_legal_case(raw_input)
-        if legal_case_matches:
-            signals['legal_case'] = legal_case_matches
+        # Extract test_entity
+        test_entity_matches = self._extract_test_entity(raw_input)
+        if test_entity_matches:
+            signals['test_entity'] = test_entity_matches
         
         # Add raw input as fallback
         signals['raw_input'] = raw_input
@@ -56,40 +56,14 @@ class LegalIntelligenceSignalNormalizer:
         
         return signals
     
-    def _extract_legal_case(self, raw_input: str) -> Optional[Dict]:
-        """Extract legal_case from raw input"""
-        # Entity definition: {'pattern': 'legal case \\$(?P<value>[\\d,]+)', 'fields': {'value': 'number', 'case_number': 'string', 'status': 'string', 'filed_date': 'date', 'description': 'string'}}
-        match = self.patterns['legal_case'].search(raw_input)
+    def _extract_test_entity(self, raw_input: str) -> Optional[Dict]:
+        """Extract test_entity from raw input"""
+        # Entity definition: {'fields': {'status': 'string', 'value': 'number'}, 'pattern': 'test value \\$(?P<value>[\\d,]+)'}
+        match = self.patterns['test_entity'].search(raw_input)
         if not match:
             return None
         
         result = {}
-        try:
-            # Simple named group extraction if pattern has it
-            value = match.group('value') if 'value' in match.groupdict() else None
-            if value:
-                # Clean numeric value (remove commas)
-                clean_val = value.replace(',', '')
-                result['value'] = float(clean_val) if '.' in clean_val else int(clean_val)
-        except Exception:
-            # Fallback to group index if name not found
-            try:
-                # This is a bit of a hack since we don't know group indices
-                pass
-            except Exception:
-                pass
-        try:
-            # Simple named group extraction if pattern has it
-            value = match.group('case_number') if 'case_number' in match.groupdict() else None
-            if value:
-                result['case_number'] = value
-        except Exception:
-            # Fallback to group index if name not found
-            try:
-                # This is a bit of a hack since we don't know group indices
-                pass
-            except Exception:
-                pass
         try:
             # Simple named group extraction if pattern has it
             value = match.group('status') if 'status' in match.groupdict() else None
@@ -104,21 +78,11 @@ class LegalIntelligenceSignalNormalizer:
                 pass
         try:
             # Simple named group extraction if pattern has it
-            value = match.group('filed_date') if 'filed_date' in match.groupdict() else None
+            value = match.group('value') if 'value' in match.groupdict() else None
             if value:
-                result['filed_date'] = datetime.fromisoformat(value).isoformat()
-        except Exception:
-            # Fallback to group index if name not found
-            try:
-                # This is a bit of a hack since we don't know group indices
-                pass
-            except Exception:
-                pass
-        try:
-            # Simple named group extraction if pattern has it
-            value = match.group('description') if 'description' in match.groupdict() else None
-            if value:
-                result['description'] = value
+                # Clean numeric value (remove commas)
+                clean_val = value.replace(',', '')
+                result['value'] = float(clean_val) if '.' in clean_val else int(clean_val)
         except Exception:
             # Fallback to group index if name not found
             try:
@@ -142,9 +106,9 @@ class LegalIntelligenceSignalNormalizer:
         return min(confidence, 1.0)
 
 """
-Auto-generated Policy Engine for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
-Source checksum: cf50e56a31b2d3fc
+Auto-generated Policy Engine for Test Pack
+Generated on: 2026-08-29T17:29:12.056982
+Source checksum: 2abea2dbc5a378d9
 """
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
@@ -161,13 +125,12 @@ class PolicyResult:
     explanation: str
     matched_conditions: List[str]
 
-class LegalIntelligencePolicyEngine:
+class TestPackPolicyEngine:
     """Auto-generated policy engine"""
     
     def __init__(self):
         self.policy_handlers = {
-            'High Value Case Review': self._handle_high_value_case_review,
-            'Urgent Case Priority': self._handle_urgent_case_priority,
+            'Test Policy': self._handle_test_policy,
         }
     
     def evaluate(self, signals: Dict[str, Any]) -> PolicyResult:
@@ -181,10 +144,7 @@ class LegalIntelligencePolicyEngine:
             PolicyResult with decision and actions
         """
         # Check each policy in order of severity
-        result = self.policy_handlers['High Value Case Review'](signals)
-        if result:
-            return result
-        result = self.policy_handlers['Urgent Case Priority'](signals)
+        result = self.policy_handlers['Test Policy'](signals)
         if result:
             return result
         
@@ -200,83 +160,49 @@ class LegalIntelligencePolicyEngine:
             matched_conditions=[]
         )
     
-    def _handle_high_value_case_review(self, signals: Dict[str, Any]) -> Optional[PolicyResult]:
+    def _handle_test_policy(self, signals: Dict[str, Any]) -> Optional[PolicyResult]:
         """
-        Policy: High Value Case Review
-        Description: Flag cases over $1M for executive review
+        Policy: Test Policy
+        Description: A test policy
         """
         matched_conditions = []
         
         # Check required signals
-        if signals.get('legal_case') is None:
+        if signals.get('test_entity') is None:
             return None
-        matched_conditions.append('legal_case present')
+        matched_conditions.append('test_entity present')
         
         # Check conditions
-        # Condition: signals.get('legal_case', {}).get('value', 0) > 1000000
+        # Condition: signals.get('test_entity', {}).get('value', 0) > 100
         try:
             # We use a simple eval here for the conditions defined in YAML
             # WARNING: In production, use a safer expression parser
-            if not eval("signals.get(\u0027legal_case\u0027, {}).get(\u0027value\u0027, 0) \u003e 1000000", {"signals": signals, "signals.get": signals.get}):
+            if not eval("signals.get(\u0027test_entity\u0027, {}).get(\u0027value\u0027, 0) \u003e 100", {"signals": signals, "signals.get": signals.get}):
                 return None
-            matched_conditions.append("signals.get(\u0027legal_case\u0027, {}).get(\u0027value\u0027, 0) \u003e 1000000")
+            matched_conditions.append("signals.get(\u0027test_entity\u0027, {}).get(\u0027value\u0027, 0) \u003e 100")
         except Exception:
             return None
         
         # Policy matched
         return PolicyResult(
-            policy_name='High Value Case Review',
-            decision_type='review_required',
-            severity='high',
+            policy_name='Test Policy',
+            decision_type='test_decision',
+            severity='medium',
             autonomy_level='recommend',
-            actions=[{"action": "notify_executive", "priority": "high"}, {"action": "schedule_review", "priority": "medium"}],
+            actions=[{"action": "test_action", "priority": "medium"}],
             confidence=signals.get('confidence', 0.5),
-            explanation="The value of this legal case ($signals.get('legal_case', {}).get('value')) exceeds the $1,000,000 executive review threshold.",
-            matched_conditions=matched_conditions
-        )
-    def _handle_urgent_case_priority(self, signals: Dict[str, Any]) -> Optional[PolicyResult]:
-        """
-        Policy: Urgent Case Priority
-        Description: Flag urgent cases for immediate attention
-        """
-        matched_conditions = []
-        
-        # Check required signals
-        if signals.get('legal_case') is None:
-            return None
-        matched_conditions.append('legal_case present')
-        
-        # Check conditions
-        # Condition: signals.get('legal_case', {}).get('status', '') == 'urgent'
-        try:
-            # We use a simple eval here for the conditions defined in YAML
-            # WARNING: In production, use a safer expression parser
-            if not eval("signals.get(\u0027legal_case\u0027, {}).get(\u0027status\u0027, \u0027\u0027) == \u0027urgent\u0027", {"signals": signals, "signals.get": signals.get}):
-                return None
-            matched_conditions.append("signals.get(\u0027legal_case\u0027, {}).get(\u0027status\u0027, \u0027\u0027) == \u0027urgent\u0027")
-        except Exception:
-            return None
-        
-        # Policy matched
-        return PolicyResult(
-            policy_name='Urgent Case Priority',
-            decision_type='urgent_action',
-            severity='critical',
-            autonomy_level='approve',
-            actions=[{"action": "immediate_review", "priority": "critical"}],
-            confidence=signals.get('confidence', 0.5),
-            explanation="Urgent case requires immediate attention",
+            explanation="Test condition met for value $signals.get('test_entity', {}).get('value')",
             matched_conditions=matched_conditions
         )
 
 
 """
-Auto-generated Action Mapper for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
+Auto-generated Action Mapper for Test Pack
+Generated on: 2026-08-29T17:29:12.056982
 """
 from typing import Dict, Any, List
 
-class LegalIntelligenceActionMapper:
+class TestPackActionMapper:
     """Map policy decisions to actionable tools"""
     
     def __init__(self):
@@ -288,13 +214,13 @@ class LegalIntelligenceActionMapper:
         return policy_result.actions
 
 """
-Auto-generated Provenance Tracker for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
+Auto-generated Provenance Tracker for Test Pack
+Generated on: 2026-08-29T17:29:12.056982
 """
 from typing import Dict, Any, List
 from datetime import datetime
 
-class LegalIntelligenceProvenanceTracker:
+class TestPackProvenanceTracker:
     """Track evidence and decision lineage (Auditable Decision Trace)"""
     
     def __init__(self):
@@ -309,7 +235,7 @@ class LegalIntelligenceProvenanceTracker:
             "decision_id": f"D-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{hash(raw_input) % 10000:04d}",
             "timestamp": datetime.now().isoformat(),
             "pack": {
-                "name": "Legal Intelligence",
+                "name": "Test Pack",
                 "version": "1.0.0"
             },
             # Authoritative Execution Trace
@@ -343,28 +269,28 @@ class LegalIntelligenceProvenanceTracker:
 
 logger = logging.getLogger(__name__)
 
-class LegalIntelligencePack:
+class TestPackPack:
     """
-    Legal Intelligence Behavior Pack
-    Domain: legal
+    Test Pack Behavior Pack
+    Domain: test
     Version: 1.0.0
     """
     
     def __init__(self):
-        self.signal_normalizer = LegalIntelligenceSignalNormalizer()
-        self.policy_engine = LegalIntelligencePolicyEngine()
-        self.action_mapper = LegalIntelligenceActionMapper()
-        self.provenance_tracker = LegalIntelligenceProvenanceTracker()
+        self.signal_normalizer = TestPackSignalNormalizer()
+        self.policy_engine = TestPackPolicyEngine()
+        self.action_mapper = TestPackActionMapper()
+        self.provenance_tracker = TestPackProvenanceTracker()
         
         self.metadata = {
-            "name": "Legal Intelligence",
-            "domain": "legal",
+            "name": "Test Pack",
+            "domain": "test",
             "version": "1.0.0",
             "signature": "",
-            "timestamp": "2026-08-29T17:29:12.086700"
+            "timestamp": "2026-08-29T17:29:12.056982"
         }
         
-        logger.info(f"✅ Loaded Legal Intelligence pack v1.0.0")
+        logger.info(f"✅ Loaded Test Pack pack v1.0.0")
     
     async def process(self, raw_input: str, user_id: int, session_id: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -431,20 +357,20 @@ class LegalIntelligencePack:
     
     def get_supported_entities(self) -> Dict[str, Any]:
         """Get supported entities"""
-        return {"legal_case": {"fields": {"case_number": "string", "description": "string", "filed_date": "date", "status": "string", "value": "number"}, "pattern": "legal case \\$(?P\u003cvalue\u003e[\\d,]+)"}}
+        return {"test_entity": {"fields": {"status": "string", "value": "number"}, "pattern": "test value \\$(?P\u003cvalue\u003e[\\d,]+)"}}
     
     def get_supported_events(self) -> Dict[str, Any]:
         """Get supported events"""
-        return {"case_filed": {"fields": {"case_number": "string", "court": "string", "filed_date": "date"}}}
+        return {"test_event": {"fields": {"description": "string", "timestamp": "date"}}}
     
     def get_policies(self) -> List[Dict[str, Any]]:
         """Get all policies"""
-        return [{"actions": [{"action": "notify_executive", "priority": "high"}, {"action": "schedule_review", "priority": "medium"}], "autonomy": {"level": "recommend"}, "confidence_threshold": 0.7, "decision": {"reasoning": "The value of this legal case ($signals.get(\u0027legal_case\u0027, {}).get(\u0027value\u0027)) exceeds the $1,000,000 executive review threshold.", "severity": "high", "type": "review_required"}, "description": "Flag cases over $1M for executive review", "name": "High Value Case Review", "when": {"conditions": ["signals.get(\u0027legal_case\u0027, {}).get(\u0027value\u0027, 0) \u003e 1000000"], "signals": ["legal_case"]}}, {"actions": [{"action": "immediate_review", "priority": "critical"}], "autonomy": {"level": "approve"}, "confidence_threshold": 0.8, "decision": {"reasoning": "Urgent case requires immediate attention", "severity": "critical", "type": "urgent_action"}, "description": "Flag urgent cases for immediate attention", "name": "Urgent Case Priority", "when": {"conditions": ["signals.get(\u0027legal_case\u0027, {}).get(\u0027status\u0027, \u0027\u0027) == \u0027urgent\u0027"], "signals": ["legal_case"]}}]
+        return [{"actions": [{"action": "test_action", "priority": "medium"}], "autonomy": {"level": "recommend"}, "confidence_threshold": 0.6, "decision": {"reasoning": "Test condition met for value $signals.get(\u0027test_entity\u0027, {}).get(\u0027value\u0027)", "severity": "medium", "type": "test_decision"}, "description": "A test policy", "name": "Test Policy", "when": {"conditions": ["signals.get(\u0027test_entity\u0027, {}).get(\u0027value\u0027, 0) \u003e 100"], "signals": ["test_entity"]}}]
 
     def get_snowflake_template(self) -> Dict[str, Any]:
         """Generate snowflake template for this pack"""
         return {
-            "domain": "legal",
+            "domain": "test",
             "focus": [],
             "keywords": [],
             "actions": [],
