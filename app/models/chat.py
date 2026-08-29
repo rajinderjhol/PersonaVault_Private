@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.session import Base
@@ -23,6 +23,7 @@ class ChatMessage(Base):
     role = Column(String)  # 'user' or 'assistant'
     content = Column(Text)
     provider = Column(String, nullable=True)
+    trace_ids = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     session = relationship("ChatSession", back_populates="messages")

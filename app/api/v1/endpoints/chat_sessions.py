@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from typing import List, Optional
 from datetime import datetime
+import json
 from pydantic import BaseModel
 
 from app.db.session import get_db
@@ -115,6 +116,7 @@ async def get_session_messages(
                 "role": m.role,
                 "content": m.content,
                 "provider": getattr(m, 'provider', None),
+                "trace_ids": json.loads(m.trace_ids) if m.trace_ids else None,
                 "created_at": m.created_at.isoformat() if m.created_at else None
             } for m in messages]
         }

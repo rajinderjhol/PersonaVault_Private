@@ -423,12 +423,20 @@ app.include_router(chat_stream_router)
 app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
 app.include_router(mcp_tools_router)
+from app.api.v1.endpoints.traces import router as traces_router
+app.include_router(traces_router)
 app.include_router(decisions.router)
 
 app.include_router(swarm.router)
 app.include_router(integrations.router)
 from app.api.v1.endpoints.marketplace import router as marketplace_router
+from app.api.v1.endpoints.privacy import router as privacy_router
+from app.api.v1.endpoints import proactive as proactive_router
+from app.api.v1.endpoints import identity as identity_router
 app.include_router(marketplace_router)
+app.include_router(privacy_router)
+app.include_router(proactive_router.router)
+app.include_router(identity_router.router)
 
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
@@ -443,6 +451,7 @@ app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
+from app.api.v1.endpoints.ingestion import router as ingestion_router
 app.include_router(ingestion_router)
 app.include_router(patterns_router, prefix="/api/v1")
 app.include_router(policies_router)
@@ -460,13 +469,13 @@ async def admin_dashboard_redirect(request: Request):
     """Redirect to the actual dashboard location."""
     return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=302)
 
-@app.get("/admin/marketplace", response_class=HTMLResponse)
-async def marketplace_page(request: Request):
-    """Render the marketplace dashboard page."""
+@app.get("/admin/test/layout", response_class=HTMLResponse)
+async def test_layout_page(request: Request):
+    """Render the layout verification test page."""
     from fastapi.templating import Jinja2Templates
     templates = Jinja2Templates(directory="app/templates")
     return templates.TemplateResponse(
-        "dashboard/marketplace.html",
+        "dashboard/test_layout.html",
         {"request": request}
     )
 

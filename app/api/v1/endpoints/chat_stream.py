@@ -1,11 +1,8 @@
-"""
-Chat Stream Endpoint - Domain-aware streaming chat
-"""
-
+import asyncio
 import json
 import logging
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Request, Query
+from typing import AsyncGenerator, Dict, Any, Optional
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -13,69 +10,77 @@ from app.swarm.core.generator import GeneratorAgent
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/chat", tags=["chat-stream"])
 
 
 class ChatRequest(BaseModel):
     query: str
     provider: str = "auto"
-    user_id: Optional[str] = None
+    user_id: int = 1
     session_id: Optional[str] = None
     force_domain: Optional[str] = None
-    track_thoughts: bool = True
-
-
-class ChatResponse(BaseModel):
-    content: str
-    domain: Optional[str] = None
-    domain_confidence: Optional[float] = None
 
 
 @router.post("/stream")
-async def stream_chat(request: ChatRequest) -> StreamingResponse:
-    """
-    Stream chat response with domain awareness.
-    """
-    logger.info(f"Chat request: {request.query[:50]}... (provider: {request.provider})")
+async def stream_chat(request: ChatRequest):
+    """Stream chat response with premium UX - real-time feedback."""
     
-    # Initialize generator
     generator = GeneratorAgent()
     
-    # Get context (memories) if user_id provided
-    context = None
-    if request.user_id:
+    async def event_generator() -> AsyncGenerator[str, None]:
         try:
-            from app.services.memory.ice_repository import IceMemoryRepository
-            memory_repo = IceMemoryRepository()
-            memories = await memory_repo.get_relevant_memories(
-                query=request.query,
-                user_id=request.user_id,
-                limit=5
-            )
-            context = memories
-        except Exception as e:
-            logger.warning(f"Failed to load memories: {e}")
-    
-    async def event_generator():
-        """Generate SSE events."""
-        try:
-            domain_result = None
+            # 1. Send initial "thinking" status
+            yield f"data: {json.dumps({'type': 'status', 'message': '🔍 Analyzing your query...'})}\n\n"
+            await asyncio.sleep(0.1)
             
-            # Stream response
-            async for chunk in generator.generate_stream(
+            # 2. Get domain detection
+            domain_result = await generator.domain_router.route(query=request.query)
+            yield f"data: {json.dumps({'type': 'status', 'message': f'🎯 Domain detected: {domain_result.domain}'})}\n\n"
+            await asyncio.sleep(0.1)
+            
+            # 3. Show crystallized patterns if found
+            if domain_result.patterns:
+                yield f"data: {json.dumps({'type': 'status', 'message': f'💎 Found {len(domain_result.patterns)} crystallized patterns'})}\n\n"
+                await asyncio.sleep(0.1)
+            
+            # 4. Send "generating" status
+            yield f"data: {json.dumps({'type': 'status', 'message': '🧠 Generating response...'})}\n\n"
+            await asyncio.sleep(0.1)
+            
+            # 5. Stream the actual response
+            first_chunk = True
+            async for chunk in generator.generate_stream_with_trace(
                 query=request.query,
                 provider=request.provider,
-                context=context,
-                force_domain=request.force_domain
+                user_id=request.user_id
             ):
-                yield f"data: {json.dumps({'content': chunk})}\n\n"
+                if chunk.get("type") == "content":
+                    content = chunk.get("content", "")
+                    # Send content chunk
+                    yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
+                    if first_chunk:
+                        # Once we start sending content, clear the status
+                        yield f"data: {json.dumps({'type': 'status', 'message': '💬 Responding...'})}\n\n"
+                        first_chunk = False
+                
+                elif chunk.get("type") == "trace":
+                    # Send the full trace with metadata at the end
+                    yield f"data: {json.dumps({
+                        'type': 'trace', 
+                        'trace': chunk.get('trace'), 
+                        'memory_status': chunk.get('memory_status'),
+                        'suggestions': chunk.get('suggestions'),
+                        'domain': chunk.get('domain'), 
+                        'domain_confidence': chunk.get('domain_confidence')
+                    })}\n\n"
             
-            # Send completion event
+            # 6. Send completion status
+            yield f"data: {json.dumps({'type': 'status', 'message': '✅ Complete'})}\n\n"
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             
         except Exception as e:
             logger.error(f"Stream error: {e}")
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
     
     return StreamingResponse(
         event_generator(),
@@ -86,64 +91,3 @@ async def stream_chat(request: ChatRequest) -> StreamingResponse:
             "X-Accel-Buffering": "no"
         }
     )
-
-
-@router.post("/chat")
-async def chat(request: ChatRequest) -> Dict[str, Any]:
-    """
-    Non-streaming chat with domain awareness.
-    """
-    generator = GeneratorAgent()
-    
-    context = None
-    if request.user_id:
-        try:
-            from app.services.memory.ice_repository import IceMemoryRepository
-            memory_repo = IceMemoryRepository()
-            memories = await memory_repo.get_relevant_memories(
-                query=request.query,
-                user_id=request.user_id,
-                limit=5
-            )
-            context = memories
-        except Exception as e:
-            logger.warning(f"Failed to load memories: {e}")
-    
-    result = await generator.generate(
-        query=request.query,
-        context=context
-    )
-    
-    return {
-        "answer": result.get("answer"),
-        "source": result.get("source"),
-        "confidence": result.get("confidence"),
-        "domain": result.get("domain"),
-        "domain_confidence": result.get("domain_confidence"),
-        "trace": result.get("trace")
-    }
-
-
-@router.get("/domains")
-async def list_domains() -> Dict[str, Any]:
-    """
-    List all available domains.
-    """
-    generator = GeneratorAgent()
-    stats = generator.domain_router.get_domain_stats()
-    state = generator.domain_router.get_conversation_state()
-    
-    return {
-        "domains": stats,
-        "conversation": state
-    }
-
-
-@router.post("/domains/reset")
-async def reset_domain_conversation() -> Dict[str, str]:
-    """
-    Reset the domain conversation state.
-    """
-    generator = GeneratorAgent()
-    generator.domain_router.reset_conversation()
-    return {"status": "reset"}

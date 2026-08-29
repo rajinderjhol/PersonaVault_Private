@@ -99,6 +99,7 @@ async def dashboard_ui(request: Request):
 async def trigger_swarm_interaction(request: Request, body: dict, user_id: int = Depends(require_admin)):
     """Directly inject a query into the Swarm and process it."""
     query = body.get("query", "")
+    session_id = body.get("session_id")
     if not query:
         raise HTTPException(status_code=400, detail="Query content required")
     
@@ -124,7 +125,7 @@ async def trigger_swarm_interaction(request: Request, body: dict, user_id: int =
         try:
             result = await orchestrator.run(
                 query=query,
-                context={"user_id": user_id, "origin": "dashboard"}
+                context={"user_id": user_id, "origin": "dashboard", "session_id": session_id}
             )
             
             await blackboard.post_insight(

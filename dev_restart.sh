@@ -70,7 +70,7 @@ done
 if [ "$PURGE_STATE" = true ]; then
     echo "🔧 Initializing database schema..."
     export PYTHONPATH=$PWD
-    python3 -c "
+    ./.venv/bin/python -c "
 from app.db.session import engine, Base
 import asyncio
 import app.models
@@ -81,9 +81,9 @@ asyncio.run(init_db())
 "
 
     echo "🌱 Running data seeding..."
-    python3 scripts/seed_all_data.py
-    python3 scripts/install_all_packs.py
-    python3 scripts/seed_contract_memories.py
+    ./.venv/bin/python scripts/seed_all_data.py
+    ./.venv/bin/python scripts/install_all_packs.py
+    ./.venv/bin/python scripts/seed_contract_memories.py
 else
     echo "ℹ️ Skipping database initialization and seeding."
 fi
@@ -91,7 +91,7 @@ fi
 # 4. START SERVER
 echo "🚀 Igniting Intelligence Gateway..."
 export PYTHONPATH=$PWD
-nohup python3 -m uvicorn app.main:app \
+nohup ./.venv/bin/python -m uvicorn app.main:app \
     --host 0.0.0.0 \
     --port 8000 \
     > "$LOG_PATH" 2>&1 &
