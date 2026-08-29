@@ -49,12 +49,11 @@ async def chat_endpoint(
             patient_id=patient_id,
             provider=provider
         )
-        logger.info(f"🔍 DEBUG: gateway.chat returned response from provider: '{result.get('provider')}'")
         
         # Self-improving intelligence
         if hasattr(request.app.state, "self_improving"):
-            confidence = result.get("confidence", 0.7)
-            response_text = result.get("response", "")
+            # Using finalResponse instead of response
+            response_text = result.get("finalResponse", "")
             
             # Extract patterns in the background
             asyncio.create_task(
@@ -62,7 +61,7 @@ async def chat_endpoint(
                     current_user.id,
                     query,
                     response_text,
-                    confidence,
+                    0.8, # Placeholder confidence
                     {"provider": provider, "session_id": session_id}
                 )
             )
@@ -72,7 +71,7 @@ async def chat_endpoint(
                 query, response_text
             )
             if enhanced_response != response_text:
-                result["response"] = enhanced_response
+                result["finalResponse"] = enhanced_response
                 result["pattern_applied"] = True
         
         return result

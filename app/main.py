@@ -27,8 +27,10 @@ from passlib.context import CryptContext
 # Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion, swarm, integrations
+    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion, swarm, integrations, user_preferences, thermodynamics
 )
+from app.api.v1.endpoints.user_preferences import router as user_preferences_router
+
 from app.routes import decisions
 from app.api.v1.endpoints.ingestion import router as ingestion_router
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
@@ -437,13 +439,15 @@ app.include_router(marketplace_router)
 app.include_router(privacy_router)
 app.include_router(proactive_router.router)
 app.include_router(identity_router.router)
+app.include_router(user_preferences.router)
+app.include_router(thermodynamics.router)
 
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
 
 
 # Modular Dashboard (Take precedence over legacy admin routes)
-app.include_router(dashboard_router, tags=["dashboard"])
+app.include_router(dashboard_router, prefix="/api/v1/admin/dashboard", tags=["dashboard"])
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
 
 app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])

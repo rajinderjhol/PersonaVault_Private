@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text, and_
 from datetime import datetime, timedelta, timezone
+print("!!! DASHBOARD ROUTER LOADED !!!")
 import os
 import time
 import logging
@@ -43,7 +44,7 @@ from app.api.v1.endpoints.dashboard.routers.learning_router import router as lea
 from app.api.v1.endpoints.dashboard.routers.blackboard_router import router as blackboard_router
 from app.api.v1.endpoints.dashboard.routers.swarm_router import router as swarm_router
 
-router = APIRouter(prefix="/api/v1/admin/dashboard", tags=["admin"])
+router = APIRouter(tags=["admin"])
 router.include_router(model_router)
 router.include_router(metrics_router)
 router.include_router(governance_router)
@@ -53,6 +54,8 @@ router.include_router(learning_router)
 router.include_router(blackboard_router)
 router.include_router(swarm_router)
 TEMPLATE_DIR = Path(__file__).parent / "templates"
+# Fallback for tab lookups to search main templates if not in v2
+TAB_TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 
 def _safe_metric_get(metric, default=0, labels=None):
@@ -70,26 +73,44 @@ def _safe_metric_get(metric, default=0, labels=None):
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard_ui(request: Request):
-    """Serve the main dashboard UI with modular tabs."""
+    """Serve the main dashboard UI with modular tabs (Legacy)."""
     if not request.cookies.get("session_id"):
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     
-    # Ensure template directory exists
-    if not TEMPLATE_DIR.exists():
-        logger.error(f"Template directory not found: {TEMPLATE_DIR}")
-        return HTMLResponse("<h1>Dashboard templates missing</h1>", status_code=500)
-
     base_path = TEMPLATE_DIR / "base.html"
+        
     if not base_path.exists():
         logger.error(f"Dashboard base template not found: {base_path}")
-        return HTMLResponse("<h1>Dashboard template 'base.html' not found</h1>", status_code=404)
+        return HTMLResponse("<h1>Dashboard template not found</h1>", status_code=404)
         
+    logger.info(f"Loading legacy dashboard template from: {base_path}")
     try:
         with open(base_path, "r") as f:
             return HTMLResponse(f.read())
     except Exception as e:
         logger.error(f"Error reading dashboard template: {e}")
         return HTMLResponse("<h1>Error loading dashboard</h1>", status_code=500)
+
+
+@router.get("/v2", response_class=HTMLResponse)
+async def dashboard_v2_ui(request: Request):
+    """Serve v2 (three-panel) dashboard UI."""
+    if not request.cookies.get("session_id"):
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    base_path = TEMPLATE_DIR / "v2" / "base.html"
+        
+    if not base_path.exists():
+        logger.error(f"V2 Dashboard base template not found: {base_path}")
+        return HTMLResponse("<h1>V2 Dashboard template not found</h1>", status_code=404)
+        
+    logger.info(f"Loading v2 dashboard template from: {base_path}")
+    try:
+        with open(base_path, "r") as f:
+            return HTMLResponse(f.read())
+    except Exception as e:
+        logger.error(f"Error reading v2 dashboard template: {e}")
+        return HTMLResponse("<h1>Error loading v2 dashboard</h1>", status_code=500)
 
 
 
@@ -262,16 +283,26 @@ async def get_blackboard_snapshot(
 
 
 
+
 # ============ TABS ============
 
 @router.get("/tab/{tab_id}", response_class=HTMLResponse)
 async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
     """Serve individual tab content."""
-    tab_path = TEMPLATE_DIR / f"{tab_id}.html"
+    # Map complex tab IDs to simplified filenames if necessary
+    mapping = {
+        "domain-security": "security",
+        "domain-compliance": "governance",
+        "domain-swarm": "swarm"
+    }
+    safe_tab_id = mapping.get(tab_id, tab_id)
+    tab_path = TAB_TEMPLATE_DIR / f"{safe_tab_id}.html"
+
     if tab_path.exists():
         with open(tab_path, "r") as f:
             return HTMLResponse(f.read())
-    
+
+    # Fallbacks (for robust UI)
     fallbacks = {
         "overview": '<div id="metrics-grid" class="grid"></div><div class="card"><h3 class="card-title">Intelligence Feed</h3><pre id="raw-metrics">Initializing system state...</pre></div>',
         "models": '<div class="card"><h3 class="card-title">Ollama Node</h3><div id="models-list" style="display:flex; flex-direction:column; gap:12px;"></div></div>',
@@ -286,6 +317,7 @@ async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
 
 
 @router.get("/tab/decision-intelligence")
+
 async def get_decision_intelligence_tab():
     """Return the decision intelligence dashboard tab HTML."""
     html_path = TEMPLATE_DIR / "decision_intelligence.html"
@@ -466,24 +498,4 @@ async def get_all_provider_settings(
         logger.error(f"Error getting all provider settings: {e}")
         return {}
 
-@router.get("/tab/{tab_id}", response_class=HTMLResponse)
-async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
-    """Serve individual tab content."""
-    tab_path = TEMPLATE_DIR / f"{tab_id}.html"
-    if tab_path.exists():
-        with open(tab_path, "r") as f:
-            return HTMLResponse(f.read())
-    
-    # Fallbacks (for robust UI)
-    fallbacks = {
-        "overview": '<div id="metrics-grid" class="grid"></div><div class="card"><h3 class="card-title">Intelligence Feed</h3><pre id="raw-metrics">Initializing system state...</pre></div>',
-        "models": '<div class="card"><h3 class="card-title">Ollama Node</h3><div id="models-list" style="display:flex; flex-direction:column; gap:12px;"></div></div>',
-        "logs": '<div class="card" style="height:500px; display:flex; flex-direction:column;"><div id="log-container" class="log-container"></div></div>',
-        "agents": '<div class="grid"><div class="card"><div class="card-title">Cognitive Load</div><div id="agent-load-stats" class="mt-10"></div></div><div class="card"><div class="card-title">Empathy & Tone</div><div id="empathy-stats" class="mt-10"></div></div></div><div class="card"><div class="card-title">Human-In-The-Loop</div><div id="hitl-list" class="mt-10"></div></div>',
-        "mcp": '<div class="grid"><div class="card"><div class="card-title">Registered Nodes</div><div id="mcp-servers-list" class="mt-10"></div></div><div class="card"><div class="card-title">Available Swarm Tools</div><div id="mcp-tools-list" class="mt-10"></div></div></div>',
-        "lattices": '<div class="card" style="margin-bottom: 25px; border-left: 4px solid #a855f7;"><div class="metric-label">Memory Distribution Ratio</div><div class="mem-viz-container"><div id="bar-l2" class="viz-l2" style="width: 10%"></div><div id="bar-l3" class="viz-l3" style="width: 10%"></div></div></div><div class="grid"><div class="card"><div class="metric-label">Layer 1 (Gas)</div><div class="metric-value">Active</div></div><div class="card"><div class="metric-label">Layer 2 (Liquid)</div><div id="layer2-count" class="metric-value">0</div></div><div class="card"><div class="metric-label">Layer 3 (Ice)</div><div id="layer3-count" class="metric-value">0</div></div></div>',
-        "learning_dashboard": '<div id="learning-dashboard-tab" class="card"><h3 class="card-title">📊 Learning Dashboard</h3><div id="pattern-feed">Loading patterns...</div></div>',
-        "evidence": '<div class="card"><h3 class="card-title">Evidence Pipeline</h3><div id="evidence-stats-container">Loading...</div></div>'
-    }
-    return HTMLResponse(fallbacks.get(tab_id, f"<div class='metric-label'>Fragment '{tab_id}' not found</div>"))
 
