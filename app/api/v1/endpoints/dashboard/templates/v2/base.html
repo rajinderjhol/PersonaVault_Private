@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>!!! NEW DASHBOARD !!!</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="/static/css/three_panel/theme.css">
+    <link rel="stylesheet" href="/static/css/three_panel/dashboard.css">
+    <link rel="stylesheet" href="/static/css/three_panel/chat.css">
+    <link rel="stylesheet" href="/static/css/three_panel/context.css">
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <aside class="sidebar collapsed">
+            <!-- Sidebar Content -->
+            <div class="brand">🛡️ PersonaVault</div>
+            <nav id="sidebar-nav"></nav>
+            <button onclick="document.getElementById('sidebar-editor').style.display='flex'">⚙️ Customize</button>
+        </aside>
+        
+        <main class="chat-panel">
+            <!-- Center Panel Content -->
+            <header>
+                <button onclick="toggleSidebar()">☰</button>
+                <h2>Command Center</h2>
+            </header>
+            
+            <!-- CHAT CONTENT -->
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <span class="chat-icon">💬</span>
+                        <span class="chat-title-text">PersonaVault Chat</span>
+                    </div>
+                    <div class="chat-header-actions">
+                        <button class="btn-new-chat" onclick="chatIntegration.newChat()">+ New Chat</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-empty">
+                        <div class="empty-icon">👋</div>
+                        <h3>Welcome to PersonaVault!</h3>
+                        <p>Create a new chat session to get started.</p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="chat-input-wrapper">
+                        <textarea id="chat-input" placeholder="Ask me anything..." rows="1"></textarea>
+                        <div class="chat-actions">
+                            <button class="btn-attach" title="Attach file">📎</button>
+                            <button class="send-btn" id="send-btn">➤</button>
+                        </div>
+                    </div>
+                    <div class="chat-controls">
+                        <label class="control-toggle">
+                            <input type="checkbox" id="thought-toggle"> Show thought process
+                        </label>
+                        <select id="provider-select" class="provider-select">
+                            <option value="groq">Groq</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <section class="context-panel">
+            <!-- Context Panel Content -->
+            <div class="right-sidebar">
+                <div class="context-section">
+                    <h4 class="context-title">🔍 Current Decision</h4>
+                    <div id="context-decision"></div>
+                </div>
+                <div class="context-section">
+                    <h4 class="context-title">📊 Memory Phases</h4>
+                    <div id="thermo-distribution"></div>
+                </div>
+                <div class="context-section">
+                    <h4 class="context-title">🔄 Recent Transitions</h4>
+                    <div id="thermo-transitions"></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sidebar Editor Modal -->
+        <div id="sidebar-editor" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header"><h3>✏️ Customize Sidebar</h3><button onclick="closeSidebarEditor()">×</button></div>
+                <div class="modal-body">
+                    <div class="element-grid">
+                        <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Security')">🔒 Security</button>
+                        <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Compliance')">⚖️ Compliance</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="/static/js/three_panel/dashboard.js"></script>
+    <script src="/static/js/three_panel/sidebar.js"></script>
+    <script src="/static/js/three_panel/context.js"></script>
+    <script src="/static/js/three_panel/chat_integration.js"></script>
+</body>
+</html>

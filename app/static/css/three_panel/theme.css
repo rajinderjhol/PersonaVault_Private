@@ -1,0 +1,32 @@
+:root {
+  --bg-primary: #f8fafc;
+  --bg-panel: #ffffff;
+  --sidebar-bg: #1e293b;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --accent: #38bdf8;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-panel: #1e293b;
+  --sidebar-bg: #0f172a;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+  --accent: #38bdf8;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  font-family: sans-serif;
+  height: 100vh;
+}
+
+/* Force variable application to dashboard panels */
+.dashboard-wrapper {
+  background-color: var(--bg-primary);
+}
