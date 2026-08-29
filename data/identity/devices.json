@@ -1,0 +1,172 @@
+{
+  "dev_efaa6a2cff10": {
+    "1": {
+      "id": "dev_efaa6a2cff10",
+      "user_id": 1,
+      "name": "Specific Device",
+      "type": "mobile",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.730370",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_e6bf7b400a5a": {
+    "1": {
+      "id": "dev_e6bf7b400a5a",
+      "user_id": 1,
+      "name": "Device 1",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.767330",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_c1aa58d743b9": {
+    "1": {
+      "id": "dev_c1aa58d743b9",
+      "user_id": 1,
+      "name": "Device 2",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.767810",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_7308c956673b": {
+    "1": {
+      "id": "dev_7308c956673b",
+      "user_id": 1,
+      "name": "Device 3",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.769007",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_e2d52fd6a3ae": {
+    "1": {
+      "id": "dev_e2d52fd6a3ae",
+      "user_id": 1,
+      "name": "Test Laptop",
+      "type": "desktop",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.771079",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_79626c317b62": {
+    "1": {
+      "id": "dev_79626c317b62",
+      "user_id": 1,
+      "name": "Untrusted Device",
+      "type": "web",
+      "trust_level": "verified",
+      "last_seen": "2026-08-28 17:37:45.773035",
+      "created_at": "2026-08-28 17:37:45.771635",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_3bc4f748fdf6": {
+    "1": {
+      "id": "dev_3bc4f748fdf6",
+      "user_id": 1,
+      "name": "Updated Name",
+      "type": "web",
+      "trust_level": "trusted",
+      "last_seen": "2026-08-28 17:37:45.775489",
+      "created_at": "2026-08-28 17:37:45.774188",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_b10f7db91bc5": {
+    "1": {
+      "id": "dev_b10f7db91bc5",
+      "user_id": 1,
+      "name": "Device 1",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.811561",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_571224087c96": {
+    "1": {
+      "id": "dev_571224087c96",
+      "user_id": 1,
+      "name": "Device 2",
+      "type": "mobile",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:37:45.812422",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_ee63418b9ee5": {
+    "5": {
+      "id": "dev_ee63418b9ee5",
+      "user_id": 5,
+      "name": "API Test Device",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-08-28 17:42:00.760092",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  }
+}

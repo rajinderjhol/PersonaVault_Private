@@ -1,0 +1,47 @@
+{
+  "1:read_documents": {
+    "user_id": 1,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-08-28 17:37:45.800151",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "1:temporary_access": {
+    "user_id": 1,
+    "action": "temporary_access",
+    "level": "ask",
+    "granted_at": "2026-08-28 17:37:45.800589",
+    "expires_at": "2026-09-04 17:37:45.800592",
+    "granted_by": null,
+    "metadata": {}
+  },
+  "1:read": {
+    "user_id": 1,
+    "action": "read",
+    "level": "execute",
+    "granted_at": "2026-08-28 17:37:45.813855",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "6:read_documents": {
+    "user_id": 6,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-08-28 17:42:00.825570",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "7:read_documents": {
+    "user_id": 7,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-08-28 17:42:01.031990",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  }
+}

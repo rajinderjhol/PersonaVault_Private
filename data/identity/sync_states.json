@@ -1,0 +1,12 @@
+{
+  "1:dev_1": {
+    "user_id": 1,
+    "device_id": "dev_1",
+    "last_sync_at": "2026-08-28 17:37:45.809734",
+    "sync_version": "2.0.0",
+    "memory_hash": "abc123",
+    "patterns_hash": "xyz789",
+    "context_hash": null,
+    "metadata": {}
+  }
+}

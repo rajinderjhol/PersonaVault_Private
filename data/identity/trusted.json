@@ -1,0 +1,93 @@
+{
+  "trust_5cf0b15f192b": {
+    "1": {
+      "id": "trust_5cf0b15f192b",
+      "user_id": 1,
+      "entity_type": "device",
+      "entity_id": "dev_123",
+      "trust_level": 0.8,
+      "reason": "Test trusted device",
+      "created_at": "2026-08-28 17:37:45.804298",
+      "updated_at": "2026-08-28 17:37:45.804301",
+      "metadata": {}
+    }
+  },
+  "trust_eed6eb2b103b": {
+    "1": {
+      "id": "trust_eed6eb2b103b",
+      "user_id": 1,
+      "entity_type": "app",
+      "entity_id": "app_0",
+      "trust_level": 0.5,
+      "reason": null,
+      "created_at": "2026-08-28 17:37:45.804720",
+      "updated_at": "2026-08-28 17:37:45.804722",
+      "metadata": {}
+    }
+  },
+  "trust_bbf318a89811": {
+    "1": {
+      "id": "trust_bbf318a89811",
+      "user_id": 1,
+      "entity_type": "app",
+      "entity_id": "app_1",
+      "trust_level": 0.7,
+      "reason": null,
+      "created_at": "2026-08-28 17:37:45.805278",
+      "updated_at": "2026-08-28 17:37:45.805280",
+      "metadata": {}
+    }
+  },
+  "trust_c5610af0f35b": {
+    "1": {
+      "id": "trust_c5610af0f35b",
+      "user_id": 1,
+      "entity_type": "app",
+      "entity_id": "app_2",
+      "trust_level": 0.9,
+      "reason": null,
+      "created_at": "2026-08-28 17:37:45.806413",
+      "updated_at": "2026-08-28 17:37:45.806415",
+      "metadata": {}
+    }
+  },
+  "trust_3985019e8f5e": {
+    "1": {
+      "id": "trust_3985019e8f5e",
+      "user_id": 1,
+      "entity_type": "device",
+      "entity_id": "trusted_device",
+      "trust_level": 0.9,
+      "reason": null,
+      "created_at": "2026-08-28 17:37:45.808063",
+      "updated_at": "2026-08-28 17:37:45.808066",
+      "metadata": {}
+    }
+  },
+  "trust_670926323fb8": {
+    "1": {
+      "id": "trust_670926323fb8",
+      "user_id": 1,
+      "entity_type": "device",
+      "entity_id": "dev_1",
+      "trust_level": 0.8,
+      "reason": null,
+      "created_at": "2026-08-28 17:37:45.814256",
+      "updated_at": "2026-08-28 17:37:45.814258",
+      "metadata": {}
+    }
+  },
+  "trust_a6540e97d416": {
+    "8": {
+      "id": "trust_a6540e97d416",
+      "user_id": 8,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-08-28 17:42:01.104300",
+      "updated_at": "2026-08-28 17:42:01.104304",
+      "metadata": {}
+    }
+  }
+}
