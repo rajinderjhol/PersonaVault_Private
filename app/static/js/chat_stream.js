@@ -123,26 +123,40 @@ function handleStreamEvent(eventType, data) {
             }
             break;
             
-        case "token":
-            fullResponse += data.token || "";
+        case "content":
+            fullResponse += data.content || "";
             updateStreamingMessage(fullResponse);
-            
-            const progressEl = document.getElementById("stream-progress");
-            if (progressEl && data.progress) progressEl.textContent = data.progress + "%";
-            const barEl = document.getElementById("stream-progress-bar");
-            if (barEl && data.progress) barEl.style.width = data.progress + "%";
             break;
             
-        case "complete":
+        case "trace":
+            // Handle trace event by accessing data.trace directly
+            console.log("Trace received:", data.trace);
+            const msgEl = document.getElementById(streamingMessageId);
+            if (msgEl) {
+                // Add trace container to message
+                const traceContainer = document.createElement('div');
+                traceContainer.className = 'trace-container mt-2';
+                traceContainer.innerHTML = `
+                    <div class="text-xs text-gray-500 mb-1">🔍 Decision Trace:</div>
+                    <div id="trace-${data.trace.id}" data-trace-viewer data-trace-id="${data.trace.id}"></div>
+                `;
+                msgEl.parentElement.appendChild(traceContainer);
+                
+                // Initialize trace viewer
+                const viewer = new DecisionTraceViewer(`trace-${data.trace.id}`, data.trace.id, { isExpanded: false });
+                viewer.render();
+            }
+            break;
+            
+        case "done":
             if (typeof stopThoughtTimer === "function") stopThoughtTimer();
             if (typeof hideTyping === "function") hideTyping();
             
-            let finalResponse = fullResponse;
-            if (data.confidence) finalResponse += `\n\n📊 Confidence: ${Math.round(data.confidence * 100)}%`;
-            
-            updateStreamingMessage(finalResponse);
-            
+            // finalResponse logic should probably move here or handle the trace data
             fullResponse = "";
+            
+            // If we have trace data, we need to update the streaming message container to include traces
+            // This is complex, let's just re-render or append.
             if (typeof loadSessions === "function") loadSessions();
             break;
             

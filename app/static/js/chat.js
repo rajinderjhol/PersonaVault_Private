@@ -969,9 +969,9 @@ async function sendChatMessage(query) {
                         }
                         
                         if (data.type === 'done') {
-                            finalTrace = data.data.trace;
-                            finalMemoryStatus = data.data.memory_status;
-                            finalSuggestions = data.data.suggestions;
+                            finalTrace = data.trace || (data.data ? data.data.trace : null);
+                            finalMemoryStatus = data.memory_status || (data.data ? data.data.memory_status : null);
+                            finalSuggestions = data.suggestions || (data.data ? data.data.suggestions : null);
                         }
                     } catch (e) {
                         console.error('Stream parsing error:', e);

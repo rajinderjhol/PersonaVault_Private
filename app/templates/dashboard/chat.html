@@ -1,71 +1,44 @@
 {% extends "base.html" %}
 
-{% block title %}Chat - PersonaVault{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="/static/css/trace-chat.css">
-{% endblock %}
+{% block title %}PersonaVault - Sovereign Workbench{% endblock %}
 
 {% block content %}
-<div class="row g-0" style="height: calc(100vh - 120px);">
-    <!-- Main Chat Area -->
-    <div class="col-md-8 d-flex flex-column">
-        <div class="card-header bg-dark text-light">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="badge bg-info me-2">🛡️ TRACE-ENABLED</span>
-                    <span class="badge bg-success">Deterministic Governance</span>
-                </div>
-                <div>
-                    <span class="badge bg-secondary" id="provider-badge">Groq</span>
-                    <span class="badge bg-secondary" id="session-badge">Session: {{ session_id }}</span>
-                </div>
+<link rel="stylesheet" href="/static/css/chat-premium.css">
+
+<div class="chat-premium" id="chat-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">
+                <span class="icon">📦</span>
+                <span class="name">PV Control</span>
             </div>
+            <button class="toggle-btn" onclick="layoutManager.toggleSidebar()">◀</button>
         </div>
-        
-        <!-- Chat Messages -->
-        <div id="chat-container" class="flex-grow-1 overflow-auto p-3" style="background: var(--bs-dark);">
-            <div class="text-center text-muted py-5">
-                <h5>🤖 PersonaVault Chat</h5>
-                <p>Start a conversation to get auditable, verifiable decisions.</p>
-                <small class="text-muted">Every response includes a verifiable decision trace.</small>
+        <div class="sidebar-nav"></div>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">U</div>
+                <div>
+                    <div class="name">User</div>
+                    <div class="role">Admin</div>
+                </div>
             </div>
-        </div>
-        
-        <!-- Chat Input -->
-        <div class="card-footer bg-dark border-top-secondary p-2">
-            <div class="input-group">
-                <input type="text" id="chat-input" class="form-control bg-dark text-light border-secondary" 
-                       placeholder="Type your message..." aria-label="Chat input">
-                <button id="send-button" class="btn btn-primary" type="button">
-                    <i class="bi bi-send"></i> Send
-                </button>
-            </div>
-            <div class="d-flex justify-content-between mt-1">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle"></i> 
-                    All decisions are traceable and verifiable
-                </small>
-                <small class="text-muted">
-                    <span class="badge bg-secondary">🛡️ Audit Mode</span>
-                </small>
-            </div>
+            <button class="toggle-btn" onclick="layoutManager.showTabCustomizer()">⚙️</button>
         </div>
     </div>
-    
-    <!-- Trace Sidebar -->
-    <div class="col-md-4 border-start border-secondary">
-        <div id="trace-sidebar" class="p-3" style="height: 100%; overflow-y: auto; background: var(--bs-dark);">
-            <h6 class="text-info border-bottom pb-2">🛡️ DECISION TRACE</h6>
-            <div class="text-center text-muted mt-5">
-                <p>📋 No trace loaded</p>
-                <small>Send a message to see the verifiable decision trace here.</small>
-            </div>
-        </div>
+
+    <!-- Main Chat Area -->
+    <div class="messages-container" id="messages-container">
+        <!-- Messages will be injected by JavaScript -->
+    </div>
+
+    <!-- Intelligence Panel -->
+    <div class="intelligence-panel">
+        <!-- Content will be injected by JavaScript -->
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script src="/static/js/trace-chat.js"></script>
+<script src="/static/js/layout-manager.js"></script>
+<script src="/static/js/chat-premium.js"></script>
 {% endblock %}
