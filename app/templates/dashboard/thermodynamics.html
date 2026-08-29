@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Thermodynamic Memory Engine - PersonaVault{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/thermodynamics.css">
+
+<div class="chat-premium" id="thermodynamics-dashboard">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><span>🧊</span><span>Memory Engine</span></div>
+        </div>
+        <div class="sidebar-nav">
+            <a href="#" onclick="dashboard.refreshAll()">Refresh All</a>
+            <a href="#" onclick="dashboard.initWebSocket()">Connect Live</a>
+        </div>
+    </div>
+    
+    <div class="messages-container">
+        <h1>🧊 Thermodynamic Memory Engine</h1>
+
+        <!-- Phase Distribution -->
+        <section class="phase-section">
+            <h3>Phase Distribution</h3>
+            <div class="phase-bars" id="phase-bars">
+                <div class="bar gas" data-phase="gas"><span>💨 Gas</span><span class="count">0</span></div>
+                <div class="bar liquid" data-phase="liquid"><span>💧 Liquid</span><span class="count">0</span></div>
+                <div class="bar ice" data-phase="ice"><span>🧊 Ice</span><span class="count">0</span></div>
+                <div class="bar snowflake" data-phase="snowflake"><span>❄️ Snowflakes</span><span class="count">0</span></div>
+            </div>
+        </section>
+
+        <!-- Transition Feed -->
+        <section class="transition-section">
+            <h3>🔄 Recent Phase Transitions</h3>
+            <div class="transition-feed" id="transition-feed">
+                <!-- Transitions will be injected here -->
+            </div>
+        </section>
+
+        <!-- Snowflake Library -->
+        <section class="snowflake-section">
+            <h3>❄️ Snowflake Library</h3>
+            <div class="snowflake-grid" id="snowflake-grid">
+                <!-- Snowflakes will be injected here -->
+            </div>
+        </section>
+    </div>
+    
+    <div class="intelligence-panel">
+        <h3>Live Metrics</h3>
+        <div id="live-metrics">
+            <p>System State: <span id="system-state">Stable</span></p>
+            <p>Last Update: <span id="last-update">-</span></p>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/thermodynamics.js"></script>
+{% endblock %}
