@@ -6,9 +6,12 @@ import logging
 import asyncio
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.self_improving import SelfImprovingIntelligence
 from app.services.predictive import PredictiveIntelligence
+from app.services.trace_service import TraceService
+from app.models.decision_trace import TraceStep
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +21,11 @@ class GenerativeDecisionMaker:
     analyzes tradeoffs, and ranks recommendations.
     """
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, trace_service: Optional[TraceService] = None):
         self.db = db
         self.self_improving = SelfImprovingIntelligence(db)
         self.predictive = PredictiveIntelligence(db)
+        self.trace_service = trace_service
     
     async def generate_options(self, problem: str, context: Dict) -> List[Dict]:
         """
@@ -155,7 +159,7 @@ class GenerativeDecisionMaker:
         """Convert risk level to numeric score."""
         return {"low": 0.2, "medium": 0.5, "high": 0.8}.get(risk_level, 0.5)
     
-    async def get_recommendation(self, problem: str, context: Dict) -> Dict:
+    async def get_recommendation(self, problem: str, context: Dict, session_id: Optional[int] = None) -> Dict:
         """
         Main entry point for generative decision making.
         """
@@ -168,10 +172,57 @@ class GenerativeDecisionMaker:
         # 3. Analyze tradeoffs
         tradeoffs = await self.analyze_tradeoffs(simulated)
         
+        recommendation = tradeoffs["recommended"]
+        confidence = recommendation.get("confidence", 0.5)
+        
+        # --- TRACE CAPTURE: AI RECOMMENDATION ---
+        trace_id = None
+        if self.trace_service and session_id:
+            trace = await self.trace_service.capture_step(
+                session_id=session_id,
+                step=TraceStep.AI_RECOMMENDATION,
+                data={
+                    "problem": problem,
+                    "options_count": len(options),
+                    "recommendation": {
+                        "id": recommendation.get("id"),
+                        "name": recommendation.get("name"),
+                        "confidence": confidence
+                    },
+                    "alternatives": [
+                        {
+                            "id": alt.get("id"),
+                            "name": alt.get("name"),
+                            "confidence": alt.get("confidence", 0.5)
+                        }
+                        for alt in tradeoffs.get("alternatives", [])[:3]
+                    ],
+                    "tradeoffs": {
+                        "risk_level": recommendation.get("simulation", {}).get("risk_level"),
+                        "success_probability": recommendation.get("simulation", {}).get("success_probability")
+                    }
+                },
+                agent_id="GenerativeDecisionMaker",
+                confidence_score=confidence
+            )
+            trace_id = str(trace.id) if trace else None
+            
+            # Add provenance for the recommendation
+            if trace and recommendation:
+                await self.trace_service.add_provenance(
+                    trace_id=trace.id,
+                    source_type="generative_decision",
+                    source_id=recommendation.get("id", "recommendation"),
+                    source_text=recommendation.get("description", ""),
+                    relevance_score=confidence
+                )
+        # --- END TRACE CAPTURE ---
+        
         return {
             "problem": problem,
             "options": simulated,
-            "recommendation": tradeoffs["recommended"],
+            "recommendation": recommendation,
             "alternatives": tradeoffs["alternatives"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "trace_id": trace_id
         }

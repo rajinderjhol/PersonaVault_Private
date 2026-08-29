@@ -4,11 +4,14 @@ Safely executes routine, high-confidence decisions automatically.
 """
 import logging
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.models import BehaviourEvent, SystemConfig
 from app.services.self_improving import SelfImprovingIntelligence
+from app.services.trace_service import TraceService
+from app.models.decision_trace import TraceStep
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +21,10 @@ class AutomatedDecisionEngine:
     This is the culmination of the learning and prediction phases.
     """
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, trace_service: Optional[TraceService] = None):
         self.db = db
         self.self_improving = SelfImprovingIntelligence(db)
+        self.trace_service = trace_service
         self.min_confidence = 0.85  # Minimum confidence for automation
         self.max_daily_auto = 10  # Max auto-decisions per day
     
@@ -56,7 +60,7 @@ class AutomatedDecisionEngine:
             "similar_successes": similar_success
         }
     
-    async def execute_automated_decision(self, decision: Dict) -> Dict:
+    async def execute_automated_decision(self, decision: Dict, session_id: Optional[int] = None) -> Dict:
         """
         Execute a decision automatically.
         """
@@ -84,13 +88,58 @@ class AutomatedDecisionEngine:
         await self.db.commit()
         await self.db.refresh(event)
         
+        # --- TRACE CAPTURE: ACTION & OUTCOME ---
+        trace_id = None
+        if self.trace_service and session_id:
+            # Capture ACTION step
+            action_trace = await self.trace_service.capture_step(
+                session_id=session_id,
+                step=TraceStep.ACTION,
+                data={
+                    "decision_id": str(event.id),
+                    "domain": decision.get("domain", "unknown"),
+                    "action_taken": decision.get("decision", "approved"),
+                    "reason": decision.get("reason", ""),
+                    "confidence": decision.get("confidence", 0)
+                },
+                agent_id="AutomatedDecisionEngine",
+                confidence_score=decision.get("confidence", 0.8)
+            )
+            
+            # Capture OUTCOME step
+            outcome_trace = await self.trace_service.capture_step(
+                session_id=session_id,
+                step=TraceStep.OUTCOME,
+                data={
+                    "decision_id": str(event.id),
+                    "outcome": "success",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "execution_time_ms": 0
+                },
+                agent_id="AutomatedDecisionEngine",
+                confidence_score=0.9
+            )
+            trace_id = str(action_trace.id) if action_trace else None
+            
+            # Add provenance
+            if action_trace:
+                await self.trace_service.add_provenance(
+                    trace_id=action_trace.id,
+                    source_type="automated_decision",
+                    source_id=str(event.id),
+                    source_text=f"Automated {decision.get('domain', '')} decision",
+                    relevance_score=decision.get("confidence", 0.8)
+                )
+        # --- END TRACE CAPTURE ---
+        
         logger.info(f"⚡ Automated decision executed: {event.id} - {decision.get('decision', 'unknown')}")
         
         return {
             "executed": True,
             "decision_id": event.id,
             "decision": decision,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "trace_id": trace_id
         }
     
     async def _is_routine_domain(self, domain: str) -> bool:

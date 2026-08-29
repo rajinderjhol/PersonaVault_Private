@@ -12,6 +12,7 @@ from app.services.episodic_memory import EpisodicMemory
 from app.services.semantic_memory import SemanticMemory
 from app.utils.websocket import manager
 from runtime.pack_executor import PackExecutor
+from app.services.perception import RoboticsPerceptionService
 from app.services.trace_service import get_trace_service, DecisionTrace
 import uuid
 
@@ -23,9 +24,15 @@ class MultiAgentOrchestrator:
         self.blackboard = blackboard
         self.agents = agents or {}
         self.working_memory = WorkingMemory()
-        self.pack_executor = PackExecutor()  # ✅ Integrated Behavior Pack Compiler
         self.trace_service = get_trace_service(db_session) # ✅ Integrated Trace Service
+        self.perception = RoboticsPerceptionService(db_session, self.trace_service)
+        self.pack_executor = PackExecutor(trace_service=self.trace_service)  # ✅ Integrated Behavior Pack Compiler
         logger.info(f"Agents initialized: {list(self.agents.keys())}")
+
+        # Inject trace service into all agents
+        for agent in self.agents.values():
+            if hasattr(agent, 'trace_service'):
+                agent.trace_service = self.trace_service
 
         # Fallback to agents if available, otherwise initialize defaults
         self.retriever = self.agents.get("retriever")
@@ -194,23 +201,34 @@ class MultiAgentOrchestrator:
         start_time = datetime.now()
         
         try:
-            # Step 1: Get user ID
-            user_id = self._get_user_id(context)
+            # Step 1: Get user ID and Session ID
+            user_val = context.get("user_id", 1)
+            user_id = user_val.id if hasattr(user_val, 'id') else user_val
+            session_id = context.get("session_id")
             provider = context.get("provider", "ollama")
+            
+            # Step 1.5: Perception Step
+            perception_result = await self.perception.process_robot_observation(
+                observation_data={"raw_text": query},
+                robot_id="orchestrator",
+                user_id=user_id,
+                session_id=session_id
+            )
+            all_traces.append(perception_result.get("trace"))
             
             # Step 2: Broadcast status
             await self._broadcast_agent_status()
             await self._broadcast_thought("Orchestrator", f"📝 Processing: '{query[:50]}...'")
             
             # Step 3: Behavior Pack Policy Check (Dominant Policy)
-            pack_result = await self.pack_executor.process_with_best_pack(query, user_id)
+            pack_result = await self.pack_executor.process_with_best_pack(query, user_id, session_id=session_id)
             all_traces.append(pack_result.get("trace"))
             
             # Step 4: Get memory context
             memory_context = []
             if self.retriever:
                 try:
-                    search_data = await self.retriever.search(query, user_id, limit=5)
+                    search_data = await self.retriever.search(query, user_id, limit=5, session_id=session_id)
                     search_results = search_data.get("results", [])
                     all_traces.append(search_data.get("trace"))
                     memory_context = [r.dict() for r in search_results]
@@ -233,7 +251,8 @@ class MultiAgentOrchestrator:
                 query=query,
                 context=memory_context,
                 provider=provider,
-                user_id=user_id
+                user_id=user_id,
+                session_id=session_id
             )
             
             all_traces.append(generation.get("trace"))
@@ -264,7 +283,8 @@ class MultiAgentOrchestrator:
             
             trace_obj = DecisionTrace(
                 decision_id=decision_id,
-                timestamp=datetime.now().isoformat(),
+                session_id=session_id,
+                timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
                 user_id=user_id,
                 query=query,
                 response=response_text,
@@ -274,7 +294,7 @@ class MultiAgentOrchestrator:
                 pack_version=pack_result["metadata"].get("version", "1.0.0"),
                 latency_ms=latency_ms
             )
-            self.trace_service.store_trace(trace_obj)
+            await self.trace_service.store_trace(trace_obj)
             
             return {
                 "answer": response_text,
@@ -346,7 +366,7 @@ class MultiAgentOrchestrator:
             
             # Step 1: Policy Check
             yield {"type": "thought", "data": {"step": "🛡️", "label": "Checking policies...", "status": "active"}}
-            pack_result = await self.pack_executor.process_with_best_pack(query, user_id)
+            pack_result = await self.pack_executor.process_with_best_pack(query, user_id, session_id=session_id)
             
             # Step 2: Memory retrieval
             memory_context = []
@@ -354,7 +374,7 @@ class MultiAgentOrchestrator:
             if self.retriever:
                 try:
                     yield {"type": "thought", "data": {"step": "🔍", "label": "Searching memory...", "status": "active"}}
-                    search_data = await self.retriever.search(query, user_id=user_id)
+                    search_data = await self.retriever.search(query, user_id=user_id, session_id=session_id)
                     search_results = search_data.get("results", [])
                     retrieval_trace = search_data.get("trace")
                     
@@ -376,7 +396,7 @@ class MultiAgentOrchestrator:
             gen_memory_status = None
             gen_suggestions = None
             
-            async for item in self.generator.generate_stream_with_trace(query, provider, context=memory_context):
+            async for item in self.generator.generate_stream_with_trace(query, provider, context=memory_context, user_id=user_id, session_id=session_id):
                 if item["type"] == "content":
                     full_response += item["content"]
                     yield {"type": "content", "data": item["content"]}
@@ -396,7 +416,8 @@ class MultiAgentOrchestrator:
             # Store in TraceService
             trace_obj = DecisionTrace(
                 decision_id=decision_id,
-                timestamp=datetime.now().isoformat(),
+                session_id=session_id,
+                timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
                 user_id=user_id,
                 query=query,
                 response=full_response,
@@ -407,7 +428,7 @@ class MultiAgentOrchestrator:
                 latency_ms=latency_ms
             )
             
-            self.trace_service.store_trace(trace_obj)
+            await self.trace_service.store_trace(trace_obj)
             
             self.agent_activity["generator"] = "idle"
             await self._broadcast_agent_status()

@@ -5,10 +5,13 @@ Automatically adjusts swarm agent behaviors based on learned patterns.
 import logging
 import json
 from typing import Dict, List, Any, Optional
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import SemanticPattern, SystemConfig
 from app.services.self_improving import SelfImprovingIntelligence
+from app.services.trace_service import TraceService
+from app.models.decision_trace import TraceStep
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -19,11 +22,12 @@ class AutoPolicyUpdater:
     The system evolves its own behavior.
     """
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, trace_service: Optional[TraceService] = None):
         self.db = db
         self.self_improving = SelfImprovingIntelligence(db)
+        self.trace_service = trace_service
     
-    async def update_policies(self):
+    async def update_policies(self, session_id: Optional[int] = None):
         """
         Main entry point for auto-policy updates.
         """
@@ -38,14 +42,48 @@ class AutoPolicyUpdater:
         # 3. Generate policy updates
         updates = await self._generate_policy_updates(grouped)
         
+        # --- TRACE CAPTURE: POLICY MATCH ---
+        trace_id = None
+        if self.trace_service and session_id and updates:
+            trace = await self.trace_service.capture_step(
+                session_id=session_id,
+                step=TraceStep.POLICY_MATCH,
+                data={
+                    "patterns_analyzed": len(patterns),
+                    "updates_generated": len(updates),
+                    "grouped_patterns": {
+                        k: len(v) for k, v in grouped.items()
+                    },
+                    "updates": updates[:5]  # Top 5 updates
+                },
+                agent_id="AutoPolicyUpdater",
+                confidence_score=0.8
+            )
+            trace_id = str(trace.id) if trace else None
+            
+            # Add provenance for each update
+            if trace:
+                for update in updates[:3]:  # Top 3 updates
+                    await self.trace_service.add_provenance(
+                        trace_id=trace.id,
+                        source_type="policy_update",
+                        source_id=f"policy_{update.get('domain', 'unknown')}",
+                        source_text=update.get("recommendation", ""),
+                        relevance_score=update.get("confidence", 0.5)
+                    )
+        # --- END TRACE CAPTURE ---
+        
         # 4. Apply updates if they meet thresholds
         if updates:
             applied = await self._apply_updates(updates)
             logger.info(f"✅ Applied {len(applied)} policy updates")
-            return applied
+            return {
+                "applied": applied,
+                "trace_id": trace_id
+            }
         
         logger.info("ℹ️ No policy updates needed")
-        return []
+        return {"applied": [], "trace_id": trace_id}
     
     def _group_patterns(self, patterns: List[Dict]) -> Dict:
         """Group patterns by type for analysis."""
