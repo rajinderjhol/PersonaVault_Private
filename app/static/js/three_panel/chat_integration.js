@@ -23,6 +23,8 @@ class ChatIntegration {
     // --- Session Management ---
 
     async loadSessions() {
+        if (this.sessions.length > 0) return; // Prevent re-loading if already loaded
+
         try {
             const response = await fetch('/api/v1/chat/sessions/', { 
                 credentials: 'include' 

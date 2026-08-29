@@ -10,6 +10,7 @@ class ContextPanel {
         this.snowflakes = [];
         this.updateInterval = null;
         this.ws = null;
+        this.isRefreshing = false;
         this.init();
     }
 
@@ -17,13 +18,19 @@ class ContextPanel {
         console.log("ContextPanel: initializing...");
         this.loadContext();
         this.setupWebSocket();
-        // Auto-refresh every 10 seconds
-        this.updateInterval = setInterval(() => this.refreshAll(), 10000);
+        // Auto-refresh every 60 seconds
+        this.updateInterval = setInterval(() => this.refreshAll(), 60000);
     }
 
     async refreshAll() {
+        if (this.isRefreshing) {
+            console.log('ContextPanel: refresh already in progress, skipping.');
+            return;
+        }
+        this.isRefreshing = true;
         console.log("ContextPanel: refreshing...");
         await this.loadContext();
+        this.isRefreshing = false;
     }
 
     async loadContext() {
@@ -40,11 +47,11 @@ class ContextPanel {
             this.metrics = metrics;
             this.transitions = transitions || [];
             this.snowflakes = snowflakes || [];
-            console.log("ContextPanel: context loaded.");
+            console.log("ContextPanel: context loaded.", { decision, metrics, transitions, snowflakes });
 
             this.renderAll();
         } catch (error) {
-            console.error('Failed to load context:', error);
+            console.error('ContextPanel: Failed to load context:', error.message);
         }
     }
 

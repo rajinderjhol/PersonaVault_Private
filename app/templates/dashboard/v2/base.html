@@ -6,7 +6,6 @@
     <title>PersonaVault Intelligence Dashboard</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="/static/css/three_panel/theme.css">
-    <link rel="stylesheet" href="/static/css/three_panel/dashboard.css">
     <link rel="stylesheet" href="/static/css/three_panel/chat.css">
     <link rel="stylesheet" href="/static/css/three_panel/context.css">
 </head>
@@ -56,7 +55,7 @@
                         <span class="chat-title-text">PersonaVault Chat</span>
                     </div>
                     <div class="chat-header-actions">
-                        <button class="btn-new-chat" onclick="window.chatIntegration?.newChat()">+ New Chat</button>
+                        <button class="btn-new-chat" onclick="window.chatIntegration?.createNewSession()">+ New Chat</button>
                     </div>
                 </div>
 
@@ -131,9 +130,15 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="/static/js/three_panel/dashboard.js"></script>
     <script src="/static/js/three_panel/sidebar.js"></script>
     <script src="/static/js/three_panel/context.js"></script>
     <script src="/static/js/three_panel/chat_integration.js"></script>
+    <script>
+        // Global helper for v1 tab compatibility
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    </script>
 </body>
 </html>

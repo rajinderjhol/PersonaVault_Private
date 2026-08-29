@@ -296,7 +296,11 @@ async def get_tab(tab_id: str, user_id: int = Depends(require_admin)):
         "domain-swarm": "swarm"
     }
     safe_tab_id = mapping.get(tab_id, tab_id)
+    
+    # Check if this is a V2 tab
     tab_path = TAB_TEMPLATE_DIR / f"{safe_tab_id}.html"
+    if not tab_path.exists():
+        tab_path = TAB_TEMPLATE_DIR / "v2" / f"{safe_tab_id}.html"
 
     if tab_path.exists():
         with open(tab_path, "r") as f:

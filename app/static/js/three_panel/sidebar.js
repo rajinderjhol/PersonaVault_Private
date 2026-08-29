@@ -16,13 +16,16 @@ class SidebarManager {
     }
 
     loadElements() {
-        // Default navigation elements
+        // Expanded navigation elements including v1 tabs
         this.elements = [
-            { id: 'dashboard', icon: '📊', label: 'Dashboard', url: '/admin/dashboard/v2' },
-            { id: 'chat', icon: '💬', label: 'Chat', url: '/admin/dashboard/v2?tab=chat' },
-            { id: 'swarm', icon: '🐝', label: 'Swarm', url: '/admin/swarm' },
-            { id: 'compliance', icon: '⚖️', label: 'Compliance', url: '/admin/compliance' },
-            { id: 'security', icon: '🔒', label: 'Security', url: '/admin/security' }
+            { id: 'dashboard', icon: '📊', label: 'Dashboard', url: '/api/v1/admin/dashboard/v2' },
+            { id: 'chat', icon: '💬', label: 'Chat', url: '/api/v1/admin/dashboard/v2?tab=chat' },
+            { id: 'swarm', icon: '🐝', label: 'Swarm', url: '/api/v1/admin/dashboard/v2?tab=swarm' },
+            { id: 'compliance', icon: '⚖️', label: 'Compliance', url: '/api/v1/admin/dashboard/v2?tab=governance' },
+            { id: 'security', icon: '🔒', label: 'Security', url: '/api/v1/admin/dashboard/v2?tab=security' },
+            { id: 'agents', icon: '🤖', label: 'Agents', url: '/api/v1/admin/dashboard/v2?tab=agents' },
+            { id: 'models', icon: '🧠', label: 'Models', url: '/api/v1/admin/dashboard/v2?tab=models' },
+            { id: 'overview', icon: '📈', label: 'Overview', url: '/api/v1/admin/dashboard/v2?tab=overview' }
         ];
     }
 
