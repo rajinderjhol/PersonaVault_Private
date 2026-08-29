@@ -504,10 +504,13 @@ class IntelligenceGateway:
         result = await self._call_with_fallback(provider, query, context)
         self.thought_tracker.add_step("Generation", "Response generated")
         
-        final_result = {"response": result.get("response", "No response")}
-        final_result["provider"] = provider
-        final_result["thought_process"] = self.thought_tracker.get_steps()
-        final_result["total_time"] = self.thought_tracker.get_total_time()
+        # Structured contract
+        final_result = {
+            "finalResponse": result.get("response", "No response"),
+            "reasoningTrace": self.thought_tracker.get_steps(),
+            "provider": provider,
+            "total_time": self.thought_tracker.get_total_time()
+        }
         
         return final_result
     
