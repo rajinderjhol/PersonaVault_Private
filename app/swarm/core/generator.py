@@ -12,6 +12,9 @@ from app.swarm.base import BaseAgent
 from app.swarm.routing.reasoning_router import ReasoningRouter
 from app.swarm.routing.domain_router import DomainRouter
 from app.services.memory.ice_repository import IceMemoryRepository
+from app.services.lineage.lineage_service import LineageService
+from app.models.lineage import SourceType
+from app.services.trace_service import TraceStep
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,7 @@ class GeneratorAgent(BaseAgent):
         self.router = ReasoningRouter()
         self.domain_router = DomainRouter()
         self.ice_repo = IceMemoryRepository(self.session_factory)
+        self.lineage_service = LineageService(self.session_factory)
         self._last_provider_used = "unknown"
         self._last_model_used = "unknown"
         logger.info(f"GeneratorAgent initialized (airgapped: {self.router.airgapped})")
@@ -36,7 +40,8 @@ class GeneratorAgent(BaseAgent):
         query: str, 
         provider: str = "auto",
         context: Optional[List[Any]] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        session_id: Optional[int] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream generation with structured decision trace and domain awareness.
@@ -103,6 +108,20 @@ class GeneratorAgent(BaseAgent):
             end_time=end_time
         )
         
+        # Persist to database
+        target_session = session_id or user_id # session_id is preferred
+        if self.trace_service and target_session:
+             try:
+                 await self.trace_service.capture_step(
+                     session_id=target_session,
+                     step=TraceStep.AI_RECOMMENDATION,
+                     data=trace,
+                     agent_id="generator",
+                     confidence_score=route_metadata.get("complexity", {}).get("score", 0.7)
+                 )
+             except Exception as e:
+                 logger.error(f"Failed to persist streaming trace: {e}")
+        
         # 5. Get memory status and suggestions
         memory_status = await self._get_memory_status(user_id=user_id)
         suggestions = self._get_suggested_actions(
@@ -124,14 +143,23 @@ class GeneratorAgent(BaseAgent):
         
         # 7. Crystallize if appropriate
         if route_metadata.get("mode") == "reasoning" and len(response_complete) > 50:
-            await self._crystallize_reasoning(
+            memory_id = await self._crystallize_reasoning(
                 query=query,
                 reasoning_path=full_prompt,
                 response=response_complete,
                 complexity=route_metadata.get("complexity", {}),
                 user_id=user_id
             )
-
+            # Track lineage
+            if memory_id:
+                await self.lineage_service.track_node(
+                    node_type=SourceType.PATTERN,
+                    user_id=user_id,
+                    source_id=memory_id,
+                    content_summary=f"Crystallized: {query[:50]}",
+                    metadata={"domain": domain_result.domain}
+                )
+    
     def _build_domain_prompt(
         self,
         query: str,
@@ -468,17 +496,26 @@ Always consider:
         
         # Crystallize reasoning if mode was reasoning
         if route_metadata.get("mode") == "reasoning":
-            await self._crystallize_reasoning(
+            memory_id = await self._crystallize_reasoning(
                 query=query,
                 reasoning_path=full_prompt,
                 response=answer,
                 complexity=route_metadata.get("complexity", {}),
                 user_id=user_id
             )
+            # Track lineage
+            if memory_id:
+                await self.lineage_service.track_node(
+                    node_type=SourceType.PATTERN,
+                    user_id=user_id,
+                    source_id=memory_id,
+                    content_summary=f"Crystallized: {query[:50]}",
+                    metadata={"domain": domain_result.domain}
+                )
             logger.info("🧠 Reasoning crystallized to Layer 3")
 
         # Generate trace with routing metadata and domain info
-        trace = self.create_trace(
+        trace = await self.create_trace_async(
             input_data=query,
             explanation=f"Generated answer via {source} (domain: {domain_result.domain})",
             confidence=confidence,
@@ -487,7 +524,9 @@ Always consider:
                 "routing": route_metadata,
                 "domain": domain_result.domain,
                 "domain_confidence": domain_result.confidence
-            }
+            },
+            session_id=kwargs.get("session_id"),
+            step=TraceStep.AI_RECOMMENDATION
         )
 
         return {
@@ -566,7 +605,10 @@ Always consider:
         reasoning_path: str, 
         response: str
     ) -> Dict[str, Any]:
-        """Extract the essential reasoning pattern from a deep thought session."""
+        """
+        Extract the essential reasoning pattern from a deep thought session.
+        """
+        # Simple keyword extraction
         keywords = re.findall(r'\b\w{4,}\b', query + " " + reasoning_path)
         
         return {
@@ -577,18 +619,24 @@ Always consider:
         }
     
     def _calculate_reasoning_depth(self, reasoning_path: str) -> float:
-        """Calculate how 'deep' the reasoning was."""
+        """
+        Calculate how "deep" the reasoning was.
+        """
         decision_markers = ["therefore", "however", "moreover", "consequently", "because", "since", "so"]
         count = sum(1 for marker in decision_markers if marker in reasoning_path.lower())
         return min(count / 10, 1.0)
     
     def _calculate_pattern_confidence(self, reasoning_path: str) -> float:
-        """Calculate confidence based on reasoning path coherence."""
+        """
+        Calculate confidence based on reasoning path coherence.
+        """
         base = min(len(reasoning_path) / 1000, 0.8)
         return min(base + 0.1, 1.0)
     
     async def _find_similar_crystallized_pattern(self, pattern: Dict[str, Any], user_id: int) -> Optional[Dict]:
-        """Check if a similar reasoning pattern already exists in Layer 3."""
+        """
+        Check if a similar reasoning pattern already exists in Layer 3.
+        """
         try:
             similar = await self.ice_repo.search_similar(
                 query=pattern["summary"],

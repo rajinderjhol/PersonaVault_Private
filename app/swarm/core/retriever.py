@@ -5,6 +5,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from app.schemas.memory_schemas import MemoryResult, RetrievalPlan
 from app.swarm.base import BaseAgent
+from app.services.trace_service import TraceStep
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class RetrievalAgent(BaseAgent):
         
         return results
     
-    async def search(self, query: str, user_id: int, limit: int = 10) -> Dict[str, Any]:
+    async def search(self, query: str, user_id: int, limit: int = 10, session_id: Optional[int] = None) -> Dict[str, Any]:
         logger.info(f"RetrievalAgent searching for: {query}, user_id: {user_id}")
         plan = RetrievalPlan(
             needs_retrieval=True,
@@ -77,11 +78,13 @@ class RetrievalAgent(BaseAgent):
         results = await self.hybrid_search(plan, user_id)
         
         # Generate trace
-        trace = self.create_trace(
+        trace = await self.create_trace_async(
             input_data=query,
             explanation=f"Retrieved {len(results)} memory items",
             confidence=max([r.score for r in results]) if results else 0.0,
-            decision="retrieve_memories"
+            decision="retrieve_memories",
+            session_id=session_id,
+            step=TraceStep.PERCEPTION # Retrieval is part of Perception
         )
 
         return {

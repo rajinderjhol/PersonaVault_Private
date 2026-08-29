@@ -81,4 +81,28 @@ class IceMemoryRepository:
         pattern = await self.sql_repo.get_by_id(int(pattern_id))
         return pattern.__dict__ if pattern else None
 
+    async def mark_invalid(self, pattern_id: str) -> bool:
+        """
+        Mark a crystallized pattern as invalid (for deletion).
+        """
+        try:
+            from sqlalchemy import update
+            from app.repositories.sqlalchemy.semantic_pattern import SemanticPattern
+            
+            # Using sql_repo's DB session or similar
+            async with self.sql_repo.db() as session:
+                stmt = (
+                    update(SemanticPattern)
+                    .where(SemanticPattern.id == int(pattern_id))
+                    .values(is_valid=False)
+                )
+                await session.execute(stmt)
+                await session.commit()
+                
+                logger.info(f"Marked pattern {pattern_id} as invalid")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to mark pattern {pattern_id} as invalid: {e}")
+            return False
+
 
