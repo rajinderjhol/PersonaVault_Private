@@ -79,13 +79,17 @@ async def rbac_middleware(request: Request, call_next):
     
     # 3. Enforce Administrative Access
     is_admin_path = any(path.startswith(prefix) for prefix in ADMIN_PREFIXES)
-    if user:
-        logger.info(f"RBAC: Path: {path}, User role: {user.role}, Admin path: {is_admin_path}")
     
+    # DEBUG: Log user state
+    if user:
+        logger.info(f"RBAC DEBUG: Path: {path}, User: {user.username}, Role: {user.role}, IsAdminPath: {is_admin_path}")
+    else:
+        logger.warning(f"RBAC DEBUG: Path: {path}, No user found, IsAdminPath: {is_admin_path}")
+
     if is_admin_path:
         if not user or user.role != "admin":
             username = user.username if user else 'Anonymous'
-            logger.warning(f"RBAC DENIED: Unauthorized admin access attempt to {path} by {username}")
+            logger.warning(f"RBAC DENIED: Unauthorized admin access attempt to {path} by {username} with role: {user.role if user else 'N/A'}")
             
             if path.startswith("/admin") and not path.startswith("/api"):
                 return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -93,11 +97,11 @@ async def rbac_middleware(request: Request, call_next):
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
                 content={
-                    "detail": "Permission denied: Admin privileges required",
+                    "detail": f"Permission denied: Admin privileges required. Detected role: {user.role if user else 'Anonymous'}",
                     "code": "PERM_001"
                 }
             )
-            
+
     # 4. New Declarative Permission Check
     if user and not check_permission(user.role, path, org_id=getattr(user, "organization_id", None)):
         logger.warning(f"RBAC DENIED: Unauthorized access to {path} by {user.username} with role {user.role}")
