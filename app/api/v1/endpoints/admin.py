@@ -155,25 +155,66 @@ async def list_roles(
 
 @router.get("/models")
 async def list_models(
-    current_user: User = Depends(require_admin),
-    request: Request = None
+    current_user: User = Depends(require_admin)
 ):
-    """List all available models."""
+    """
+    List all available AI models.
+    """
     try:
-        # For now, leveraging the existing ollama endpoint logic or registry
-        # Simplest: query ollama directly if configured
-        from app.core.config import Config
+        # Check if Ollama is running
         import httpx
-        
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{Config.OLLAMA_BASE_URL}/api/tags", timeout=5.0)
+            response = await client.get("http://localhost:11434/api/tags", timeout=5.0)
             if response.status_code == 200:
-                models = response.json().get('models', [])
-                return [{"id": m['name'], "name": m['name']} for m in models]
-            return []
+                data = response.json()
+                models = []
+                for model in data.get("models", []):
+                    models.append({
+                        "name": model.get("name"),
+                        "size": model.get("size"),
+                        "modified_at": model.get("modified_at"),
+                        "digest": model.get("digest"),
+                    })
+                return {"models": models, "provider": "ollama"}
+            else:
+                return {"models": [], "provider": "ollama", "error": "Ollama not responding"}
     except Exception as e:
-        logger.error(f"List models failed: {e}")
-        return []
+        logger.error(f"Failed to list models: {e}")
+        # Return Groq models as fallback
+        return {
+            "models": [
+                {"name": "groq/llama3-70b", "provider": "groq"},
+                {"name": "groq/mixtral-8x7b", "provider": "groq"},
+                {"name": "groq/gemma-7b", "provider": "groq"},
+            ],
+            "provider": "groq"
+        }
+
+
+@router.post("/models/pull")
+async def pull_model(
+    model_name: str,
+    current_user: User = Depends(require_admin)
+):
+    """
+    Pull a model from Ollama.
+    """
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://localhost:11434/api/pull",
+                json={"name": model_name},
+                timeout=60.0
+            )
+            if response.status_code == 200:
+                return {"status": "success", "message": f"Model {model_name} pulled successfully"}
+            else:
+                return {"status": "error", "message": "Failed to pull model"}
+    except Exception as e:
+        logger.error(f"Failed to pull model: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to pull model: {str(e)}")
+
 from datetime import datetime
 # ... (imports) ...
 # ...

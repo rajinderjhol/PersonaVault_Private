@@ -450,7 +450,7 @@ app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
 app.include_router(dashboard_router, prefix="/api/v1/admin/dashboard", tags=["dashboard"])
 app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
 
-app.include_router(packs_router, prefix="/api/v1", tags=["behaviour-packs"])
+app.include_router(packs_router, prefix="/api/v1/marketplace", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
