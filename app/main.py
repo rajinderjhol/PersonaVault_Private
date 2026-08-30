@@ -48,6 +48,9 @@ from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.api.v1.endpoints.packs import router as packs_router
 from app.api.v1.endpoints.privacy import router as privacy_router
+from app.api.v1.endpoints.admin_users import router as admin_users_router
+from app.api.v1.endpoints.constitution import router as constitution_router
+from app.api.v1.endpoints.connections import router as connections_router
 from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
@@ -464,6 +467,9 @@ app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
 
 app.include_router(packs_router, prefix="/api/v1/marketplace", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])
+app.include_router(admin_users_router)
+app.include_router(constitution_router)
+app.include_router(connections_router)
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
