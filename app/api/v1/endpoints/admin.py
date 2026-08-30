@@ -174,55 +174,77 @@ async def list_models(
     except Exception as e:
         logger.error(f"List models failed: {e}")
         return []
-@router.get("/config/ai-provider")
+from datetime import datetime
+# ... (imports) ...
+# ...
+@router.get("/config/primary-ai-provider")
 async def get_primary_ai_provider(
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get the current primary AI provider."""
+    """
+    Get the current primary AI provider.
+    """
     try:
+        # Get the primary provider from config
         stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
         result = await db.execute(stmt)
-        config = result.scalars().first()
+        config = result.scalar_one_or_none()
+        
         if config:
-            return {"primary_provider": config.value, "source": "database"}
-        return {"primary_provider": "ollama", "source": "default"}
+            return {"provider": config.value, "config": config}
+        
+        # Fallback to default
+        return {"provider": "groq", "config": None}
+        
     except Exception as e:
-        logger.error(f"Error fetching AI provider: {e}")
-        return {"primary_provider": "ollama", "source": "error", "error": str(e)}
+        logger.error(f"Failed to get primary AI provider: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get primary AI provider")
 
-@router.put("/config/ai-provider")
+
+@router.put("/config/primary-ai-provider")
 async def update_primary_ai_provider(
-    payload: AIProviderUpdate,
-    user = Depends(require_admin),
+    provider: str,
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Switch the primary AI provider globally."""
-    if payload.provider not in ["ollama", "gemini"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid provider. Must be 'ollama' or 'gemini'."
-        )
-
+    """
+    Update the primary AI provider.
+    """
     try:
+        # Validate provider
+        valid_providers = ["groq", "ollama", "gemini", "auto"]
+        if provider not in valid_providers:
+            raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {valid_providers}")
+        
+        # Update or create config
         stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")
         result = await db.execute(stmt)
-        config = result.scalars().first()
-        if not config:
-            config = SystemConfig(key="primary_ai_provider", value=payload.provider)
-            db.add(config)
+        config = result.scalar_one_or_none()
+        
+        if config:
+            config.value = provider
+            config.updated_at = datetime.utcnow()
         else:
-            config.value = payload.provider
+            config = SystemConfig(
+                key="primary_ai_provider",
+                value=provider,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            db.add(config)
         
         await db.commit()
-        logger.info(f"Admin switched primary AI provider to: {payload.provider}")
-        return {"status": "success", "primary_provider": payload.provider}
+        await db.refresh(config)
+        
+        return {"status": "success", "provider": provider, "config": config}
+        
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Failed to update primary AI provider: {e}")
         await db.rollback()
-        logger.error(f"Error updating AI provider: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail="Failed to update primary AI provider")
 
 @router.get("/config")
 async def get_all_configs(
