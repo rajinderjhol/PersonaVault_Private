@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel
+from uuid import UUID
 from app.db.session import get_db
-from app.models import SystemConfig
+from app.models import SystemConfig, User
 from app.services.semantic_memory import SemanticMemory
 from app.core.dependencies import require_admin
 import logging
@@ -19,6 +20,138 @@ class AIProviderUpdate(BaseModel):
 class BlacklistRequest(BaseModel):
     trigger: str
 
+# --- User Management ---
+
+@router.get("/users")
+async def list_users(
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    skip: int = 0,
+    limit: int = 50
+):
+    """
+    List all users (admin only).
+    """
+    try:
+        stmt = select(User).offset(skip).limit(limit)
+        result = await db.execute(stmt)
+        users = result.scalars().all()
+        
+        count_stmt = select(func.count()).select_from(User)
+        count_result = await db.execute(count_stmt)
+        total = count_result.scalar() or 0
+        
+        return {
+            "users": [
+                {
+                    "id": str(u.id),
+                    "username": u.username,
+                    "email": u.email,
+                    "role": u.role,
+                    "is_active": u.is_active,
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                    "last_login": u.last_login.isoformat() if u.last_login else None
+                }
+                for u in users
+            ],
+            "total": total
+        }
+        
+    except Exception as e:
+        logger.error(f"List users failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list users")
+
+
+@router.get("/users/{user_id}")
+async def get_user(
+    user_id: UUID,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get a specific user (admin only).
+    """
+    try:
+        stmt = select(User).where(User.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get user failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user")
+
+
+@router.patch("/users/{user_id}/role")
+async def update_user_role(
+    user_id: UUID,
+    role: str,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update user role (admin only).
+    """
+    try:
+        stmt = select(User).where(User.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if role not in ["admin", "analyst", "viewer"]:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        
+        user.role = role
+        await db.commit()
+        await db.refresh(user)
+        
+        return {
+            "status": "success",
+            "message": f"User role updated to {role}",
+            "user_id": str(user_id),
+            "role": role
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update user role failed: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update user role")
+
+
+@router.get("/roles")
+async def list_roles(
+    current_user: User = Depends(require_admin)
+):
+    """
+    List all available roles.
+    """
+    return {
+        "roles": [
+            {"name": "admin", "description": "Full system access"},
+            {"name": "analyst", "description": "Read/write access to intelligence"},
+            {"name": "viewer", "description": "Read-only access"},
+        ]
+    }
+
+# ... rest of existing admin endpoints ...
 @router.get("/config/ai-provider")
 async def get_primary_ai_provider(
     db: AsyncSession = Depends(get_db)

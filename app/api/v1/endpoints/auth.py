@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
@@ -95,9 +96,45 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "username": current_user.username, "role": current_user.role}
 
 @router.post("/logout")
-async def logout(response: Response, request: Request):
-    response.delete_cookie(key="session_id", path="/")
-    return {"status": "success"}
+async def logout(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Logout user by invalidating the current session.
+    """
+    try:
+        # Get session token from cookie
+        session_token = request.cookies.get("session_id")
+        
+        if session_token:
+            # Find and deactivate the session
+            stmt = select(UserSession).where(
+                UserSession.session_token == session_token,
+                UserSession.user_id == current_user.id,
+                UserSession.is_active == True
+            )
+            result = await db.execute(stmt)
+            session = result.scalar_one_or_none()
+            
+            if session:
+                session.is_active = False
+                # Assuming ended_at column exists, if not, skip this
+                if hasattr(session, 'ended_at'):
+                    session.ended_at = datetime.utcnow()
+                await db.commit()
+        
+        # Clear the cookie
+        response = JSONResponse(
+            content={"status": "success", "message": "Logged out successfully"}
+        )
+        response.delete_cookie("session_id", path="/")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Logout failed: {e}")
+        raise HTTPException(status_code=500, detail="Logout failed")
 
 async def create_user(db: AsyncSession, **user_data):
     username = user_data.get("username")

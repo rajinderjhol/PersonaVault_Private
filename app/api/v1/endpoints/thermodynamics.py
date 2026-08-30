@@ -1,5 +1,6 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from typing import Dict, Any, List, Optional
+from uuid import UUID
 import asyncio
 import json
 import logging
@@ -17,6 +18,270 @@ logger = logging.getLogger(__name__)
 
 # --- WebSocket Manager ---
 class ThermodynamicWebSocketManager:
+    """
+    Manages WebSocket connections for real-time thermodynamic updates.
+    """
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+        self.client_metadata: Dict[str, Dict] = {}
+    
+    async def connect(self, client_id: str, websocket: WebSocket, metadata: Dict = None):
+        """Accept a new WebSocket connection."""
+        await websocket.accept()
+        self.active_connections[client_id] = websocket
+        self.client_metadata[client_id] = metadata or {}
+        logger.info(f"🔌 Client {client_id} connected. Total: {len(self.active_connections)}")
+    
+    def disconnect(self, client_id: str):
+        """Remove a disconnected client."""
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+        if client_id in self.client_metadata:
+            del self.client_metadata[client_id]
+        logger.info(f"🔌 Client {client_id} disconnected. Total: {len(self.active_connections)}")
+    
+    async def send_message(self, client_id: str, message: Dict):
+        """Send a message to a specific client."""
+        if client_id in self.active_connections:
+            try:
+                await self.active_connections[client_id].send_text(json.dumps(message))
+                return True
+            except Exception as e:
+                logger.error(f"Failed to send message to {client_id}: {e}")
+                self.disconnect(client_id)
+        return False
+    
+    async def broadcast(self, message: Dict, exclude: List[str] = None):
+        """Broadcast a message to all connected clients."""
+        exclude = exclude or []
+        for client_id, websocket in list(self.active_connections.items()):
+            if client_id not in exclude:
+                try:
+                    await websocket.send_text(json.dumps(message))
+                except Exception as e:
+                    logger.error(f"Failed to broadcast to {client_id}: {e}")
+                    self.disconnect(client_id)
+    
+    async def send_thermodynamic_update(self, client_id: str = None):
+        """
+        Send thermodynamic data to a specific client or all clients.
+        """
+        try:
+            # Placeholder data - you can fetch real data here
+            data = {
+                "type": "metrics",
+                "data": {
+                    "gas": 3,
+                    "liquid": 87,
+                    "ice": 45,
+                    "snowflakes": 12
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            if client_id:
+                await self.send_message(client_id, data)
+            else:
+                await self.broadcast(data)
+                
+        except Exception as e:
+            logger.error(f"Failed to send thermodynamic update: {e}")
+    
+    def get_connection_count(self) -> int:
+        """Get the number of active connections."""
+        return len(self.active_connections)
+    
+    def get_active_clients(self) -> List[str]:
+        """Get a list of active client IDs."""
+        return list(self.active_connections.keys())
+
+# Singleton instance
+ws_manager = ThermodynamicWebSocketManager()
+
+# --- Manual Phase Control Endpoints ---
+
+@router.post("/manual/freeze")
+async def manual_freeze(
+    pattern_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually freeze a pattern from Liquid to Ice.
+    """
+    try:
+        # Get the pattern
+        stmt = select(DecisionTrace).where(DecisionTrace.id == pattern_id)
+        result = await db.execute(stmt)
+        pattern = result.scalar_one_or_none()
+
+        if not pattern:
+            raise HTTPException(status_code=404, detail="Pattern not found")
+
+        # Check current phase
+        current_phase = pattern.phase if hasattr(pattern, 'phase') else 'liquid'
+        if current_phase == 'ice':
+            return {"status": "already_frozen", "message": "Pattern is already ice"}
+
+        # Update phase
+        pattern.phase = 'ice'
+        pattern.is_crystallized = True
+        pattern.crystallized_at = datetime.utcnow()
+        pattern.phase_updated_at = datetime.utcnow()
+
+        await db.commit()
+        await db.refresh(pattern)
+
+        # Log transition
+        logger.info(f"Manual freeze: Pattern {pattern_id} frozen to Ice")
+
+        return {
+            "status": "success",
+            "message": "Pattern frozen to Ice",
+            "pattern_id": str(pattern_id),
+            "new_phase": "ice"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Manual freeze failed: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to freeze pattern")
+
+
+@router.post("/manual/melt")
+async def manual_melt(
+    pattern_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually melt a pattern from Ice to Liquid.
+    """
+    try:
+        stmt = select(DecisionTrace).where(DecisionTrace.id == pattern_id)
+        result = await db.execute(stmt)
+        pattern = result.scalar_one_or_none()
+
+        if not pattern:
+            raise HTTPException(status_code=404, detail="Pattern not found")
+
+        current_phase = pattern.phase if hasattr(pattern, 'phase') else 'ice'
+        if current_phase == 'liquid':
+            return {"status": "already_melted", "message": "Pattern is already liquid"}
+
+        pattern.phase = 'liquid'
+        pattern.is_crystallized = False
+        pattern.phase_updated_at = datetime.utcnow()
+
+        await db.commit()
+        await db.refresh(pattern)
+
+        logger.info(f"Manual melt: Pattern {pattern_id} melted to Liquid")
+
+        return {
+            "status": "success",
+            "message": "Pattern melted to Liquid",
+            "pattern_id": str(pattern_id),
+            "new_phase": "liquid"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Manual melt failed: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to melt pattern")
+
+
+@router.post("/manual/evaporate")
+async def manual_evaporate(
+    pattern_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually evaporate a pattern from Liquid to Gas.
+    """
+    try:
+        stmt = select(DecisionTrace).where(DecisionTrace.id == pattern_id)
+        result = await db.execute(stmt)
+        pattern = result.scalar_one_or_none()
+
+        if not pattern:
+            raise HTTPException(status_code=404, detail="Pattern not found")
+
+        current_phase = pattern.phase if hasattr(pattern, 'phase') else 'liquid'
+        if current_phase == 'gas':
+            return {"status": "already_evaporated", "message": "Pattern is already gas"}
+
+        pattern.phase = 'gas'
+        pattern.is_crystallized = False
+        pattern.phase_updated_at = datetime.utcnow()
+
+        await db.commit()
+        await db.refresh(pattern)
+
+        logger.info(f"Manual evaporate: Pattern {pattern_id} evaporated to Gas")
+
+        return {
+            "status": "success",
+            "message": "Pattern evaporated to Gas",
+            "pattern_id": str(pattern_id),
+            "new_phase": "gas"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Manual evaporate failed: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to evaporate pattern")
+
+
+@router.post("/manual/sublimate")
+async def manual_sublimate(
+    pattern_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually sublimate a pattern from Ice directly to Gas.
+    """
+    try:
+        stmt = select(DecisionTrace).where(DecisionTrace.id == pattern_id)
+        result = await db.execute(stmt)
+        pattern = result.scalar_one_or_none()
+
+        if not pattern:
+            raise HTTPException(status_code=404, detail="Pattern not found")
+
+        current_phase = pattern.phase if hasattr(pattern, 'phase') else 'ice'
+        if current_phase == 'gas':
+            return {"status": "already_sublimated", "message": "Pattern is already gas"}
+
+        pattern.phase = 'gas'
+        pattern.is_crystallized = False
+        pattern.phase_updated_at = datetime.utcnow()
+
+        await db.commit()
+        await db.refresh(pattern)
+
+        logger.info(f"Manual sublimate: Pattern {pattern_id} sublimated to Gas")
+
+        return {
+            "status": "success",
+            "message": "Pattern sublimated to Gas",
+            "pattern_id": str(pattern_id),
+            "new_phase": "gas"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Manual sublimate failed: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to sublimate pattern")
+
+# ... rest of existing endpoints ...
+
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.client_metadata: Dict[str, Dict] = {}
