@@ -1,90 +1,50 @@
 """
-Proactive Suggestions Endpoint - Get proactive suggestions for users
+Proactive Intelligence API - Anticipate user needs and provide insights
 """
-
-import logging
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 
-from app.services.proactive.suggester import ProactiveSuggester
-
-logger = logging.getLogger(__name__)
+from app.db.session import get_db
+from app.core.dependencies import get_current_user
+from app.models.user import User
+from app.services.proactive_intelligence import ProactiveIntelligenceService
 
 router = APIRouter(prefix="/api/v1/proactive", tags=["proactive"])
 
 
-class SuggestionResponse(BaseModel):
-    suggestions: list
-    count: int
-    timestamp: str
-
-
-@router.get("/suggestions/{user_id}")
-async def get_suggestions(
-    user_id: int,
-    query: Optional[str] = Query(None, description="Current user query"),
-    context: Optional[str] = Query(None, description="Context JSON string")
-) -> SuggestionResponse:
-    """
-    Get proactive suggestions for a user.
-    """
-    suggester = ProactiveSuggester()
+@router.get("/insights")
+async def get_proactive_insights(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get proactive insights for the current user."""
+    service = ProactiveIntelligenceService(db)
+    insights = await service.get_insights(current_user)
     
-    try:
-        context_dict = {}
-        if context:
-            import json
-            context_dict = json.loads(context)
-        
-        suggestions = await suggester.get_suggestions(
-            user_id=user_id,
-            context=context_dict,
-            query=query
-        )
-        
-        return SuggestionResponse(
-            suggestions=[
-                {
-                    "id": s.id,
-                    "type": s.type,
-                    "confidence": s.confidence,
-                    "title": s.title,
-                    "description": s.description,
-                    "action": s.action,
-                    "metadata": s.metadata
-                }
-                for s in suggestions
-            ],
-            count=len(suggestions),
-            timestamp=datetime.now().isoformat()
-        )
-        
-    except Exception as e:
-        logger.error(f"Failed to get suggestions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/suggestions/{suggestion_id}/dismiss")
-async def dismiss_suggestion(suggestion_id: str, user_id: int):
-    """
-    Dismiss a suggestion.
-    """
     return {
-        "success": True,
-        "suggestion_id": suggestion_id,
-        "dismissed": True
+        "insights": insights,
+        "timestamp": datetime.utcnow().isoformat(),
+        "count": len(insights)
     }
 
 
-@router.post("/suggestions/{suggestion_id}/execute")
-async def execute_suggestion(suggestion_id: str, user_id: int):
-    """
-    Execute a suggestion's action.
-    """
-    return {
-        "success": True,
-        "suggestion_id": suggestion_id,
-        "executed": True
-    }
+@router.post("/insights/{insight_id}/dismiss")
+async def dismiss_insight(
+    insight_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Dismiss a proactive insight."""
+    # In production, store this in User preferences
+    return {"status": "success", "message": "Insight dismissed"}
+
+
+@router.post("/insights/{insight_id}/action")
+async def take_action_on_insight(
+    insight_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Take action on a proactive insight."""
+    # Route to appropriate action based on insight type
+    return {"status": "success", "message": "Action initiated"}
