@@ -8,6 +8,7 @@ from app.services.intelligence_gateway import gateway
 from app.services.trace_service import TraceService, TraceStep
 from app.swarm.routing.domain_detector import DomainDetector
 from app.db.session import get_db
+from app.utils.time_parser import TimeParser
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import asyncio
@@ -37,6 +38,9 @@ async def chat_endpoint(
         result_domain = await domain_detector.detect(query)
         pack_name = result_domain.domain or "general"
         
+        # Temporal Intelligence integration
+        temporal_context = TimeParser.parse(query)
+        
         # If provider is not available, try fallback
         available_providers = ["ollama", "groq", "gemini"]
         if provider not in available_providers:
@@ -51,13 +55,14 @@ async def chat_endpoint(
             return {"error": "Query is required"}
         
         # Get response
-        logger.info(f"🔍 DEBUG: Calling gateway.chat with provider: '{provider}'")
+        logger.info(f"🔍 DEBUG: Calling gateway.chat with provider: '{provider}' and temporal_context: {temporal_context}")
         result = await gateway.chat(
             user_id=current_user.id,
             query=query,
             state=request.app.state,
             patient_id=patient_id,
-            provider=provider
+            provider=provider,
+            temporal_context=temporal_context
         )
         
         # Capture trace

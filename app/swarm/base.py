@@ -11,6 +11,7 @@ class BaseAgent:
         self._client = client
         self.trace_service = trace_service
         self.logger = logging.getLogger(f"persona.swarm.{name}")
+        self.temporal_context: Optional[Dict[str, Any]] = None
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -55,6 +56,9 @@ class BaseAgent:
                          },
                          "explanation": explanation or "Agent processed input"
                      }
+
+                     if self.temporal_context:
+                         trace_dict["trace"]["perception"]["temporal_context"] = self.temporal_context
 
                      # Persist to database if service and session are available
                      if self.trace_service and session_id:

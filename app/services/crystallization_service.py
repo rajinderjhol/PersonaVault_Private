@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 from app.models import EpisodicEntry, SemanticPattern
 from app.services.semantic_memory import SemanticMemory
+from app.services.temporal_analysis_service import TemporalAnalysisService
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,49 @@ class CrystallizationService:
     def __init__(self, session_factory, semantic_memory: Optional[SemanticMemory] = None):
         self.session_factory = session_factory
         self.semantic_memory = semantic_memory or SemanticMemory(session_factory)
+        # Note: TemporalAnalysisService requires an async session. 
+        # We will initialize it inside methods that have session access or use the factory.
         self.config = CrystallizationConfig()
         self._stats = {"crystallized": 0, "skipped": 0, "errors": 0}
+    
+    async def calculate_pattern_relevance(self, pattern: SemanticPattern, db: AsyncSession) -> float:
+        """
+        Calculate current relevance score with time-decay.
+        """
+        temporal_service = TemporalAnalysisService(db)
+        base_score = getattr(pattern, 'weight', 0.5)
+        
+        # Apply temporal decay based on pattern age
+        decay_factor = temporal_service.calculate_pattern_decay(
+            confidence=base_score,
+            last_reinforced=pattern.created_at
+        )
+        
+        # Relevance = base_score * decay_factor
+        return base_score * decay_factor
+
+    async def should_crystallize(self, entry: EpisodicEntry, db: AsyncSession) -> bool:
+        """Enhanced crystallization check with temporal context"""
+        # ... existing logic ...
+        
+        # Check confidence threshold first
+        if not await self._qualifies_for_crystallization(entry):
+            return False
+        
+        # Add temporal velocity check - only crystallize if pattern shows temporal stability
+        temporal_service = TemporalAnalysisService(db)
+        velocity_data = await temporal_service.calculate_decision_velocity(
+            user_id=entry.user_id,
+            days=7
+        )
+        velocity = velocity_data.get("velocity", 0)
+        
+        # Patterns with very high velocity (rapid change) may not be ready for crystallization
+        if velocity > 0.9:  # threshold
+            logger.info(f"Pattern velocity too high ({velocity}), deferring crystallization")
+            return False
+        
+        return True
     
     async def crystallize(self, entry: EpisodicEntry) -> Optional[SemanticPattern]:
         """
