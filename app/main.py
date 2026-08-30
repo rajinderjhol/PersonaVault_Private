@@ -431,7 +431,9 @@ from app.api.v1.endpoints.chat_stream import router as chat_stream_router
 from app.api.v1.endpoints.chat_stream import router as chat_stream_router
 from app.api.v1.endpoints.chat_sessions import router as chat_sessions_router
 from app.api.v1.endpoints.intelligence import router as intelligence_router
+from app.api.v1.endpoints.mcp_connectors import router as mcp_connectors_router
 from app.api.v1.endpoints.mcp_tools import router as mcp_tools_router
+
 
 app.include_router(chat_router)
 app.include_router(chat_stream_router)
@@ -439,6 +441,7 @@ app.include_router(chat_stream_router)
 app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
 app.include_router(mcp_tools_router)
+app.include_router(mcp_connectors_router)
 from app.api.v1.endpoints.traces import router as traces_router
 app.include_router(traces_router)
 app.include_router(decisions.router)
