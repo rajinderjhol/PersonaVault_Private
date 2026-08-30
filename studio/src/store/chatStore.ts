@@ -1,176 +1,207 @@
 import { create } from 'zustand';
-import { useTraceStore } from './traceStore';
-import { useThermodynamicsStore } from './thermodynamicsStore';
-import { useModelStore } from './modelStore';
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: number;
-  thought?: string; // For the Thought Narrative feed
-  traceId?: string; // Link to an Auditable Decision Trace
-}
+import { chatAPI, ChatMessage, ChatSession, ChatResponse } from '../api/chat';
 
 interface ChatState {
-  messages: Message[];
+  // State
+  sessions: ChatSession[];
+  currentSessionId: number | null;
+  messages: ChatMessage[];
   isStreaming: boolean;
-  activeSessionId: string | null;
-  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
-  sendMessage: (content: string) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+
+  // Actions
+  loadSessions: () => Promise<void>;
+  createSession: (title?: string) => Promise<ChatSession>;
+  loadSession: (sessionId: number) => Promise<void>;
+  sendMessage: (query: string, provider?: string) => Promise<ChatResponse>;
+  addMessage: (message: ChatMessage) => void;
+  pinSession: (sessionId: number) => Promise<void>;
+  unpinSession: (sessionId: number) => Promise<void>;
+  deleteSession: (sessionId: number) => Promise<void>;
+  updateSessionTitle: (sessionId: number, title: string) => Promise<void>;
   clearMessages: () => void;
-  setStreaming: (streaming: boolean) => void;
-  setSession: (id: string | null) => void;
+  setCurrentSession: (sessionId: number) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
-  messages: [
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I am your PersonaVault intelligence agent. How can I assist you with your decision processes today?',
-      timestamp: Date.now(),
-    }
-  ],
+  // Initial state
+  sessions: [],
+  currentSessionId: null,
+  messages: [],
   isStreaming: false,
-  activeSessionId: 'default-session',
-  
-  addMessage: (msg) => set((state) => ({
-    messages: [...state.messages, {
-      ...msg,
-      id: Math.random().toString(36).substring(7),
-      timestamp: Date.now()
-    }]
-  })),
+  isLoading: false,
+  error: null,
 
-  sendMessage: async (content) => {
-    const { addMessage } = get();
-    const traceStore = useTraceStore.getState();
-    const thermoStore = useThermodynamicsStore.getState();
-    
-    // 1. Add user message
-    addMessage({ role: 'user', content });
-    set({ isStreaming: true });
-    
-    // 2. Trigger active trace start
-    traceStore.setActiveTrace({
-      id: Math.floor(Math.random() * 1000).toString(),
-      timestamp: Date.now(),
-      confidence: 0.95,
-      evidence: ['Real-time user input', 'Cognitive Mesh v1.0'],
-      steps: [
-        { id: '1', type: 'detection', status: 'complete', label: 'Signal Detected' },
-        { id: '2', type: 'policy', status: 'active', label: 'Matching Security Policies' },
-        { id: '3', type: 'recommendation', status: 'pending', label: 'Analyzing Risks' },
-        { id: '4', type: 'decision', status: 'pending', label: 'Finalizing' },
-        { id: '5', type: 'action', status: 'pending', label: 'Execute' },
-      ]
-    });
-
+  // Load all sessions
+  loadSessions: async () => {
+    set({ isLoading: true, error: null });
     try {
-      const assistantId = Math.random().toString(36).substring(7);
-      
-      set((state) => ({
-        messages: [...state.messages, {
-          id: assistantId,
-          role: 'assistant',
-          content: '',
-          timestamp: Date.now(),
-          thought: 'Initializing cognitive swarm... Accessing Security Pack...'
-        }]
-      }));
-      
-      const { selectedModel, selectedProvider } = useModelStore.getState();
-
-      const response = await fetch('/api/v1/ollama/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: get().messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
-          model: selectedModel,
-          provider: selectedProvider
-        })
-      });
-
-      if (!response.ok) throw new Error('Network response was not ok');
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const data = JSON.parse(line);
-            if (data.message?.content) {
-              accumulatedContent += data.message.content;
-              
-              set((state) => ({
-                messages: state.messages.map(m => m.id === assistantId ? {
-                  ...m,
-                  content: accumulatedContent,
-                  thought: accumulatedContent.length > 100 
-                    ? 'Synthesizing final response... Mapping to decision nodes...' 
-                    : accumulatedContent.length > 50 
-                    ? 'Retrieving episodic memories... Validating against governance...' 
-                    : m.thought
-                } : m)
-              }));
-
-              // Gradually complete trace steps
-              if (accumulatedContent.length > 150) {
-                traceStore.setActiveTrace({
-                  ...traceStore.activeTrace!,
-                  steps: traceStore.activeTrace!.steps.map((s, i) => i < 4 ? { ...s, status: 'complete' } : s)
-                });
-              } else if (accumulatedContent.length > 50) {
-                traceStore.setActiveTrace({
-                  ...traceStore.activeTrace!,
-                  steps: traceStore.activeTrace!.steps.map((s, i) => i < 2 ? { ...s, status: 'complete' } : i === 2 ? { ...s, status: 'active' } : s)
-                });
-              }
-            }
-          } catch (e) {}
-        }
+      const data = await chatAPI.listSessions();
+      set({ sessions: data, isLoading: false });
+      // Auto-select first session if none selected
+      if (data.length > 0 && !get().currentSessionId) {
+        await get().loadSession(data[0].id);
       }
-
-      // 3. Finalize Trace and trigger crystallization
-      set((state) => ({
-        isStreaming: false,
-        messages: state.messages.map(m => m.id === assistantId ? {
-          ...m,
-          thought: 'Cognitive loop complete. Insight crystallized. Trace archived.',
-          traceId: traceStore.activeTrace?.id
-        } : m)
-      }));
-
-      traceStore.setActiveTrace({
-        ...traceStore.activeTrace!,
-        steps: traceStore.activeTrace!.steps.map(s => ({ ...s, status: 'complete' }))
-      });
-
-      thermoStore.addTransition(`Freeze: Interaction #${traceStore.activeTrace?.id} crystallized into Semantic Memory`);
-      thermoStore.setPhase('ice', Math.min(thermoStore.phases.ice + 1, 100));
-
     } catch (error) {
-      console.error('Chat Error:', error);
-      set({ isStreaming: false });
-      addMessage({ 
-        role: 'system', 
-        content: 'System Error: Cognitive Gateway Unreachable. Check Ollama connection.' 
-      });
+      set({ error: (error as Error).message, isLoading: false });
     }
   },
 
-  clearMessages: () => set({ messages: [] }),
-  setStreaming: (streaming) => set({ isStreaming: streaming }),
-  setSession: (id) => set({ activeSessionId: id }),
+  // Create a new session
+  createSession: async (title: string = 'New Chat') => {
+    set({ isLoading: true, error: null });
+    try {
+      const session = await chatAPI.createSession(title);
+      set((state) => ({
+        sessions: [session, ...state.sessions],
+        currentSessionId: session.id,
+        messages: [],
+        isLoading: false,
+      }));
+      return session;
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+      throw error;
+    }
+  },
+
+  // Load a session's messages
+  loadSession: async (sessionId: number) => {
+    set({ isLoading: true, error: null });
+    try {
+      const messages = await chatAPI.getSessionMessages(sessionId);
+      set({
+        currentSessionId: sessionId,
+        messages,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+    }
+  },
+
+  // Send a message
+  sendMessage: async (query: string, provider: string = 'groq') => {
+    const currentSessionId = get().currentSessionId;
+    set({ isStreaming: true, error: null });
+
+    // Add user message immediately
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      role: 'user',
+      content: query,
+      created_at: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [...state.messages, userMessage],
+    }));
+
+    try {
+      const response = await chatAPI.sendMessage(query, currentSessionId || undefined, provider);
+
+      // If we got a session ID back, update current session
+      if (response.session_id && !get().currentSessionId) {
+        set({ currentSessionId: response.session_id });
+        await get().loadSessions();
+      }
+
+      // Add assistant message
+      const assistantMessage: ChatMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: response.response,
+        provider: provider,
+        trace_ids: response.trace_ids,
+        created_at: new Date().toISOString(),
+      };
+      set((state) => ({
+        messages: [...state.messages, assistantMessage],
+        isStreaming: false,
+      }));
+
+      // Refresh sessions to update message counts
+      await get().loadSessions();
+
+      return response;
+    } catch (error) {
+      set({ error: (error as Error).message, isStreaming: false });
+      // Add error message
+      const errorMessage: ChatMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: '❌ Error: ' + (error as Error).message,
+        created_at: new Date().toISOString(),
+      };
+      set((state) => ({
+        messages: [...state.messages, errorMessage],
+      }));
+      throw error;
+    }
+  },
+
+  // Add a message manually (for streaming)
+  addMessage: (message: ChatMessage) => {
+    set((state) => ({
+      messages: [...state.messages, message],
+    }));
+  },
+
+  // Pin/unpin session
+  pinSession: async (sessionId: number) => {
+    try {
+      await chatAPI.pinSession(sessionId);
+      await get().loadSessions();
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  unpinSession: async (sessionId: number) => {
+    try {
+      await chatAPI.unpinSession(sessionId);
+      await get().loadSessions();
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  // Delete session
+  deleteSession: async (sessionId: number) => {
+    try {
+      await chatAPI.deleteSession(sessionId);
+      await get().loadSessions();
+      if (get().currentSessionId === sessionId) {
+        const sessions = get().sessions;
+        if (sessions.length > 0) {
+          await get().loadSession(sessions[0].id);
+        } else {
+          set({ currentSessionId: null, messages: [] });
+        }
+      }
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  // Update session title
+  updateSessionTitle: async (sessionId: number, title: string) => {
+    try {
+      await chatAPI.updateSession(sessionId, title);
+      await get().loadSessions();
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  // Clear current messages
+  clearMessages: () => {
+    set({ messages: [] });
+  },
+
+  // Set current session
+  setCurrentSession: (sessionId: number) => {
+    set({ currentSessionId: sessionId });
+    get().loadSession(sessionId);
+  },
 }));

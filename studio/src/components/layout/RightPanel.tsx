@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Thermometer, BrainCircuit, History } from 'lucide-react';
 import { useTraceStore } from '../../store/traceStore';
-import { useThermodynamicsStore } from '../../store/thermodynamicsStore';
+import { useThermodynamics } from '../../hooks/useThermodynamics';
 import { motion } from 'framer-motion';
 
 const RightPanel: React.FC = () => {
   const { activeTrace } = useTraceStore();
-  const { phases, transitions } = useThermodynamicsStore();
+  const { phases, transitions, fetchPhases, fetchTransitions } = useThermodynamics(true, 30000);
+
+  useEffect(() => {
+    fetchPhases();
+    fetchTransitions();
+  }, [fetchPhases, fetchTransitions]);
 
   return (
     <aside style={{
@@ -25,12 +30,16 @@ const RightPanel: React.FC = () => {
         <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Thermometer size={16} /> Memory Phases
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <PhaseItem label="Gas (Working)" color="var(--color-gas)" percentage={phases.gas} />
-          <PhaseItem label="Liquid (Episodic)" color="var(--color-liquid)" percentage={phases.liquid} />
-          <PhaseItem label="Ice (Semantic)" color="var(--color-ice)" percentage={phases.ice} />
-          <PhaseItem label="Snowflakes (Domain)" color="var(--color-text-primary)" percentage={phases.snowflake} />
-        </div>
+        {phases ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <PhaseItem label="Gas (Working)" color="var(--color-gas)" percentage={phases.gas} total={phases.total} />
+            <PhaseItem label="Liquid (Episodic)" color="var(--color-liquid)" percentage={phases.liquid} total={phases.total} />
+            <PhaseItem label="Ice (Semantic)" color="var(--color-ice)" percentage={phases.ice} total={phases.total} />
+            <PhaseItem label="Snowflakes (Domain)" color="var(--color-text-primary)" percentage={phases.snowflakes} total={phases.total} />
+          </div>
+        ) : (
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Loading phases...</div>
+        )}
       </div>
 
       {/* Active Decision Trace */}
@@ -62,7 +71,7 @@ const RightPanel: React.FC = () => {
           <History size={16} /> Phase Transitions
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {transitions.map((log, i) => (
+          {transitions.length > 0 ? transitions.map((log, i) => (
             <div key={i} style={{ 
               backgroundColor: 'var(--color-bg-tertiary)', 
               padding: '10px', 
@@ -72,30 +81,35 @@ const RightPanel: React.FC = () => {
               border: '1px solid var(--glass-border)',
               fontFamily: 'monospace'
             }}>
-              {log}
+              {log.description}
             </div>
-          ))}
+          )) : (
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>No recent transitions</div>
+          )}
         </div>
       </div>
     </aside>
   );
 };
 
-const PhaseItem: React.FC<{ label: string, color: string, percentage: number }> = ({ label, color, percentage }) => (
-  <div style={{ fontSize: '0.85rem' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-      <span>{label}</span>
-      <span>{percentage}%</span>
+const PhaseItem: React.FC<{ label: string, color: string, percentage: number, total: number }> = ({ label, color, percentage, total }) => {
+  const p = total > 0 ? (percentage / total) * 100 : 0;
+  return (
+    <div style={{ fontSize: '0.85rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <span>{label}</span>
+        <span>{percentage}</span>
+      </div>
+      <div style={{ height: '4px', backgroundColor: 'var(--color-bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: `${p}%` }}
+          style={{ height: '100%', backgroundColor: color }} 
+        />
+      </div>
     </div>
-    <div style={{ height: '4px', backgroundColor: 'var(--color-bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
-      <motion.div 
-        initial={{ width: 0 }}
-        animate={{ width: `${percentage}%` }}
-        style={{ height: '100%', backgroundColor: color }} 
-      />
-    </div>
-  </div>
-);
+  );
+};
 
 const TraceStep: React.FC<{ label: string, status: string, isLast: boolean }> = ({ label, status, isLast }) => (
   <div style={{ 

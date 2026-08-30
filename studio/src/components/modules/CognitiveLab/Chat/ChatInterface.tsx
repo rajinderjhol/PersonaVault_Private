@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useChatStore } from '../../../../store/chatStore';
-import type { Message } from '../../../../store/chatStore';
+import { useChat } from '../../../../hooks/useChat';
+import { Message } from '../../../../store/chatStore'; // Note: ChatMessage from chatAPI/store matches this interface structure.
 import { Send, Paperclip, Mic, User, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ChatInterface: React.FC = () => {
-  const { messages, sendMessage, isStreaming } = useChatStore();
+  const { messages, sendMessage, isStreaming } = useChat(true);
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -42,12 +42,12 @@ const ChatInterface: React.FC = () => {
         }}
       >
         <AnimatePresence>
-          {messages.map((msg) => (
-            <MessageItem key={msg.id} message={msg} />
+          {messages.map((msg, index) => (
+            <MessageItem key={index} message={msg} />
           ))}
         </AnimatePresence>
       </div>
-
+      
       {/* Input Area */}
       <div style={{
         backgroundColor: 'var(--color-bg-secondary)',
@@ -110,7 +110,7 @@ const ChatInterface: React.FC = () => {
   );
 };
 
-const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
+const MessageItem: React.FC<{ message: any }> = ({ message }) => {
   const isUser = message.role === 'user';
   
   return (
@@ -158,7 +158,7 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
           {message.content}
         </div>
         
-        {!isUser && message.traceId && (
+        {!isUser && message.trace_ids && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -171,7 +171,7 @@ const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
             border: '1px solid rgba(0, 242, 255, 0.1)',
             cursor: 'pointer'
           }}>
-            <Sparkles size={12} /> View Decision Trace #{message.traceId}
+            <Sparkles size={12} /> View Decision Trace
           </div>
         )}
       </div>
