@@ -86,6 +86,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessage: async (query: string, provider: string = 'groq') => {
     const currentSessionId = get().currentSessionId;
     set({ isStreaming: true, error: null });
+    console.log('🔍 ChatStore: Sending message...', { query, currentSessionId });
 
     // Add user message immediately
     const userMessage: ChatMessage = {
@@ -100,6 +101,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       const response = await chatAPI.sendMessage(query, currentSessionId || undefined, provider);
+      console.log('🔍 ChatStore: API Response received:', response);
 
       // If we got a session ID back, update current session
       if (response.session_id && !get().currentSessionId) {
@@ -111,11 +113,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const assistantMessage: ChatMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: response.response,
+        content: response.response || response.finalResponse || 'No response',
         provider: provider,
         trace_ids: response.trace_ids,
         created_at: new Date().toISOString(),
       };
+      console.log('🔍 ChatStore: Adding assistant message:', assistantMessage);
+      
       set((state) => ({
         messages: [...state.messages, assistantMessage],
         isStreaming: false,
@@ -126,6 +130,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       return response;
     } catch (error) {
+      console.error('🔍 ChatStore: Error in sendMessage:', error);
       set({ error: (error as Error).message, isStreaming: false });
       // Add error message
       const errorMessage: ChatMessage = {

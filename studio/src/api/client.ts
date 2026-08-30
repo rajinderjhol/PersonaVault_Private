@@ -2,20 +2,34 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
+console.log('🔌 API Client initialized with base URL:', API_BASE_URL);
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
 
-// Response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => response,
+// Add request interceptor for debugging
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
+    return config;
+  },
   (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized error - logout logic can be triggered via events if needed
-      window.location.href = '/'; 
-    }
+    console.error('💥 API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('📥 API Response:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('💥 API Response Error:', error.response?.status, error.response?.data);
     return Promise.reject(error);
   }
 );

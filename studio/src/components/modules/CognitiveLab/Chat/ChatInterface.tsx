@@ -11,8 +11,14 @@ const ChatInterface: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
     const content = input;
+    console.log('🔍 Chat: Sending message:', content);
     setInput('');
-    await sendMessage(content);
+    try {
+      await sendMessage(content);
+      console.log('✅ Chat: Message sent successfully');
+    } catch (error) {
+      console.error('❌ Chat error:', error);
+    }
   };
 
   useEffect(() => {
