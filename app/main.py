@@ -33,6 +33,7 @@ from app.api.v1.endpoints.user_preferences import router as user_preferences_rou
 
 from app.routes import decisions
 from app.api.v1.endpoints.ingestion import router as ingestion_router
+from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
@@ -443,6 +444,7 @@ app.include_router(user_preferences.router)
 app.include_router(thermodynamics.router)
 
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
+app.include_router(health_router, prefix="/api/v1", tags=["health"])
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
 
 
