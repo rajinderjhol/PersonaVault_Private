@@ -5,34 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PersonaVault Intelligence Dashboard</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <link rel="stylesheet" href="/static/css/three_panel/theme.css">
-    <link rel="stylesheet" href="/static/css/three_panel/chat.css">
-    <link rel="stylesheet" href="/static/css/three_panel/context.css">
+    <link rel="stylesheet" href="/static/css/v2/v2_dashboard.css">
 </head>
 <body>
     <div class="dashboard-wrapper">
-        <!-- SIDEBAR (Dark Theme) -->
         <aside class="sidebar" id="main-sidebar">
             <div class="brand">
                 <span class="logo-icon">🛡️</span>
                 <span class="brand-text">PersonaVault</span>
             </div>
-            
-            <nav id="sidebar-nav">
-                <!-- Populated by JavaScript -->
-            </nav>
-
-            <!-- Session List -->
-            <div class="session-section">
-                <div class="session-header">
+            <nav id="sidebar-nav"></nav>
+            <div class="sidebar-section">
+                <div class="section-header">
                     <span>💬 Chat History</span>
-                    <button class="btn-new-session" onclick="window.chatIntegration?.createNewSession()">+ New</button>
+                    <button class="btn-action" onclick="window.chatIntegration?.newChat()">+ New</button>
                 </div>
                 <div id="session-list" class="session-list">
-                    <div class="session-loading">Loading sessions...</div>
+                    <div class="session-loading">Sessions will appear here</div>
                 </div>
             </div>
-
             <div class="sidebar-footer">
                 <div class="user-info">
                     <span class="user-avatar">👤</span>
@@ -41,13 +32,11 @@
             </div>
         </aside>
 
-        <!-- CENTER PANEL -->
         <main class="chat-panel">
             <header>
-                <button onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+                <button class="menu-btn" onclick="toggleSidebar()">☰</button>
                 <h2>Command Center</h2>
             </header>
-
             <div class="chat-container">
                 <div class="chat-header">
                     <div class="chat-title">
@@ -55,10 +44,9 @@
                         <span class="chat-title-text">PersonaVault Chat</span>
                     </div>
                     <div class="chat-header-actions">
-                        <button class="btn-new-chat" onclick="window.chatIntegration?.createNewSession()">+ New Chat</button>
+                        <button class="btn-new-chat" onclick="window.chatIntegration?.newChat()">+ New Chat</button>
                     </div>
                 </div>
-
                 <div class="chat-messages" id="chat-messages">
                     <div class="chat-empty">
                         <div class="empty-icon">👋</div>
@@ -66,12 +54,11 @@
                         <p>Start a new conversation to begin.</p>
                     </div>
                 </div>
-
                 <div class="chat-input-area">
                     <div class="chat-input-wrapper">
                         <textarea id="chat-input" placeholder="Ask me anything..." rows="1"></textarea>
                         <div class="chat-actions">
-                            <button class="btn-attach" title="Attach file">📎</button>
+                            <button class="btn-attach">📎</button>
                             <button class="send-btn" id="send-btn">➤</button>
                         </div>
                     </div>
@@ -89,11 +76,7 @@
             </div>
         </main>
 
-        <!-- CONTEXT PANEL -->
         <section class="context-panel">
-            <header>
-                <button onclick="toggleContextPanel()" title="Toggle context panel">🔍</button>
-            </header>
             <div class="right-sidebar">
                 <div class="context-section">
                     <h4 class="context-title">🔍 Current Decision</h4>
@@ -110,7 +93,6 @@
             </div>
         </section>
 
-        <!-- Sidebar Editor Modal -->
         <div id="sidebar-editor" class="modal" style="display:none;">
             <div class="modal-content">
                 <div class="modal-header">
@@ -129,16 +111,12 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    <script src="/static/js/three_panel/dashboard.js"></script>
-    <script src="/static/js/three_panel/sidebar.js"></script>
-    <script src="/static/js/three_panel/context.js"></script>
-    <script src="/static/js/three_panel/chat_integration.js"></script>
-    <script>
-        // Global helper for v1 tab compatibility
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-    </script>
+    <!-- SINGLE COMBINED JS FILE -->
+    <script src="/static/js/three_panel/personavault.js"></script>
+</body>
+</html>
+
+    <!-- PersonaVault Dashboard JavaScript -->
+    <script src="/static/js/three_panel/personavault.js"></script>
 </body>
 </html>

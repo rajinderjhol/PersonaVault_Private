@@ -90,6 +90,10 @@ async def login(payload: LoginRequest, response: Response, request: Request, db:
     
     return {"status": "success", "user": {"id": user.id, "username": user.username, "role": user.role}}
 
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return {"id": current_user.id, "username": current_user.username, "role": current_user.role}
+
 @router.post("/logout")
 async def logout(response: Response, request: Request):
     response.delete_cookie(key="session_id", path="/")

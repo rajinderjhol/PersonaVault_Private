@@ -3,6 +3,7 @@
 # Define paths
 DB_PATH="storage/memory_db/personavault.db"
 LOG_PATH="storage/logs/uvicorn.log"
+STUDIO_LOG_PATH="studio/studio.log"
 ENV_PATH=".env"
 
 # Colors
@@ -29,6 +30,7 @@ fi
 echo "🛑 Stopping PersonaVault processes..."
 pkill -9 -f "uvicorn" 2>/dev/null || true
 pkill -9 -f "ollama" 2>/dev/null || true
+pkill -9 -f "vite" 2>/dev/null || true
 sleep 2
 
 # Purge volatile state if --force flag is used
@@ -36,6 +38,7 @@ if [ "$1" == "--force" ]; then
     echo "🔥 Forced Restart initiated. Purging all volatile state..."
     rm -f "$DB_PATH"
     > "$LOG_PATH"
+    > "$STUDIO_LOG_PATH"
 elif [ -f "$DB_PATH" ]; then
     echo "✅ Database found at $DB_PATH. Skipping purge and seeding."
     PURGE_STATE=false
@@ -88,7 +91,7 @@ else
     echo "ℹ️ Skipping database initialization and seeding."
 fi
 
-# 4. START SERVER
+# 4. START BACKEND
 echo "🚀 Igniting Intelligence Gateway..."
 export PYTHONPATH=$PWD
 nohup ./.venv/bin/python -m uvicorn app.main:app \
@@ -96,7 +99,13 @@ nohup ./.venv/bin/python -m uvicorn app.main:app \
     --port 8000 \
     > "$LOG_PATH" 2>&1 &
 
-# 5. HEALTH CHECK
+# 5. START STUDIO FRONTEND
+echo "🖥️  Starting Sovereign Decision Studio..."
+cd studio
+nohup npm run dev -- --host 0.0.0.0 --port 5173 > studio.log 2>&1 &
+cd ..
+
+# 6. HEALTH CHECK
 echo -e "${CYAN}⏳ Waiting for PersonaVault...${NC}"
 for i in {1..60}; do
     if curl -s http://localhost:8000/health/engine | grep -q '"status":"ready"'; then
@@ -110,8 +119,13 @@ done
 echo ""
 echo -e "${GREEN}${BOLD}✨ PersonaVault is now operational!${NC}"
 echo "--------------------------------------------------"
-echo "  Admin Dashboard:  http://localhost:8000/admin/dashboard"
-echo "  API Swagger UI:   http://localhost:8000/docs"
-echo "  Health Monitor:   http://localhost:8000/health/detailed"
+echo "  🏠 Admin Dashboard:  http://localhost:8000/admin/dashboard"
+echo "  🖥️  Studio (v3):      http://localhost:5173/"
+echo "  📡 API Swagger UI:   http://localhost:8000/docs"
+echo "  💚 Health Monitor:   http://localhost:8000/health/engine"
 echo "--------------------------------------------------"
-echo "Logs: tail -f $LOG_PATH"
+echo "Logs:"
+echo "  Backend:  tail -f $LOG_PATH"
+echo "  Frontend: tail -f ~/personavault/backend/$STUDIO_LOG_PATH"
+echo "--------------------------------------------------"
+echo -e "${CYAN}${BOLD}🛡️ Sovereign Decision Studio is LIVE!${NC}"

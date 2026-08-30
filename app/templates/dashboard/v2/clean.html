@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PersonaVault Intelligence Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <style>
+        /* Minimal working CSS */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 220px; min-width: 220px; background: #0f172a; color: #94a3b8; display: flex; flex-direction: column; height: 100vh; border-right: 1px solid #1e293b; }
+        .sidebar .brand { color: #f1f5f9; padding: 16px 20px; border-bottom: 1px solid #1e293b; font-weight: 700; font-size: 18px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin: 2px 8px; border-radius: 8px; color: #94a3b8; text-decoration: none; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: #1e293b; color: #f1f5f9; }
+        .nav-icon { font-size: 18px; width: 28px; text-align: center; }
+        
+        .main { flex: 1; display: flex; flex-direction: column; background: #fff; }
+        .main header { padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; background: #fafafa; }
+        .main header h2 { font-size: 18px; color: #0f172a; }
+        
+        .chat-area { flex: 1; padding: 20px; overflow-y: auto; }
+        .message { margin-bottom: 12px; max-width: 80%; }
+        .message.user { margin-left: auto; }
+        .message-content { padding: 10px 14px; border-radius: 12px; background: #f1f5f9; }
+        .message.user .message-content { background: #3b82f6; color: white; }
+        
+        .input-area { padding: 12px 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; background: #fafafa; }
+        .input-area textarea { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: none; font-family: inherit; }
+        .input-area button { padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .context { width: 280px; min-width: 280px; background: #f8fafc; border-left: 1px solid #e2e8f0; padding: 16px 20px; overflow-y: auto; }
+        .context-section { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+        .context-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; }
+        .phase-bar { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+        .phase-bar .track { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+        .phase-bar .fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .phase-bar.gas .fill { background: #94a3b8; }
+        .phase-bar.liquid .fill { background: #60a5fa; }
+        .phase-bar.ice .fill { background: #34d399; }
+        .phase-bar.snowflake .fill { background: #f472b6; }
+        .phase-count { font-weight: 600; font-size: 13px; min-width: 30px; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="brand">🛡️ PersonaVault</div>
+        <div style="flex:1; padding: 8px 0;">
+            <a href="/admin/dashboard/v2" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="/admin/dashboard/v2?tab=chat" class="nav-item"><span class="nav-icon">💬</span> Chat</a>
+            <a href="/admin/swarm" class="nav-item"><span class="nav-icon">🐝</span> Swarm</a>
+            <a href="/admin/compliance" class="nav-item"><span class="nav-icon">⚖️</span> Compliance</a>
+            <a href="/admin/security" class="nav-item"><span class="nav-icon">🔒</span> Security</a>
+        </div>
+        <div style="padding: 12px 16px; border-top: 1px solid #1e293b; color: #94a3b8; font-size: 13px;">
+            👤 Admin
+        </div>
+    </div>
+
+    <div class="main">
+        <header>
+            <h2>Command Center</h2>
+        </header>
+        <div class="chat-area" id="messages">
+            <div style="text-align:center; color:#94a3b8; padding: 40px;">
+                <div style="font-size:48px; margin-bottom:12px;">👋</div>
+                <h3 style="color:#0f172a;">Welcome to PersonaVault!</h3>
+                <p>Start a new conversation to begin.</p>
+            </div>
+        </div>
+        <div class="input-area">
+            <textarea id="chatInput" placeholder="Ask me anything..." rows="1"></textarea>
+            <button id="sendBtn">➤</button>
+        </div>
+    </div>
+
+    <div class="context">
+        <div class="context-section">
+            <div class="context-title">🔍 Current Decision</div>
+            <div id="decisionDisplay">No active decision</div>
+        </div>
+        <div class="context-section">
+            <div class="context-title">📊 Memory Phases</div>
+            <div id="phaseDisplay">Loading...</div>
+        </div>
+        <div class="context-section">
+            <div class="context-title">🔄 Recent Transitions</div>
+            <div id="transitionDisplay">No recent transitions</div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CLEAN WORKING JAVASCRIPT - NO ERRORS
+        // ============================================
+        (function() {
+            console.log('🚀 PersonaVault v2 Dashboard (Clean)');
+
+            // ---------- CHAT ----------
+            const input = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const messages = document.getElementById('messages');
+
+            function addMessage(role, content) {
+                const div = document.createElement('div');
+                div.className = `message ${role}`;
+                div.innerHTML = `<div class="message-content">${content}</div>`;
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            async function sendMessage() {
+                const text = input.value.trim();
+                if (!text) return;
+                addMessage('user', text);
+                input.value = '';
+
+                try {
+                    const res = await fetch('/api/v1/chat/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ query: text })
+                    });
+                    const data = await res.json();
+                    addMessage('assistant', data.response || 'No response');
+                } catch (e) {
+                    addMessage('assistant', '❌ Error: ' + e.message);
+                }
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+            });
+
+            // ---------- CONTEXT ----------
+            async function loadContext() {
+                try {
+                    const res = await fetch('/api/v1/thermodynamics/phase-distribution', {
+                        credentials: 'include'
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const total = (data.gas||0)+(data.liquid||0)+(data.ice||0)+(data.snowflakes||0) || 1;
+                        const phases = [
+                            { id: 'gas', count: data.gas||0, label: 'Gas', icon: '💨' },
+                            { id: 'liquid', count: data.liquid||0, label: 'Liquid', icon: '💧' },
+                            { id: 'ice', count: data.ice||0, label: 'Ice', icon: '🧊' },
+                            { id: 'snowflake', count: data.snowflakes||0, label: 'Snowflakes', icon: '❄️' }
+                        ];
+                        document.getElementById('phaseDisplay').innerHTML = phases.map(p => `
+                            <div class="phase-bar ${p.id}">
+                                <span>${p.icon}</span>
+                                <span style="flex:1;font-size:12px;">${p.label}</span>
+                                <div class="track"><div class="fill" style="width:${Math.max((p.count/total)*100,0.5)}%"></div></div>
+                                <span class="phase-count">${p.count}</span>
+                            </div>
+                        `).join('');
+                    }
+                } catch (e) {
+                    console.error('Context load error:', e);
+                }
+            }
+
+            loadContext();
+
+            // Auto-refresh every 10 seconds
+            setInterval(loadContext, 10000);
+
+            console.log('✅ Dashboard ready');
+        })();
+    </script>
+</body>
+</html>

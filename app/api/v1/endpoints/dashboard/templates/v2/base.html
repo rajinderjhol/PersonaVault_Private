@@ -3,103 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>!!! NEW DASHBOARD !!!</title>
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <link rel="stylesheet" href="/static/css/three_panel/theme.css">
-    <link rel="stylesheet" href="/static/css/three_panel/dashboard.css">
-    <link rel="stylesheet" href="/static/css/three_panel/chat.css">
-    <link rel="stylesheet" href="/static/css/three_panel/context.css">
+    <title>PersonaVault v2</title>
+    <link rel="icon" href="/static/favicon.ico">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #f1f5f9; height: 100vh; display: flex; overflow: hidden; }
+        
+        .panel-left { width: 200px; background: #0f172a; color: #94a3b8; display: flex; flex-direction: column; border-right: 1px solid #1e293b; }
+        .panel-center { flex: 1; display: flex; flex-direction: column; background: white; }
+        .panel-right { width: 280px; background: #f8fafc; border-left: 1px solid #e2e8f0; padding: 16px; overflow-y: auto; }
+        
+        .panel-left .brand { color: white; padding: 16px; font-weight: 700; font-size: 18px; border-bottom: 1px solid #1e293b; }
+        .panel-left .nav { padding: 8px; }
+        .panel-left .nav a { display: block; padding: 8px 12px; border-radius: 6px; color: #94a3b8; text-decoration: none; margin-bottom: 2px; }
+        .panel-left .nav a:hover { background: #1e293b; color: white; }
+        .panel-left .nav a.active { background: #1e293b; color: white; }
+        .panel-left .footer { padding: 16px; border-top: 1px solid #1e293b; font-size: 12px; margin-top: auto; }
+        
+        .panel-center header { padding: 12px 20px; border-bottom: 1px solid #e2e8f0; background: #fafafa; }
+        .panel-center header h2 { font-size: 16px; color: #0f172a; }
+        .panel-center .chat { flex: 1; display: flex; flex-direction: column; padding: 16px 20px; overflow: hidden; }
+        .panel-center .chat .messages { flex: 1; overflow-y: auto; margin-bottom: 12px; }
+        .panel-center .chat .message { margin-bottom: 8px; max-width: 75%; }
+        .panel-center .chat .message.user { margin-left: auto; }
+        .panel-center .chat .message .bubble { padding: 8px 14px; border-radius: 12px; font-size: 14px; }
+        .panel-center .chat .message.user .bubble { background: #3b82f6; color: white; }
+        .panel-center .chat .message.assistant .bubble { background: #f1f5f9; }
+        .panel-center .chat .input { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid #e2e8f0; }
+        .panel-center .chat .input textarea { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: none; font-family: inherit; }
+        .panel-center .chat .input button { padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .panel-center .chat .input select { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+        
+        .panel-right .section { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+        .panel-right .section:last-child { border-bottom: none; }
+        .panel-right .title { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 600; margin-bottom: 6px; }
+        .panel-right .empty { color: #94a3b8; font-size: 12px; padding: 6px 0; }
+        
+        .phase { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 12px; }
+        .phase .bar { flex: 1; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; }
+        .phase .bar .fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+        .phase.gas .fill { background: #94a3b8; }
+        .phase.liquid .fill { background: #60a5fa; }
+        .phase.ice .fill { background: #34d399; }
+        .phase.snowflake .fill { background: #f472b6; }
+        
+        .transition { padding: 4px 8px; background: white; border-radius: 4px; margin-bottom: 4px; font-size: 11px; display: flex; justify-content: space-between; border-left: 2px solid #94a3b8; }
+        .decision-card { background: white; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .decision-card .row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+        .loading { color: #94a3b8; font-size: 12px; }
+    </style>
 </head>
 <body>
-    <div class="dashboard-wrapper">
-        <aside class="sidebar collapsed">
-            <!-- Sidebar Content -->
-            <div class="brand">🛡️ PersonaVault</div>
-            <nav id="sidebar-nav"></nav>
-            <button onclick="document.getElementById('sidebar-editor').style.display='flex'">⚙️ Customize</button>
-        </aside>
-        
-        <main class="chat-panel">
-            <!-- Center Panel Content -->
-            <header>
-                <button onclick="toggleSidebar()">☰</button>
-                <h2>Command Center</h2>
-            </header>
-            
-            <!-- CHAT CONTENT -->
-            <div class="chat-container">
-                <div class="chat-header">
-                    <div class="chat-title">
-                        <span class="chat-icon">💬</span>
-                        <span class="chat-title-text">PersonaVault Chat</span>
-                    </div>
-                    <div class="chat-header-actions">
-                        <button class="btn-new-chat" onclick="chatIntegration.newChat()">+ New Chat</button>
-                    </div>
-                </div>
-                <div class="chat-messages" id="chat-messages">
-                    <div class="chat-empty">
-                        <div class="empty-icon">👋</div>
-                        <h3>Welcome to PersonaVault!</h3>
-                        <p>Create a new chat session to get started.</p>
-                    </div>
-                </div>
-                <div class="chat-input-area">
-                    <div class="chat-input-wrapper">
-                        <textarea id="chat-input" placeholder="Ask me anything..." rows="1"></textarea>
-                        <div class="chat-actions">
-                            <button class="btn-attach" title="Attach file">📎</button>
-                            <button class="send-btn" id="send-btn">➤</button>
-                        </div>
-                    </div>
-                    <div class="chat-controls">
-                        <label class="control-toggle">
-                            <input type="checkbox" id="thought-toggle"> Show thought process
-                        </label>
-                        <select id="provider-select" class="provider-select">
-                            <option value="groq">Groq</option>
-                        </select>
-                    </div>
+
+    <!-- LEFT PANEL -->
+    <div class="panel-left">
+        <div class="brand">🛡️ PersonaVault</div>
+        <div class="nav">
+            <!-- USE THE SAME ROUTES AS V1 -->
+            <a href="/admin/dashboard/v2" class="active">📊 Dashboard</a>
+            <a href="/admin/dashboard">💬 Chat</a>
+            <a href="/admin/swarm">🐝 Swarm</a>
+            <a href="/admin/compliance">⚖️ Compliance</a>
+            <a href="/admin/security">🔒 Security</a>
+        </div>
+        <div class="footer">👤 Admin</div>
+    </div>
+
+    <!-- CENTER PANEL -->
+    <div class="panel-center">
+        <header><h2>Command Center</h2></header>
+        <div class="chat">
+            <div class="messages" id="messages">
+                <div style="text-align:center;color:#94a3b8;padding:40px;">
+                    <div style="font-size:40px;">👋</div>
+                    <h3 style="color:#0f172a;">Welcome to PersonaVault!</h3>
+                    <p style="font-size:14px;">Start a new conversation to begin.</p>
                 </div>
             </div>
-        </main>
-        
-        <section class="context-panel">
-            <!-- Context Panel Content -->
-            <div class="right-sidebar">
-                <div class="context-section">
-                    <h4 class="context-title">🔍 Current Decision</h4>
-                    <div id="context-decision"></div>
-                </div>
-                <div class="context-section">
-                    <h4 class="context-title">📊 Memory Phases</h4>
-                    <div id="thermo-distribution"></div>
-                </div>
-                <div class="context-section">
-                    <h4 class="context-title">🔄 Recent Transitions</h4>
-                    <div id="thermo-transitions"></div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- Sidebar Editor Modal -->
-        <div id="sidebar-editor" class="modal" style="display:none;">
-            <div class="modal-content">
-                <div class="modal-header"><h3>✏️ Customize Sidebar</h3><button onclick="closeSidebarEditor()">×</button></div>
-                <div class="modal-body">
-                    <div class="element-grid">
-                        <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Security')">🔒 Security</button>
-                        <button class="element-btn" onclick="sidebarManager.addElement('domain', 'Compliance')">⚖️ Compliance</button>
-                    </div>
-                </div>
+            <div class="input">
+                <textarea id="input" rows="1" placeholder="Ask me anything..."></textarea>
+                <select id="providerSelect">
+                    <option value="groq">Groq</option>
+                    <option value="ollama">Ollama</option>
+                    <option value="gemini">Gemini</option>
+                </select>
+                <button id="send">➤</button>
             </div>
         </div>
     </div>
-    
-    <!-- Scripts -->
-    <script src="/static/js/three_panel/dashboard.js"></script>
-    <script src="/static/js/three_panel/sidebar.js"></script>
-    <script src="/static/js/three_panel/context.js"></script>
-    <script src="/static/js/three_panel/chat_integration.js"></script>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel-right">
+        <div class="section"><div class="title">🔍 Current Decision</div><div id="decision"><div class="empty">No active decision</div></div></div>
+        <div class="section"><div class="title">📊 Memory Phases</div><div id="phases"><div class="loading">Loading...</div></div></div>
+        <div class="section"><div class="title">🔄 Recent Transitions</div><div id="transitions"><div class="empty">No recent transitions</div></div></div>
+    </div>
+
+    <script>
+    (function() {
+        console.log('🚀 v2 Dashboard loading...');
+
+        const messages = document.getElementById('messages');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send');
+        const providerSelect = document.getElementById('providerSelect');
+
+        function addMessage(role, text) {
+            const empty = messages.querySelector('[style]');
+            if (empty && messages.children.length === 1) empty.remove();
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            div.innerHTML = '<div class="bubble">' + text + '</div>';
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showTyping() {
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.id = 'typing';
+            div.innerHTML = '<div class="bubble">⏳ Thinking...</div>';
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTyping() {
+            const el = document.getElementById('typing');
+            if (el) el.remove();
+        }
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+            addMessage('user', text);
+            input.value = '';
+            showTyping();
+
+            const provider = providerSelect ? providerSelect.value : 'groq';
+
+            try {
+                const res = await fetch('/api/v1/chat/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ query: text, provider: provider })
+                });
+                hideTyping();
+                const data = await res.json();
+                addMessage('assistant', data.response || data.finalResponse || 'No response');
+            } catch (e) {
+                hideTyping();
+                addMessage('assistant', '❌ Error: ' + e.message);
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        // Context
+        async function loadPhases() {
+            try {
+                const res = await fetch('/api/v1/thermodynamics/phase-distribution', { credentials: 'include' });
+                if (!res.ok) return;
+                const data = await res.json();
+                const total = (data.gas||0) + (data.liquid||0) + (data.ice||0) + (data.snowflakes||0) || 1;
+                const phases = [
+                    { id: 'gas', label: 'Gas', icon: '💨', count: data.gas||0 },
+                    { id: 'liquid', label: 'Liquid', icon: '💧', count: data.liquid||0 },
+                    { id: 'ice', label: 'Ice', icon: '🧊', count: data.ice||0 },
+                    { id: 'snowflake', label: 'Snowflakes', icon: '❄️', count: data.snowflakes||0 }
+                ];
+                document.getElementById('phases').innerHTML = phases.map(p => {
+                    const pct = Math.max((p.count / total) * 100, 0.5);
+                    return '<div class="phase ' + p.id + '">' +
+                        '<span>' + p.icon + '</span>' +
+                        '<span style="width:50px;">' + p.label + '</span>' +
+                        '<span class="bar"><span class="fill" style="width:' + pct + '%;"></span></span>' +
+                        '<span style="min-width:24px;text-align:right;font-weight:600;">' + p.count + '</span>' +
+                    '</div>';
+                }).join('');
+            } catch(e) { console.error('Phases error:', e); }
+        }
+
+        async function loadDecision() {
+            try {
+                const res = await fetch('/api/v1/thermodynamics/current-decision', { credentials: 'include' });
+                if (!res.ok) return;
+                const d = await res.json();
+                if (!d || !d.step) return;
+                document.getElementById('decision').innerHTML =
+                    '<div class="decision-card">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+                            '<span style="font-weight:600;font-size:12px;padding:2px 8px;border-radius:8px;background:#dbeafe;color:#1d4ed8;">' + d.step + '</span>' +
+                            '<span style="font-weight:700;color:#10b981;">' + (d.confidence||0) + '%</span>' +
+                        '</div>' +
+                        '<div class="row"><span>Agent</span><span>' + (d.agent||'Unknown') + '</span></div>' +
+                        '<div class="row"><span>Policy</span><span>' + (d.policy||'None') + '</span></div>' +
+                    '</div>';
+            } catch(e) { console.error('Decision error:', e); }
+        }
+
+        async function loadTransitions() {
+            try {
+                const res = await fetch('/api/v1/thermodynamics/transitions?limit=5', { credentials: 'include' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data || data.length === 0) return;
+                document.getElementById('transitions').innerHTML = data.map(t =>
+                    '<div class="transition">' +
+                        '<span>🔄 ' + (t.description || t.type) + '</span>' +
+                        '<span style="color:#94a3b8;">' + (t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : '') + '</span>' +
+                    '</div>'
+                ).join('');
+            } catch(e) { console.error('Transitions error:', e); }
+        }
+
+        loadPhases();
+        loadDecision();
+        loadTransitions();
+        setInterval(() => { loadPhases(); loadDecision(); loadTransitions(); }, 15000);
+
+        console.log('✅ v2 Dashboard ready');
+    })();
+    </script>
 </body>
 </html>
