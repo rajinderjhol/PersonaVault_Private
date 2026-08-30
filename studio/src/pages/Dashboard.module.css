@@ -1,0 +1,56 @@
+.dashboard {
+    padding: 2rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.metricsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.metricCard {
+    background: var(--bg-secondary, #1a1a2e);
+    border: 1px solid var(--border-color, #2a2a4a);
+    padding: 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.metricIcon {
+    font-size: 2rem;
+}
+
+.metricContent {
+    flex: 1;
+}
+
+.metricLabel {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #9ca3af);
+    margin-bottom: 0.25rem;
+}
+
+.metricValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.metricTrend {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    color: var(--text-tertiary, #6b7280);
+}
+
+.trendUp {
+    color: #22c55e;
+}
