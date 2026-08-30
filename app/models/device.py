@@ -9,7 +9,7 @@ from uuid import uuid4
 from typing import Dict
 
 from app.db.session import Base
-from app.mcp.device_registry import DeviceType, DeviceCapability, DeviceStatus, DeviceTrustLevel
+from app.mcp.device_types import DeviceType, DeviceCapability, DeviceStatus, DeviceTrustLevel
 
 
 class Device(Base):
@@ -44,7 +44,7 @@ class Device(Base):
     endpoint = Column(String(500), nullable=True)
     
     # Metadata
-    metadata = Column(JSON, default=dict)
+    device_metadata = Column(JSON, default=dict)
     
     # Timestamps
     registered_at = Column(DateTime, default=datetime.utcnow)
@@ -71,7 +71,7 @@ class Device(Base):
             "last_seen": self.last_seen.isoformat() if self.last_seen else None,
             "ip_address": self.ip_address,
             "endpoint": self.endpoint,
-            "metadata": self.metadata,
+            "metadata": self.device_metadata,
             "registered_at": self.registered_at.isoformat() if self.registered_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None

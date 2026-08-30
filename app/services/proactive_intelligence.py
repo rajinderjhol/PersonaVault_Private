@@ -10,6 +10,7 @@ import logging
 from app.models.decision_trace import DecisionTrace
 from app.models.user import User
 from app.services.intelligence_gateway import gateway
+from app.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 class ProactiveIntelligenceService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.notifier = NotificationService(db)
 
     async def get_insights(self, user: User) -> List[Dict[str, Any]]:
         """Generate proactive insights based on user activity."""
@@ -25,13 +27,15 @@ class ProactiveIntelligenceService:
         # 1. Check for patterns
         patterns = await self._detect_patterns(user)
         if patterns:
-            insights.append({
+            insight = {
                 "type": "pattern",
                 "title": "🔍 Emerging Pattern Detected",
                 "description": f"I've noticed {patterns['count']} similar decisions forming a pattern.",
                 "action": "Review pattern",
                 "priority": "high"
-            })
+            }
+            insights.append(insight)
+            await self.notifier.send_time_aware_notification(user.id, insight['title'], insight['description'], insight['priority'])
         
         # 2. Check for crystallization opportunities
         crystallization = await self._check_crystallization(user)

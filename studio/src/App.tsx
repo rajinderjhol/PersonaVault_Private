@@ -1,3 +1,5 @@
+import { CalendarManager } from './components/modules/Integrations/CalendarManager';
+import { DeviceManager } from './components/modules/Integrations/DeviceManager';
 import React from 'react';
 import AppLayout from './components/layout/AppLayout';
 import CognitiveLab from './components/modules/CognitiveLab/CognitiveLab';
@@ -62,6 +64,8 @@ function App() {
           {activeModule === 'marketplace' && <Marketplace />}
           {activeModule === 'security' && <SecurityCenter />}
           {activeModule === 'models' && <ModelManagement />}
+          {activeModule === 'calendar' && <CalendarManager />}
+          {activeModule === 'devices' && <DeviceManager />}
         </motion.div>
       </AnimatePresence>
 

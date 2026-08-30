@@ -12,7 +12,9 @@ import {
   Layers,
   ShoppingBag,
   ShieldAlert,
-  Server
+  Server,
+  Calendar,
+  Smartphone
 } from 'lucide-react';
 import { create } from 'zustand';
 
@@ -119,6 +121,20 @@ const LeftPanel: React.FC = () => {
           collapsed={collapsed} 
           active={activeModule === 'governance'} 
           onClick={() => setActiveModule('governance')}
+        />
+        <NavItem 
+          icon={<Calendar size={20} />} 
+          label="Calendar" 
+          collapsed={collapsed} 
+          active={activeModule === 'calendar'} 
+          onClick={() => setActiveModule('calendar')}
+        />
+        <NavItem 
+          icon={<Smartphone size={20} />} 
+          label="Devices" 
+          collapsed={collapsed} 
+          active={activeModule === 'devices'} 
+          onClick={() => setActiveModule('devices')}
         />
         <NavItem 
           icon={<Cpu size={20} />} 

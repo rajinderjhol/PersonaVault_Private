@@ -48,6 +48,7 @@ class PackLoader:
                         version=pack_data.get('version', '1.0.0'),
                         description=pack_data.get('description', ''),
                         policies=policies,
+                        temporal_patterns=pack_data.get('temporal_patterns', []),
                         is_active=pack_data.get('active', True),
                         installed_at=datetime.utcnow(),
                         installed_by=user_id

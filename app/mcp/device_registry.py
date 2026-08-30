@@ -2,7 +2,6 @@
 Unified Device Registry - Manage all devices (IoT, Medical, Enterprise, Camera, etc.)
 """
 from typing import Dict, Any, List, Optional
-from enum import Enum
 from datetime import datetime
 from uuid import uuid4
 import logging
@@ -11,49 +10,7 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 from app.models.device import Device
-# Assuming app.models.device imports DeviceType etc. or they need to be here
-# Since I'm overwriting, I will include the enums here or ensure they are imported.
-# Based on the user prompt, they were in app/mcp/device_registry.py
-
-class DeviceType(str, Enum):
-    IOT = "iot"
-    ROBOT = "robot"
-    MEDICAL = "medical"
-    CAMERA = "camera"
-    EDGE = "edge"
-    ENTERPRISE = "enterprise"
-    SMART_HOME = "smart_home"
-    WEARABLE = "wearable"
-    NETWORK = "network"
-    UNKNOWN = "unknown"
-
-
-class DeviceCapability(str, Enum):
-    SENSOR = "sensor"           # Data collection
-    ACTUATOR = "actuator"       # Physical action
-    CAMERA = "camera"           # Visual input
-    NETWORK = "network"         # Network monitoring
-    MEDICAL = "medical"         # Medical devices
-    ENTERPRISE = "enterprise"   # Enterprise systems
-    STORAGE = "storage"         # Storage devices
-    COMPUTE = "compute"         # Edge compute
-
-
-class DeviceStatus(str, Enum):
-    ONLINE = "online"
-    OFFLINE = "offline"
-    DEGRADED = "degraded"
-    MAINTENANCE = "maintenance"
-    PENDING = "pending"
-    UNKNOWN = "unknown"
-
-
-class DeviceTrustLevel(str, Enum):
-    FULL = "full"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    UNTRUSTED = "untrusted"
+from app.mcp.device_types import DeviceType, DeviceCapability, DeviceStatus, DeviceTrustLevel
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +40,7 @@ class DeviceRegistry:
             user_id=user_id,
             trust_level=trust_level,
             status=DeviceStatus.PENDING,
-            metadata=metadata or {},
+            device_metadata=metadata or {},
             registered_at=datetime.utcnow()
         )
         self.db.add(device)

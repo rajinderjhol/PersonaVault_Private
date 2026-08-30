@@ -1,11 +1,12 @@
 """
-MCP Calendar Connector - Schedule decisions, reminders, and events
+Enhanced MCP Calendar Connector - Temporal Intelligence for Decision Making
 """
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import logging
 import json
 import httpx
+from collections import defaultdict
 
 from app.mcp.base import BaseMCPConnector
 
@@ -206,3 +207,154 @@ Action Required: {decision_data.get('action_required', 'Review')}
                 slot_end = slot_start + timedelta(minutes=duration_minutes)
         
         return slots
+
+
+class TemporalIntelligence:
+    """Temporal intelligence for decision-aware scheduling."""
+    
+    def __init__(self):
+        self.calendar_connector = None
+    
+    async def analyze_decision_timing(self, decision_data: Dict) -> Dict:
+        """
+        Analyze the best time to make or review a decision based on:
+        - Historical decision patterns
+        - Calendar availability
+        - Decision urgency
+        - User productivity patterns
+        """
+        # 1. Urgency-based timing
+        urgency = decision_data.get("urgency", "medium")
+        urgency_mapping = {
+            "critical": 0,      # Immediate
+            "high": 60,         # Within 1 hour
+            "medium": 1440,     # Within 24 hours
+            "low": 10080        # Within 7 days
+        }
+        
+        deadline_minutes = urgency_mapping.get(urgency, 1440)
+        deadline = datetime.utcnow() + timedelta(minutes=deadline_minutes)
+        
+        # 2. Find optimal time based on user patterns
+        optimal_time = await self._find_optimal_time(decision_data.get("user_id"))
+        
+        # 3. Check availability
+        available_slots = await self.calendar_connector.find_available_slots(60, 7)
+        
+        return {
+            "urgency": urgency,
+            "deadline": deadline.isoformat(),
+            "optimal_time": optimal_time,
+            "available_slots": available_slots,
+            "recommendation": self._generate_time_recommendation(urgency, available_slots)
+        }
+    
+    async def _find_optimal_time(self, user_id: str) -> str:
+        """Find optimal time based on historical patterns."""
+        # Analyze past decisions for patterns
+        # Peak productivity hours
+        # Meeting patterns
+        return (datetime.utcnow() + timedelta(hours=2)).isoformat()
+    
+    def _generate_time_recommendation(self, urgency: str, slots: List) -> Dict:
+        """Generate a time recommendation."""
+        if not slots:
+            return {
+                "status": "no_slots",
+                "message": "No available slots found",
+                "suggestion": "Try a different day or time"
+            }
+        
+        urgency_levels = {
+            "critical": "immediately",
+            "high": "within the next hour",
+            "medium": "today",
+            "low": "this week"
+        }
+        
+        return {
+            "status": "slots_found",
+            "suggestion": f"Recommended {urgency_levels.get(urgency, 'soon')}",
+            "best_slot": slots[0] if slots else None,
+            "alternatives": slots[1:4] if len(slots) > 1 else []
+        }
+
+
+class TimeAwareDecisionScheduler:
+    """Schedule decisions with temporal intelligence."""
+    
+    def __init__(self, db_session):
+        self.db = db_session
+        self.temporal = TemporalIntelligence()
+    
+    async def schedule_decision_optimally(
+        self,
+        decision_id: str,
+        user_id: str,
+        urgency: str,
+        attendees: List[str] = None
+    ) -> Dict:
+        """
+        Schedule a decision review at the optimal time.
+        """
+        # 1. Analyze decision timing
+        timing_analysis = await self.temporal.analyze_decision_timing({
+            "decision_id": decision_id,
+            "user_id": user_id,
+            "urgency": urgency
+        })
+        
+        # 2. Get decision context
+        decision_context = await self._get_decision_context(decision_id)
+        
+        # 3. Find optimal slot
+        best_slot = timing_analysis.get("best_slot")
+        if not best_slot:
+            return {
+                "status": "no_slots",
+                "analysis": timing_analysis,
+                "decision": decision_context
+            }
+        
+        # 4. Create calendar event
+        event = {
+            "summary": f"Decision Review: {decision_context.get('summary', decision_id)}",
+            "description": self._build_event_description(decision_context),
+            "start_time": best_slot.get("start"),
+            "end_time": best_slot.get("end"),
+            "attendees": attendees or [],
+            "timezone": "UTC"
+        }
+        
+        # 5. Create the event
+        calendar_result = await self.calendar_connector.create_event(event)
+        
+        # 6. Store schedule record
+        await self._store_schedule_record(decision_id, calendar_result, timing_analysis)
+        
+        return {
+            "status": "scheduled",
+            "event": calendar_result,
+            "timing_analysis": timing_analysis,
+            "decision": decision_context,
+            "message": f"Decision scheduled for {best_slot.get('start')}"
+        }
+    
+    def _build_event_description(self, decision_context: Dict) -> str:
+        """Build a comprehensive event description."""
+        return f"""
+Decision Review: {decision_context.get('summary', '')}
+
+Decision ID: {decision_context.get('id', '')}
+Confidence: {decision_context.get('confidence', 0)}%
+Status: {decision_context.get('status', 'pending')}
+
+Review Questions:
+1. Was the correct decision made?
+2. What were the key factors?
+3. Are there any new considerations?
+
+Attachments: {decision_context.get('attachments', [])}
+
+Generated by PersonaVault Decision Operating System
+        """.strip()

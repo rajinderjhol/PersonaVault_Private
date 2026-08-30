@@ -22,6 +22,7 @@ class BehaviourPack(Base):
     prompts = Column(JSON, default={})
     views = Column(JSON, default={})
     policies = Column(JSON, default=[])
+    temporal_patterns = Column(JSON, default=[])
     evaluation_rules = Column(JSON, default=[])
     
     # Status
