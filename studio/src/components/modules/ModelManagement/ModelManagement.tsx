@@ -36,24 +36,23 @@ const ModelManagement: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
         {models.map((model) => (
           <div 
-            key={model.model_name}
-            onClick={() => setSelectedModel(model.model_name)}
+            key={model.id}
+            onClick={() => setSelectedModel(model.id)}
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
               padding: '20px',
               borderRadius: '12px',
-              border: `1px solid ${selectedModel === model.model_name ? 'var(--color-gas)' : 'var(--glass-border)'}`,
+              border: `1px solid ${selectedModel === model.id ? 'var(--color-gas)' : 'var(--glass-border)'}`,
               cursor: 'pointer',
               position: 'relative'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
               <Server size={24} color="var(--color-text-secondary)" />
-              <h3 style={{ margin: 0 }}>{model.model_name}</h3>
+              <h3 style={{ margin: 0 }}>{model.name}</h3>
             </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{model.description}</p>
             
-            {selectedModel === model.model_name && (
+            {selectedModel === model.id && (
               <div style={{ position: 'absolute', top: '12px', right: '12px', color: 'var(--color-gas)' }}>
                 <Check size={20} />
               </div>

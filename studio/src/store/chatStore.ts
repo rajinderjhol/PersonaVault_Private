@@ -25,6 +25,12 @@ interface ChatState {
   setCurrentSession: (sessionId: number) => void;
 }
 
+// Helper to clean up AI thinking tags
+const cleanResponse = (text: string): string => {
+  if (!text) return text;
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+};
+
 export const useChatStore = create<ChatState>((set, get) => ({
   // Initial state
   sessions: [],
@@ -113,7 +119,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const assistantMessage: ChatMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: response.response || response.finalResponse || 'No response',
+        content: cleanResponse(response.response || response.finalResponse || 'No response'),
         provider: provider,
         trace_ids: response.trace_ids,
         created_at: new Date().toISOString(),

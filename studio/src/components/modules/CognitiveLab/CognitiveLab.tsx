@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ChatInterface from './Chat/ChatInterface';
 import ThoughtNarrative from './Chat/ThoughtNarrative';
+import { ProviderSelect } from './ProviderSelect';
 
 const CognitiveLab: React.FC = () => {
+  const [provider, setProvider] = useState('ollama');
   return (
     <div style={{
       display: 'grid',
@@ -17,6 +19,10 @@ const CognitiveLab: React.FC = () => {
         height: '100%',
         gap: '20px'
       }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2>🧠 Cognitive Lab</h2>
+          <ProviderSelect value={provider} onChange={setProvider} />
+        </div>
         <ChatInterface />
       </div>
 

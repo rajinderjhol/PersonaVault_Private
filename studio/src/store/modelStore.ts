@@ -26,13 +26,13 @@ export const useModelStore = create<ModelState>((set, get) => ({
   fetchModels: async () => {
     set({ isLoading: true });
     try {
-      const response = await axios.get('/api/v1/ollama/models');
-      console.log('API Response:', response.data);
-      set({ models: response.data.models, isLoading: false });
+      const response = await axios.get('/api/v1/admin/models');
+      console.log('API Response Models:', response.data);
+      set({ models: response.data, isLoading: false });
       
       // Auto-select first model if none selected
-      if (response.data.models.length > 0 && !get().selectedModel) {
-        set({ selectedModel: response.data.models[0].model_name });
+      if (response.data.length > 0 && !get().selectedModel) {
+        set({ selectedModel: response.data[0].id });
       }
     } catch (err) {
       console.error('Failed to fetch models:', err);

@@ -152,6 +152,28 @@ async def list_roles(
     }
 
 # ... rest of existing admin endpoints ...
+
+@router.get("/models")
+async def list_models(
+    current_user: User = Depends(require_admin),
+    request: Request = None
+):
+    """List all available models."""
+    try:
+        # For now, leveraging the existing ollama endpoint logic or registry
+        # Simplest: query ollama directly if configured
+        from app.core.config import Config
+        import httpx
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{Config.OLLAMA_BASE_URL}/api/tags", timeout=5.0)
+            if response.status_code == 200:
+                models = response.json().get('models', [])
+                return [{"id": m['name'], "name": m['name']} for m in models]
+            return []
+    except Exception as e:
+        logger.error(f"List models failed: {e}")
+        return []
 @router.get("/config/ai-provider")
 async def get_primary_ai_provider(
     db: AsyncSession = Depends(get_db)

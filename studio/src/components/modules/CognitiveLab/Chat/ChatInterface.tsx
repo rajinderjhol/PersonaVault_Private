@@ -116,6 +116,7 @@ const ChatInterface: React.FC = () => {
 };
 
 const MessageItem: React.FC<{ message: any }> = ({ message }) => {
+  console.log('🔍 MessageItem rendering:', message);
   const isUser = message.role === 'user';
   
   return (
