@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../../../../hooks/useChat';
-import { Message } from '../../../../store/chatStore'; // Note: ChatMessage from chatAPI/store matches this interface structure.
 import { Send, Paperclip, Mic, User, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

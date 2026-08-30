@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { thermodynamicsAPI, PhaseDistribution, Transition, Snowflake } from '../api/thermodynamics';
+import { thermodynamicsAPI } from '../api/thermodynamics';
+import type { PhaseDistribution, Transition, Snowflake } from '../api/thermodynamics';
 
 interface ThermodynamicsState {
   // State
