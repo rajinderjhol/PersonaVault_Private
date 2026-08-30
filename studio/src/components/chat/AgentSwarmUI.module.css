@@ -1,0 +1,49 @@
+.agentSwarmUI {
+  background: var(--bg-secondary, #1a1a2e);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #2a2a4a);
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.swarmHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  background: var(--bg-hover, #2a2a4a);
+}
+
+.swarmTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.swarmControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.temporalIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.expandBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+}

@@ -1,0 +1,5 @@
+.searchPage { padding: 2rem; }
+.searchHeader { display: flex; justify-content: space-between; align-items: center; }
+.searchBar { display: flex; gap: 0.5rem; margin-bottom: 2rem; }
+.searchInput { flex: 1; padding: 0.5rem; }
+.searchButton { padding: 0.5rem 1rem; }
