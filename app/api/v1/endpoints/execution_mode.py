@@ -27,6 +27,7 @@ async def set_mode(
         "simulation": ExecutionMode.SIMULATION,
         "audit": ExecutionMode.AUDIT
     }
+    mode = mode.lower()
     if mode not in mode_map:
         return {"error": f"Invalid mode. Use: {list(mode_map.keys())}"}
     

@@ -668,10 +668,16 @@ async def branch_to_snowflake(
 ):
     """Manually branch a pattern to a snowflake."""
     try:
+        # Convert to UUID
+        try:
+            pattern_uuid = UUID(pattern_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid pattern ID format")
+
         # Get the pattern from DecisionTrace
         result = await db.execute(
             select(DecisionTrace)
-            .where(DecisionTrace.id == pattern_id)
+            .where(DecisionTrace.id == pattern_uuid)
         )
         pattern = result.scalar_one_or_none()
         
