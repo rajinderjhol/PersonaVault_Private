@@ -98,7 +98,7 @@ async def get_user(
 
 @router.patch("/users/{user_id}/role")
 async def update_user_role(
-    user_id: UUID,
+    user_id: str,  # Changed from UUID to str
     role: str,
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
@@ -107,7 +107,12 @@ async def update_user_role(
     Update user role (admin only).
     """
     try:
-        stmt = select(User).where(User.id == user_id)
+        # Handle both UUID and integer IDs
+        if user_id.isdigit():
+            stmt = select(User).where(User.id == int(user_id))
+        else:
+            stmt = select(User).where(User.id == uuid.UUID(user_id))
+        
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
         
@@ -124,10 +129,9 @@ async def update_user_role(
         return {
             "status": "success",
             "message": f"User role updated to {role}",
-            "user_id": str(user_id),
+            "user_id": str(user.id),
             "role": role
         }
-        
     except HTTPException:
         raise
     except Exception as e:
@@ -158,37 +162,41 @@ async def list_models(
     current_user: User = Depends(require_admin)
 ):
     """
-    List all available AI models.
+    List all available AI models from Ollama.
     """
     try:
-        # Check if Ollama is running
         import httpx
-        async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:11434/api/tags", timeout=5.0)
+        from httpx import ConnectError, TimeoutException
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get("http://localhost:11434/api/tags")
+            
             if response.status_code == 200:
                 data = response.json()
-                models = []
-                for model in data.get("models", []):
-                    models.append({
-                        "name": model.get("name"),
-                        "size": model.get("size"),
-                        "modified_at": model.get("modified_at"),
-                        "digest": model.get("digest"),
+                models = data.get("models", [])
+                
+                formatted_models = []
+                for model in models:
+                    formatted_models.append({
+                        "name": model.get("name", "unknown"),
+                        "size": model.get("size", 0),
+                        "modified_at": model.get("modified_at", ""),
+                        "digest": model.get("digest", ""),
                     })
-                return {"models": models, "provider": "ollama"}
+                
+                return {"models": formatted_models, "provider": "ollama", "count": len(formatted_models)}
             else:
-                return {"models": [], "provider": "ollama", "error": "Ollama not responding"}
+                return {"models": [], "provider": "ollama", "count": 0, "error": f"Ollama returned status {response.status_code}"}
+                
+    except ConnectError:
+        logger.warning("Ollama not running")
+        return {"models": [], "provider": "ollama", "count": 0, "error": "Ollama not running"}
+    except TimeoutException:
+        logger.warning("Ollama connection timeout")
+        return {"models": [], "provider": "ollama", "count": 0, "error": "Ollama connection timeout"}
     except Exception as e:
         logger.error(f"Failed to list models: {e}")
-        # Return Groq models as fallback
-        return {
-            "models": [
-                {"name": "groq/llama3-70b", "provider": "groq"},
-                {"name": "groq/mixtral-8x7b", "provider": "groq"},
-                {"name": "groq/gemma-7b", "provider": "groq"},
-            ],
-            "provider": "groq"
-        }
+        return {"models": [], "provider": "ollama", "count": 0, "error": str(e)}
 
 
 @router.post("/models/pull")
@@ -201,16 +209,47 @@ async def pull_model(
     """
     try:
         import httpx
-        async with httpx.AsyncClient() as client:
+        from httpx import ConnectError, TimeoutException
+        
+        # First, check if model already exists
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            tags_response = await client.get("http://localhost:11434/api/tags")
+            if tags_response.status_code == 200:
+                existing_models = tags_response.json().get("models", [])
+                for model in existing_models:
+                    if model.get("name") == model_name or model.get("name") == f"{model_name}:latest":
+                        return {
+                            "status": "already_exists",
+                            "message": f"Model '{model_name}' already exists",
+                            "model": model
+                        }
+        
+        # Pull the model
+        async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
                 "http://localhost:11434/api/pull",
                 json={"name": model_name},
-                timeout=60.0
+                timeout=300.0
             )
+            
             if response.status_code == 200:
-                return {"status": "success", "message": f"Model {model_name} pulled successfully"}
+                return {
+                    "status": "success",
+                    "message": f"Model '{model_name}' pulled successfully"
+                }
             else:
-                return {"status": "error", "message": "Failed to pull model"}
+                error_text = response.text[:200] if response.text else "Unknown error"
+                return {
+                    "status": "error",
+                    "message": f"Failed to pull model: {error_text}"
+                }
+                
+    except ConnectError:
+        logger.error("Ollama service not running")
+        raise HTTPException(status_code=503, detail="Ollama service not running")
+    except TimeoutException:
+        logger.error("Pull request timed out")
+        raise HTTPException(status_code=504, detail="Pull request timed out")
     except Exception as e:
         logger.error(f"Failed to pull model: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to pull model: {str(e)}")
