@@ -5,6 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.core.dependencies import get_current_user
 from app.models import User
 from app.services.intelligence_gateway import gateway
+from app.services.trace_service import TraceService, TraceStep
+from app.swarm.routing.domain_detector import DomainDetector
+from app.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import asyncio
 
@@ -15,7 +19,8 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 @router.post("/")
 async def chat_endpoint(
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Unified chat endpoint - uses the Intelligence Gateway.
@@ -27,13 +32,18 @@ async def chat_endpoint(
         patient_id = data.get("patient_id")
         provider = data.get("provider", "ollama")
         
+        # Domain detection
+        domain_detector = DomainDetector()
+        result_domain = await domain_detector.detect(query)
+        pack_name = result_domain.domain or "general"
+        
         # If provider is not available, try fallback
         available_providers = ["ollama", "groq", "gemini"]
         if provider not in available_providers:
             logger.warning(f"Unknown provider {provider}, falling back to ollama")
             provider = "ollama"
             
-        session_id = data.get("session_id")
+        session_id = data.get("session_id", 0)
         
         logger.info(f"🔍 DEBUG: Chat endpoint received provider: '{provider}' for query: '{query}'")
         
@@ -48,6 +58,19 @@ async def chat_endpoint(
             state=request.app.state,
             patient_id=patient_id,
             provider=provider
+        )
+        
+        # Capture trace
+        trace_service = TraceService(db)
+        await trace_service.capture_step(
+            session_id=session_id,
+            step=TraceStep.PERCEPTION,
+            data={"query": query, "domain": pack_name},
+            agent_id="ChatRouter",
+            confidence_score=0.95,
+            query=query,
+            pack_name=pack_name,
+            user_id=current_user.id
         )
         
         # Self-improving intelligence

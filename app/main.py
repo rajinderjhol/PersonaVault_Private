@@ -34,13 +34,20 @@ from app.api.v1.endpoints.user_preferences import router as user_preferences_rou
 from app.routes import decisions
 from app.api.v1.endpoints.ingestion import router as ingestion_router
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.endpoints.predictive_enhanced import router as predictive_router
 from app.api.v1.endpoints.onboarding import router as onboarding_router
 from app.api.v1.endpoints.nlq import router as nlq_router
 from app.api.v1.endpoints.proactive import router as proactive_router
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
+
+from app.api.v1.endpoints.identity import router as identity_router
+
+from app.api.v1.endpoints.pattern_verification import router as pattern_router
+
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.api.v1.endpoints.packs import router as packs_router
+from app.api.v1.endpoints.privacy import router as privacy_router
 from app.api.v1.endpoints.governance import router as governance_router
 from app.api.v1.endpoints.timeline import router as timeline_router
 from app.api.v1.endpoints.behaviour import router as behaviour_router
@@ -436,27 +443,24 @@ app.include_router(decisions.router)
 app.include_router(swarm.router)
 app.include_router(integrations.router)
 from app.api.v1.endpoints.marketplace import router as marketplace_router
-from app.api.v1.endpoints.privacy import router as privacy_router
-from app.api.v1.endpoints import proactive as proactive_router
-from app.api.v1.endpoints import identity as identity_router
+# Modular Dashboard (Take precedence over legacy admin routes)
+app.include_router(dashboard_router, prefix="/api/v1/admin/dashboard", tags=["dashboard"])
+app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
+
 app.include_router(marketplace_router)
 app.include_router(privacy_router)
-app.include_router(proactive_router.router)
-app.include_router(identity_router.router)
+app.include_router(identity_router)
 app.include_router(user_preferences.router)
 app.include_router(thermodynamics.router)
 
+# New endpoints
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
+app.include_router(predictive_router)
 app.include_router(onboarding_router)
 app.include_router(nlq_router)
 app.include_router(proactive_router)
 app.include_router(trends_mock.router, prefix="/api/v1", tags=["trends"])
-
-
-# Modular Dashboard (Take precedence over legacy admin routes)
-app.include_router(dashboard_router, prefix="/api/v1/admin/dashboard", tags=["dashboard"])
-app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
 
 app.include_router(packs_router, prefix="/api/v1/marketplace", tags=["behaviour-packs"])
 app.include_router(governance_router, prefix="/api/v1", tags=["governance"])

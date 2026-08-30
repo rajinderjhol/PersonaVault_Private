@@ -53,7 +53,9 @@ class RoboticsPerceptionService:
                     "raw_data": observation_data.get("raw_text", "")
                 },
                 agent_id="RoboticsPerceptionService",
-                confidence_score=0.85
+                confidence_score=0.85,
+                query=summary,
+                pack_name="robotics"
             )
             trace_id = str(trace.id) if trace else None
             

@@ -64,7 +64,9 @@ class BaseAgent:
                                  step=step,
                                  data=trace_dict,
                                  agent_id=self.name,
-                                 confidence_score=confidence
+                                 confidence_score=confidence,
+                                 query=str(input_data),
+                                 pack_name=metadata.get("domain") if metadata else None
                              )
                          except Exception as e:
                              self.logger.error(f"Failed to persist trace to DB: {e}")

@@ -39,24 +39,40 @@ class TraceService:
         agent_id: Optional[str] = None,
         confidence_score: Optional[float] = None,
         is_crystallized: bool = False,
-        message_id: Optional[int] = None
+        message_id: Optional[int] = None,
+        query: Optional[str] = None,
+        response: Optional[str] = None,
+        pack_name: Optional[str] = None,
+        user_id: Optional[int] = None,
+        decision_id: Optional[str] = None,
+        trace: Optional[Dict] = None,
+        explanation: Optional[str] = None,
+        latency_ms: Optional[float] = None
     ) -> DecisionTrace:
-        """Capture a single step in the decision trace"""
+        """Capture a single step in the decision trace with full field mapping."""
         session = await self._get_session()
         try:
-            trace = DecisionTrace(
+            trace_record = DecisionTrace(
                 session_id=session_id,
                 step=step,
                 data=data,
                 agent_id=agent_id,
                 confidence_score=confidence_score,
                 is_crystallized=is_crystallized,
-                message_id=message_id
+                message_id=message_id,
+                query=query or data.get("query"),
+                response=response or data.get("response"),
+                pack_name=pack_name or data.get("pack_name") or data.get("domain"),
+                user_id=user_id,
+                decision_id=decision_id or data.get("decision_id"),
+                trace=trace or data.get("trace"),
+                explanation=explanation or data.get("explanation"),
+                latency_ms=latency_ms or data.get("latency_ms")
             )
-            session.add(trace)
+            session.add(trace_record)
             await session.commit()
-            await session.refresh(trace)
-            return trace
+            await session.refresh(trace_record)
+            return trace_record
         finally:
             await self._close_session(session)
     

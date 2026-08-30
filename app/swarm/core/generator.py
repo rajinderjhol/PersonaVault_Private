@@ -111,17 +111,18 @@ class GeneratorAgent(BaseAgent):
         # Persist to database
         target_session = session_id or user_id # session_id is preferred
         if self.trace_service and target_session:
-             try:
-                 await self.trace_service.capture_step(
-                     session_id=target_session,
-                     step=TraceStep.AI_RECOMMENDATION,
-                     data=trace,
-                     agent_id="generator",
-                     confidence_score=route_metadata.get("complexity", {}).get("score", 0.7)
-                 )
-             except Exception as e:
-                 logger.error(f"Failed to persist streaming trace: {e}")
-        
+            try:
+                await self.trace_service.capture_step(
+                    session_id=target_session,
+                    step=TraceStep.AI_RECOMMENDATION,
+                    data=trace,
+                    agent_id="generator",
+                    confidence_score=route_metadata.get("complexity", {}).get("score", 0.7),
+                    query=query,
+                    pack_name=domain_result.domain
+                )
+            except Exception as e:
+                logger.error(f"Failed to persist streaming trace: {e}")
         # 5. Get memory status and suggestions
         memory_status = await self._get_memory_status(user_id=user_id)
         suggestions = self._get_suggested_actions(

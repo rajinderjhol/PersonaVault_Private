@@ -203,7 +203,9 @@ class GenerativeDecisionMaker:
                     }
                 },
                 agent_id="GenerativeDecisionMaker",
-                confidence_score=confidence
+                confidence_score=confidence,
+                query=problem,
+                pack_name=context.get("domain", "general")
             )
             trace_id = str(trace.id) if trace else None
             

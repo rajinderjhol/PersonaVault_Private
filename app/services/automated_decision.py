@@ -103,7 +103,9 @@ class AutomatedDecisionEngine:
                     "confidence": decision.get("confidence", 0)
                 },
                 agent_id="AutomatedDecisionEngine",
-                confidence_score=decision.get("confidence", 0.8)
+                confidence_score=decision.get("confidence", 0.8),
+                query=decision.get("reason", ""),
+                pack_name=decision.get("domain", "unknown")
             )
             
             # Capture OUTCOME step
@@ -117,7 +119,9 @@ class AutomatedDecisionEngine:
                     "execution_time_ms": 0
                 },
                 agent_id="AutomatedDecisionEngine",
-                confidence_score=0.9
+                confidence_score=0.9,
+                pack_name=decision.get("domain", "unknown"),
+                response="success"
             )
             trace_id = str(action_trace.id) if action_trace else None
             

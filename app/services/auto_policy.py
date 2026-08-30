@@ -57,7 +57,9 @@ class AutoPolicyUpdater:
                     "updates": updates[:5]  # Top 5 updates
                 },
                 agent_id="AutoPolicyUpdater",
-                confidence_score=0.8
+                confidence_score=0.8,
+                query="Auto-policy update analysis",
+                pack_name="policy"
             )
             trace_id = str(trace.id) if trace else None
             

@@ -3,7 +3,7 @@ Natural Language Query Service - Query decisions and intelligence in plain Engli
 """
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc
+from sqlalchemy import select, and_, or_, desc, func
 from datetime import datetime, timedelta
 import logging
 
@@ -104,13 +104,30 @@ class NLQService:
             elif time_range == "month":
                 stmt = stmt.where(DecisionTrace.timestamp >= datetime.utcnow() - timedelta(days=30))
         
+        # Apply domain filter (search in multiple fields)
         if "domain" in parsed.get("filters", {}):
             domain = parsed["filters"]["domain"]
-            stmt = stmt.where(DecisionTrace.pack_name == domain)
+            # Logging to debug filter
+            logger.debug(f"Applying domain filter: {domain}")
+            stmt = stmt.where(
+                or_(
+                    DecisionTrace.pack_name.ilike(f"%{domain}%"),
+                    DecisionTrace.data.contains({"domain": domain}),
+                    DecisionTrace.query.ilike(f"%{domain}%"),
+                    DecisionTrace.response.ilike(f"%{domain}%")
+                )
+            )
         
+        # Apply step filter
         if "step" in parsed.get("filters", {}):
             step = parsed["filters"]["step"]
             stmt = stmt.where(DecisionTrace.step == step)
+        
+        # Apply confidence filters
+        if "min_confidence" in parsed.get("filters", {}):
+            stmt = stmt.where(DecisionTrace.confidence_score >= parsed["filters"]["min_confidence"])
+        if "max_confidence" in parsed.get("filters", {}):
+            stmt = stmt.where(DecisionTrace.confidence_score <= parsed["filters"]["max_confidence"])
         
         # Order by timestamp
         stmt = stmt.order_by(desc(DecisionTrace.timestamp))
@@ -120,19 +137,23 @@ class NLQService:
         result = await self.db.execute(stmt)
         traces = result.scalars().all()
         
+        # Debugging
+        logger.debug(f"Search executed. Found {len(traces)} traces.")
+        
         return [self._format_trace(t) for t in traces]
 
     def _format_trace(self, trace: DecisionTrace) -> Dict:
         """Format a trace for display."""
         return {
             "id": str(trace.id),
-            "step": trace.step,
+            "step": trace.step.value if hasattr(trace.step, 'value') else str(trace.step),
             "timestamp": trace.timestamp.isoformat(),
             "confidence": trace.confidence_score,
             "data": trace.data,
             "query": trace.query,
             "response": trace.response,
-            "is_crystallized": trace.is_crystallized
+            "is_crystallized": trace.is_crystallized,
+            "pack_name": trace.pack_name
         }
 
     async def _generate_response(self, query: str, results: List[Dict], parsed: Dict) -> Dict:
@@ -153,11 +174,12 @@ class NLQService:
                 "total": len(results)
             }
         elif intent == "summary":
+            avg_conf = sum(r.get("confidence", 0) for r in results) / len(results) if results else 0
             return {
                 "text": f"Here's a summary of {len(results)} decisions.",
                 "summary": {
                     "count": len(results),
-                    "average_confidence": sum(r.get("confidence", 0) for r in results) / len(results) if results else 0,
+                    "average_confidence": round(avg_conf * 100, 1),
                     "steps": list(set(r.get("step") for r in results)),
                     "crystallized": sum(1 for r in results if r.get("is_crystallized"))
                 }
