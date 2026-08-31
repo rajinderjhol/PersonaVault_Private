@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from typing import List, Dict, Any, Optional
 from app.core.dependencies import get_current_user
+from pydantic import BaseModel
 import json
 import asyncio
 import uuid

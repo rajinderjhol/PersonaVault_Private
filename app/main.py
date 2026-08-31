@@ -412,6 +412,7 @@ async def db_session_middleware(request: Request, call_next):
         return await call_next(request)
 ...
 # Include routers
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(security_router, prefix="/api/v1", tags=["security"])
 app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
 app.include_router(compiler_router, prefix="/api/v1", tags=["compiler"])

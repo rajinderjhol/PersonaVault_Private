@@ -25,47 +25,65 @@ class PackLoader:
         """Install a pack in the system."""
         pack_data, policies = self.load_data_from_yaml(yaml_content)
         
-        async with self.session_factory() as db:
-            try:
-                stmt = select(BehaviourPack).where(BehaviourPack.id == pack_data.get('id'))
-                result = await db.execute(stmt)
-                existing = result.scalars().first()
-                
-                if existing:
-                    # Update fields
-                    existing.name = pack_data.get('name')
-                    existing.domain = pack_data.get('domain', 'general')
-                    existing.version = pack_data.get('version', '1.0.0')
-                    existing.description = pack_data.get('description', '')
-                    existing.policies = policies
-                    existing.is_active = pack_data.get('active', True)
-                    logger.info(f"✅ Pack {existing.name} updated successfully")
-                else:
-                    new_pack = BehaviourPack(
-                        id=pack_data.get('id'),
-                        name=pack_data.get('name'),
-                        domain=pack_data.get('domain', 'general'),
-                        version=pack_data.get('version', '1.0.0'),
-                        description=pack_data.get('description', ''),
-                        policies=policies,
-                        temporal_patterns=pack_data.get('temporal_patterns', []),
-                        is_active=pack_data.get('active', True),
-                        installed_at=datetime.utcnow(),
-                        installed_by=user_id
-                    )
-                    db.add(new_pack)
-                    logger.info(f"✅ Pack {new_pack.name} installed successfully")
-                
-                await db.commit()
-                return True
-            except Exception as e:
-                logger.error(f"Failed to install pack: {e}")
-                await db.rollback()
-                return False
+        db = self.session_factory()
+        
+        try:
+            if isinstance(db, AsyncSession):
+                return await self._run_install_pack(db, pack_data, policies, user_id)
+            else:
+                async with db as session:
+                    return await self._run_install_pack(session, pack_data, policies, user_id)
+        except Exception as e:
+            logger.error(f"Failed to install pack: {e}")
+            return False
+
+    async def _run_install_pack(self, db: AsyncSession, pack_data: Dict[str, Any], policies: list, user_id: int) -> bool:
+        try:
+            stmt = select(BehaviourPack).where(BehaviourPack.id == pack_data.get('id'))
+            result = await db.execute(stmt)
+            existing = result.scalars().first()
+            
+            if existing:
+                # Update fields
+                existing.name = pack_data.get('name')
+                existing.domain = pack_data.get('domain', 'general')
+                existing.version = pack_data.get('version', '1.0.0')
+                existing.description = pack_data.get('description', '')
+                existing.policies = policies
+                existing.is_active = pack_data.get('active', True)
+                logger.info(f"✅ Pack {existing.name} updated successfully")
+            else:
+                new_pack = BehaviourPack(
+                    id=pack_data.get('id'),
+                    name=pack_data.get('name'),
+                    domain=pack_data.get('domain', 'general'),
+                    version=pack_data.get('version', '1.0.0'),
+                    description=pack_data.get('description', ''),
+                    policies=policies,
+                    temporal_patterns=pack_data.get('temporal_patterns', []),
+                    is_active=pack_data.get('active', True),
+                    installed_at=datetime.utcnow(),
+                    installed_by=user_id
+                )
+                db.add(new_pack)
+                logger.info(f"✅ Pack {new_pack.name} installed successfully")
+            
+            await db.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to install pack: {e}")
+            await db.rollback()
+            return False
 
     async def list_installed_packs(self) -> list:
         """Return all installed packs."""
-        async with self.session_factory() as db:
+        db = self.session_factory()
+        if isinstance(db, AsyncSession):
             stmt = select(BehaviourPack)
             result = await db.execute(stmt)
             return result.scalars().all()
+        else:
+            async with db as session:
+                stmt = select(BehaviourPack)
+                result = await session.execute(stmt)
+                return result.scalars().all()
