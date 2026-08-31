@@ -48,6 +48,7 @@ from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.api.v1.endpoints.packs import router as packs_router
 from app.api.v1.endpoints.privacy import router as privacy_router
+from app.api.v1.endpoints.security import router as security_router
 from app.api.v1.endpoints.admin_users import router as admin_users_router
 from app.api.v1.endpoints.constitution import router as constitution_router
 from app.api.v1.endpoints.connections import router as connections_router
@@ -407,9 +408,9 @@ async def db_session_middleware(request: Request, call_next):
     async with SessionLocal() as db:
         request.state.db = db
         return await call_next(request)
-
+...
 # Include routers
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(security_router, prefix="/api/v1", tags=["security"])
 app.include_router(user_profile.router, prefix="/api/v1", tags=["user-profile"])
 app.include_router(organization.router, prefix="/api/v1", tags=["organizations"])
 app.include_router(settings.router, prefix="/api/v1", tags=["settings"])
