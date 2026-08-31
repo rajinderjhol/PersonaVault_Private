@@ -30,10 +30,18 @@ export const apiClient = {
         credentials: 'include',
       });
       
-      if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        if (response.status !== 401) {
+          console.error('API Error:', response.status, response.statusText);
+        }
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
       return await response.json();
     } catch (error) {
-      console.error('API GET error:', error);
+      // Only log if it's not a 401
+      if (!(error instanceof Error) || !error.message.includes('401')) {
+        console.error('API GET error:', error);
+      }
       throw error;
     }
   },

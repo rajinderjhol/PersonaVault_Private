@@ -66,7 +66,6 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticating: false 
           });
         } catch (err: any) {
-          console.error('Auth check error:', err);
           set({ user: null, token: null, isAuthenticated: false, isAuthenticating: false });
         }
       }

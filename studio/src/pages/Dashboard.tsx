@@ -1,21 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { TimeFilter } from '../components/dashboard/TimeFilter';
 import { TemporalIntelligenceWidget } from '../components/dashboard/TemporalIntelligenceWidget';
-import { api } from '../services/api';
+import { useDashboardMetricsQuery } from '../hooks/query/useDashboardMetricsQuery';
 import styles from './Dashboard.module.css';
 
-interface DashboardMetrics {
-  total_events: number;
-  confidence_avg: number;
-  velocity: number;
-  pattern_decay_rate: number;
-  aging_patterns_count: number;
-  temporal_trend: string;
-}
-
 export const Dashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState<{
     startDate: string;
     endDate: string;
@@ -26,33 +15,7 @@ export const Dashboard: React.FC = () => {
     range: '30d'
   });
 
-  const fetchMetrics = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/admin/dashboard/metrics', {
-        params: {
-          time_range: filter.range,
-          start_date: filter.startDate,
-          end_date: filter.endDate
-        }
-      });
-      setMetrics(response);
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter.endDate, filter.range, filter.startDate]);
-
-  useEffect(() => {
-    fetchMetrics();
-    
-    // Poll every 30 seconds
-    const interval = setInterval(fetchMetrics, 30000);
-    
-    return () => clearInterval(interval);
-  }, [fetchMetrics]);
-
+  const { data: metrics, isLoading } = useDashboardMetricsQuery(filter);
 
   const handleFilterChange = (startDate: string, endDate: string, range: string) => {
     setFilter({ startDate, endDate, range });
