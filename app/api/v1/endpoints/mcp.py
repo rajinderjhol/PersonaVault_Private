@@ -152,6 +152,31 @@ async def call_tool(tool_name: str, arguments: Dict[str, Any], request: Request,
 
     return {"error": "Tool not found", "isError": True}
 
+
+class MCPClient(BaseModel):
+    id: str
+    name: str
+    status: str
+
+class MCPServer(BaseModel):
+    id: str
+    name: str
+    status: str
+
+@router.get("/clients", response_model=List[MCPClient])
+async def list_clients(admin_id: int = Depends(get_current_user)):
+    """List connected MCP clients."""
+    return [
+        {"id": "client-1", "name": "Claude Desktop", "status": "connected"},
+    ]
+
+@router.get("/servers", response_model=List[MCPServer])
+async def list_servers(admin_id: int = Depends(get_current_user)):
+    """List configured MCP servers."""
+    return [
+        {"id": "server-1", "name": "Local Filesystem", "status": "active"},
+    ]
+
 # ============ MCP SSE TRANSPORT (PHASE 3 LEAPFROG) ============
 
 # Registry for active SSE client queues

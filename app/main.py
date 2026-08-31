@@ -47,6 +47,8 @@ from app.api.v1.endpoints.pattern_verification import router as pattern_router
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.api.v1.endpoints.packs import router as packs_router
+from app.api.v1.endpoints.compiler import router as compiler_router
+from app.api.v1.endpoints.trust import router as trust_router
 from app.api.v1.endpoints.privacy import router as privacy_router
 from app.api.v1.endpoints.security import router as security_router
 from app.api.v1.endpoints.admin_users import router as admin_users_router
@@ -411,6 +413,9 @@ async def db_session_middleware(request: Request, call_next):
 ...
 # Include routers
 app.include_router(security_router, prefix="/api/v1", tags=["security"])
+app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
+app.include_router(compiler_router, prefix="/api/v1", tags=["compiler"])
+app.include_router(trust_router, prefix="/api/v1", tags=["trust"])
 app.include_router(user_profile.router, prefix="/api/v1", tags=["user-profile"])
 app.include_router(organization.router, prefix="/api/v1", tags=["organizations"])
 app.include_router(settings.router, prefix="/api/v1", tags=["settings"])

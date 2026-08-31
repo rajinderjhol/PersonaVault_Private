@@ -10,6 +10,18 @@ from app.services.governance.explainability import ExplainabilityEngine
 
 router = APIRouter(prefix="/governance", tags=["governance"])
 
+@router.get("/overview")
+async def get_governance_overview(
+    admin_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get governance overview."""
+    return {
+        "active_policies": 15,
+        "compliance_score": 0.98,
+        "pending_reviews": 2
+    }
+
 @router.get("/audit/{decision_id}")
 async def get_audit_trail(
     decision_id: str,
