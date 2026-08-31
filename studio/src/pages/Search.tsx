@@ -1,62 +1,31 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TimeFilter } from '../components/dashboard/TimeFilter';
-import { temporalService } from '../services/temporalService';
-import type { SearchResult } from '../services/temporalService';
+import { useSearchQuery } from '../hooks/query/useSearchQuery';
 import styles from './Search.module.css';
 
 export const Search: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [totalResults, setTotalResults] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState('30d');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [temporalMetadata, setTemporalMetadata] = useState<any>(null);
+  const [params, setParams] = useState({
+    query: '',
+    timeRange: '30d',
+    startDate: '',
+    endDate: ''
+  });
+
+  const { data, isLoading, error, refetch } = useSearchQuery(params);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const performSearch = useCallback(async () => {
-    if (!query.trim()) {
-      setError('Please enter a search query');
-      return;
-    }
+  const loading = isLoading && hasSearched;
 
-    setLoading(true);
-    setError(null);
+  const performSearch = () => {
+    setParams(prev => ({ ...prev, query }));
     setHasSearched(true);
-
-    try {
-      const response = await temporalService.search({
-        query: query.trim(),
-        time_range: timeRange,
-        start_date: startDate,
-        end_date: endDate
-      });
-      
-      setResults(response.items);
-      setTotalResults(response.total);
-      setTemporalMetadata(response.temporal_metadata);
-    } catch (err: any) {
-      console.error('Search failed:', err);
-      setError(err.message || 'Search failed. Please try again.');
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [query, timeRange, startDate, endDate]);
-
-  const handleTimeFilterChange = (start: string, end: string, range: string) => {
-    setTimeRange(range);
-    setStartDate(start);
-    setEndDate(end);
+    refetch(); // Manually trigger search on click/enter
   };
 
-  useEffect(() => {
-    if (query.trim() && hasSearched) {
-      performSearch();
-    }
-  }, [timeRange, startDate, endDate, performSearch, query, hasSearched]);
+  const handleTimeFilterChange = (startDate: string, endDate: string, range: string) => {
+    setParams(prev => ({ ...prev, startDate, endDate, timeRange: range }));
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -66,11 +35,12 @@ export const Search: React.FC = () => {
 
   const clearSearch = () => {
     setQuery('');
-    setResults([]);
-    setError(null);
-    setTemporalMetadata(null);
-    setHasSearched(false);
+    setParams(prev => ({ ...prev, query: '' }));
   };
+
+  const results = data?.items || [];
+  const totalResults = data?.total || 0;
+  const temporalMetadata = data?.temporal_metadata || null;
 
   return (
     <div className={styles.searchPage}>
@@ -107,7 +77,7 @@ export const Search: React.FC = () => {
 
       {error && (
         <div className={styles.errorMessage}>
-          ⚠️ {error}
+          ⚠️ {error instanceof Error ? error.message : 'Search failed. Please try again.'}
         </div>
       )}
 

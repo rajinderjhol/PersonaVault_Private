@@ -1,44 +1,24 @@
 import React, { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { ingestionApi } from '../services/ingestionService';
+import { useJobStatusQuery } from '../hooks/query/useJobStatusQuery';
 import styles from './DataIngestion.module.css';
 
 export const DataIngestion: React.FC = () => {
   const [folderPath, setFolderPath] = useState('');
   const [jobId, setJobId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>('pending');
-  const [loading, setLoading] = useState(false);
 
-  const handleIngest = async () => {
-    setLoading(true);
-    try {
-      const response = await ingestionApi.ingestFolder(folderPath);
+  const mutation = useMutation({
+    mutationFn: (path: string) => ingestionApi.ingestFolder(path),
+    onSuccess: (response) => {
       setJobId(response.data.job_id);
-      setStatus('processing');
-      
-      // Start polling
-      pollJobStatus(response.data.job_id);
-    } catch (error) {
-      console.error('Ingestion error:', error);
-      setStatus('error');
-    } finally {
-      setLoading(false);
     }
-  };
+  });
 
-  const pollJobStatus = async (id: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await ingestionApi.getJobStatus(id);
-        setStatus(response.data.status);
-        if (response.data.status === 'completed' || response.data.status === 'failed') {
-          clearInterval(interval);
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-        clearInterval(interval);
-        setStatus('error');
-      }
-    }, 2000);
+  const { data: jobStatus, isLoading: isPolling } = useJobStatusQuery(jobId);
+
+  const handleIngest = () => {
+    mutation.mutate(folderPath);
   };
 
   return (
@@ -51,14 +31,14 @@ export const DataIngestion: React.FC = () => {
           onChange={(e) => setFolderPath(e.target.value)}
           placeholder="Enter server folder path (e.g., /data/contracts)"
         />
-        <button onClick={handleIngest} disabled={loading}>
-          {loading ? 'Starting...' : 'Start Ingestion'}
+        <button onClick={handleIngest} disabled={mutation.isPending}>
+          {mutation.isPending ? 'Starting...' : 'Start Ingestion'}
         </button>
       </div>
       {jobId && (
         <div className={styles.statusBox}>
           <p>Job ID: {jobId}</p>
-          <p>Status: <strong>{status}</strong></p>
+          <p>Status: <strong>{jobStatus?.status || 'processing'}</strong></p>
         </div>
       )}
     </div>
