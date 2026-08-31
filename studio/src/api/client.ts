@@ -3,6 +3,7 @@ const VITE_API_URL = import.meta.env.VITE_API_URL;
 // If VITE_API_URL is provided, use it. Otherwise, use relative /api/v1 which is proxied by Vite.
 const API_BASE_URL = VITE_API_URL ? VITE_API_URL.replace(/\/$/, '') : '/api/v1';
 
+console.log('🔌 API Client VITE_API_URL:', import.meta.env.VITE_API_URL);
 console.log('🔌 API Client using base:', API_BASE_URL);
 
 export const apiClient = {
