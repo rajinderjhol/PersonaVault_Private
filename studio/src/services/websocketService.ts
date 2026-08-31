@@ -1,19 +1,4 @@
-export interface AgentStatus {
-  id: string;
-  agentName: string;
-  agentType?: string;
-  content: string;
-  timestamp: string;
-  status: 'thinking' | 'active' | 'completed' | 'error';
-  confidence?: number;
-  temporalContext?: {
-    startDate: string;
-    endDate: string;
-    intervalType: string;
-    originalExpression?: string;
-    daysSpan?: number;
-  };
-}
+import type { AgentStatus } from '../types/agent';
 
 export class WebSocketService {
   private ws: WebSocket | null = null;
@@ -25,6 +10,11 @@ export class WebSocketService {
   constructor(private url: string) {}
 
   connect(): void {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      console.log('WebSocket is already connecting or connected');
+      return;
+    }
+    
     try {
       this.ws = new WebSocket(this.url);
       
@@ -44,6 +34,7 @@ export class WebSocketService {
       
       this.ws.onclose = () => {
         console.log('WebSocket disconnected');
+        this.ws = null; // Reset ws reference on close
         this.attemptReconnect();
       };
       
@@ -99,8 +90,8 @@ let wsService: WebSocketService | null = null;
 
 export const getWebSocketService = (): WebSocketService => {
   if (!wsService) {
-    // Use the backend WebSocket endpoint
-    const wsUrl = process.env.REACT_APP_WS_URL || `ws://localhost:8000/ws/agent-status`;
+    const clientId = Math.random().toString(36).substring(7);
+    const wsUrl = import.meta.env.VITE_WS_URL || `ws://localhost:8000/api/v1/admin/dashboard/ws/${clientId}`;
     wsService = new WebSocketService(wsUrl);
   }
   return wsService;

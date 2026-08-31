@@ -13,8 +13,7 @@ export interface ModeConfig {
 
 export const modeAPI = {
   getCurrentMode: async (): Promise<ModeConfig> => {
-    const response = await apiClient.get('/mode/current');
-    return response.data;
+    return await apiClient.get('/mode/current');
   },
 
   setMode: async (mode: string): Promise<void> => {

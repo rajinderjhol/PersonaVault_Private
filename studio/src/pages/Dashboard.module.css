@@ -1,5 +1,5 @@
 .dashboard {
-    padding: 2rem;
+    padding: 0;
 }
 
 .header {
@@ -16,17 +16,25 @@
 }
 
 .metricCard {
-    background: var(--bg-secondary, #1a1a2e);
-    border: 1px solid var(--border-color, #2a2a4a);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--glass-border);
     padding: 1.5rem;
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.metricCard:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-gas);
+    box-shadow: var(--glow-cyan);
 }
 
 .metricIcon {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.2));
 }
 
 .metricContent {
@@ -34,23 +42,26 @@
 }
 
 .metricLabel {
-    font-size: 0.85rem;
-    color: var(--text-secondary, #9ca3af);
-    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
 }
 
 .metricValue {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: var(--text-primary, #e0e0e0);
+    color: var(--color-text-primary);
+    font-family: var(--mono);
 }
 
 .metricTrend {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     margin-top: 0.5rem;
-    color: var(--text-tertiary, #6b7280);
+    color: var(--color-text-muted);
 }
 
 .trendUp {
-    color: #22c55e;
+    color: var(--color-success);
 }

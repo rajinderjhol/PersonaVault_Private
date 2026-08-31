@@ -37,42 +37,39 @@ export interface ChatResponse {
 export const chatAPI = {
   // Send a message (non-streaming)
   sendMessage: async (query: string, sessionId?: number, provider?: string): Promise<ChatResponse> => {
-    const response = await apiClient.post('/chat/', {
+    return await apiClient.post('/chat/', {
       query,
       session_id: sessionId,
       provider: provider || 'groq',
     });
-    return response.data;
   },
 
   // Stream a message
   streamMessage: async (query: string, sessionId?: number, provider?: string): Promise<ReadableStream> => {
-    const response = await apiClient.post('/chat/stream', {
+    return await apiClient.post('/chat/stream', {
       query,
       session_id: sessionId,
       provider: provider || 'groq',
     }, {
       responseType: 'stream',
     });
-    return response.data;
   },
 
   // List all sessions
   listSessions: async (): Promise<ChatSession[]> => {
-    const response = await apiClient.get('/chat/sessions/');
-    return response.data || [];
+    const data = await apiClient.get<ChatSession[]>('/chat/sessions/');
+    return data || [];
   },
 
   // Create a new session
   createSession: async (title: string = 'New Chat'): Promise<ChatSession> => {
-    const response = await apiClient.post('/chat/sessions/', { title });
-    return response.data;
+    return await apiClient.post('/chat/sessions/', { title });
   },
 
   // Get messages for a session
   getSessionMessages: async (sessionId: number): Promise<ChatMessage[]> => {
-    const response = await apiClient.get(`/chat/sessions/${sessionId}/messages`);
-    return response.data.messages || [];
+    const data = await apiClient.get<any>(`/chat/sessions/${sessionId}/messages`);
+    return data.messages || [];
   },
 
   // Pin/unpin session

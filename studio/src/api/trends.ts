@@ -14,7 +14,6 @@ export interface DomainTrend {
 
 export const trendsAPI = {
   getTrends: async (domain: string = 'confidence', days: number = 30): Promise<DomainTrend[]> => {
-    const response = await apiClient.get(`/timeline/trends/${domain}?days=${days}`);
-    return response.data;
+    return await apiClient.get(`/timeline/trends/${domain}?days=${days}`);
   },
 };

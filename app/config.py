@@ -27,7 +27,10 @@ class Config:
         else ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
     )
     # Allow wildcard only in explicit dev mode — never in production
-    CORS_ALLOW_ALL: bool = (APP_ENV == "development") and (os.getenv("CORS_ALLOW_ALL", "false").lower() == "true")
+    CORS_ALLOW_ALL: bool = (APP_ENV == "development") and (
+        os.getenv("CORS_ALLOW_ALL", "false").lower() == "true" or 
+        os.getenv("CLOUD_SHELL", "false").lower() == "true"
+    )
 
     # --- Metrics Endpoint Protection ---
     # Set a strong random token: python -c 'import secrets; print(secrets.token_hex(32))'

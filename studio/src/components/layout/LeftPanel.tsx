@@ -14,39 +14,41 @@ import {
   ShieldAlert,
   Server,
   Calendar,
-  Smartphone
+  Smartphone,
+  Search
 } from 'lucide-react';
 import { create } from 'zustand';
+import { Link, useLocation } from 'react-router-dom';
 
 // UI State Store for Navigation
 interface NavigationState {
-  activeModule: string;
   collapsed: boolean;
-  setActiveModule: (module: string) => void;
   toggleCollapsed: () => void;
 }
 
 export const useNavigationStore = create<NavigationState>((set) => ({
-  activeModule: 'lab',
   collapsed: false,
-  setActiveModule: (module) => set({ activeModule: module }),
   toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),
 }));
 
 const LeftPanel: React.FC = () => {
-  const { activeModule, collapsed, setActiveModule, toggleCollapsed } = useNavigationStore();
+  const { collapsed, toggleCollapsed } = useNavigationStore();
+  const location = useLocation();
+  const activePath = location.pathname;
 
   return (
-    <aside style={{
+    <aside className="glass-panel" style={{
       width: collapsed ? 'var(--left-panel-collapsed-width)' : 'var(--left-panel-width)',
       height: '100vh',
-      backgroundColor: 'var(--color-bg-secondary)',
       borderRight: '1px solid var(--glass-border)',
       transition: 'width var(--transition-speed) ease',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-      zIndex: 10
+      zIndex: 10,
+      borderTop: 'none',
+      borderBottom: 'none',
+      borderLeft: 'none'
     }}>
       <div style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
         {!collapsed && <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-gas)' }}>PersonaVault</h2>}
@@ -60,124 +62,116 @@ const LeftPanel: React.FC = () => {
 
       <nav style={{ flex: 1, padding: '10px', overflowY: 'auto' }}>
         <NavItem 
+          to="/"
           icon={<LayoutDashboard size={20} />} 
           label="Dashboard" 
           collapsed={collapsed} 
-          active={activeModule === 'dashboard'} 
-          onClick={() => setActiveModule('dashboard')}
+          active={activePath === '/'} 
         />
         <NavItem 
+          to="/chat"
           icon={<MessageSquare size={20} />} 
           label="Cognitive Lab" 
           collapsed={collapsed} 
-          active={activeModule === 'lab'} 
-          onClick={() => setActiveModule('lab')}
+          active={activePath === '/chat'} 
         />
         <NavItem 
-          icon={<ShoppingBag size={20} />} 
-          label="Marketplace" 
+          to="/search"
+          icon={<Search size={20} />} 
+          label="Universal Search" 
           collapsed={collapsed} 
-          active={activeModule === 'marketplace'} 
-          onClick={() => setActiveModule('marketplace')}
+          active={activePath === '/search'} 
         />
         <NavItem 
-          icon={<ShieldAlert size={20} />} 
-          label="Security Center" 
-          collapsed={collapsed} 
-          active={activeModule === 'security'} 
-          onClick={() => setActiveModule('security')}
-        />
-        <NavItem 
+          to="/ingestion"
           icon={<Database size={20} />} 
           label="Intelligence Vault" 
           collapsed={collapsed} 
-          active={activeModule === 'vault'} 
-          onClick={() => setActiveModule('vault')}
+          active={activePath === '/ingestion'} 
         />
         <NavItem 
+          to="/simulator"
+          icon={<Cpu size={20} />} 
+          label="Policy Simulator" 
+          collapsed={collapsed} 
+          active={activePath === '/simulator'} 
+        />
+        
+        <div style={{ height: '1px', backgroundColor: 'var(--glass-border)', margin: '10px 0' }} />
+        
+        <NavItem 
+          to="/marketplace"
+          icon={<ShoppingBag size={20} />} 
+          label="Marketplace" 
+          collapsed={collapsed} 
+          active={activePath === '/marketplace'} 
+        />
+        <NavItem 
+          to="/security"
+          icon={<ShieldAlert size={20} />} 
+          label="Security Center" 
+          collapsed={collapsed} 
+          active={activePath === '/security'} 
+        />
+        <NavItem 
+          to="/mcp"
           icon={<Layers size={20} />} 
           label="MCP Center" 
           collapsed={collapsed} 
-          active={activeModule === 'mcp'} 
-          onClick={() => setActiveModule('mcp')}
+          active={activePath === '/mcp'} 
         />
         <NavItem 
+          to="/trust"
           icon={<ShieldCheck size={20} />} 
           label="Device Trust" 
           collapsed={collapsed} 
-          active={activeModule === 'trust'} 
-          onClick={() => setActiveModule('trust')}
+          active={activePath === '/trust'} 
         />
         <NavItem 
+          to="/compiler"
           icon={<Terminal size={20} />} 
           label="Pattern Compiler" 
           collapsed={collapsed} 
-          active={activeModule === 'compiler'} 
-          onClick={() => setActiveModule('compiler')}
+          active={activePath === '/compiler'} 
         />
         <NavItem 
+          to="/governance"
           icon={<ShieldCheck size={20} />} 
           label="Governance" 
           collapsed={collapsed} 
-          active={activeModule === 'governance'} 
-          onClick={() => setActiveModule('governance')}
+          active={activePath === '/governance'} 
         />
         <NavItem 
-          icon={<Calendar size={20} />} 
-          label="Calendar" 
-          collapsed={collapsed} 
-          active={activeModule === 'calendar'} 
-          onClick={() => setActiveModule('calendar')}
-        />
-        <NavItem 
-          icon={<Smartphone size={20} />} 
-          label="Devices" 
-          collapsed={collapsed} 
-          active={activeModule === 'devices'} 
-          onClick={() => setActiveModule('devices')}
-        />
-        <NavItem 
-          icon={<Cpu size={20} />} 
-          label="Sovereign Control" 
-          collapsed={collapsed} 
-          active={activeModule === 'sovereign'} 
-          onClick={() => setActiveModule('sovereign')}
-        />
-        <NavItem 
+          to="/models"
           icon={<Server size={20} />} 
           label="Model Management" 
           collapsed={collapsed} 
-          active={activeModule === 'models'} 
-          onClick={() => setActiveModule('models')}
-        />
-        <NavItem 
-          icon={<Terminal size={20} />} 
-          label="Dev Console" 
-          collapsed={collapsed} 
-          active={activeModule === 'console'} 
-          onClick={() => setActiveModule('console')}
+          active={activePath === '/models'} 
         />
       </nav>
 
       <div style={{ padding: '20px', borderTop: '1px solid var(--glass-border)', color: 'var(--color-text-secondary)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
-          <Settings size={20} />
-          {!collapsed && <span>Settings</span>}
-        </div>
+        <NavItem 
+          to="/settings"
+          icon={<Settings size={20} />} 
+          label="Settings" 
+          collapsed={collapsed} 
+          active={activePath === '/settings'} 
+        />
       </div>
     </aside>
   );
 };
 
 const NavItem: React.FC<{ 
+  to: string,
   icon: React.ReactNode, 
   label: string, 
   collapsed: boolean, 
-  active?: boolean,
-  onClick: () => void 
-}> = ({ icon, label, collapsed, active, onClick }) => (
-  <div 
-    onClick={onClick}
+  active?: boolean
+}> = ({ to, icon, label, collapsed, active }) => (
+  <Link 
+    to={to}
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -189,12 +183,13 @@ const NavItem: React.FC<{
       cursor: 'pointer',
       marginBottom: '4px',
       transition: 'all 0.2s ease',
-      justifyContent: collapsed ? 'center' : 'flex-start'
+      justifyContent: collapsed ? 'center' : 'flex-start',
+      textDecoration: 'none'
     }}
   >
     {icon}
     {!collapsed && <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{label}</span>}
-  </div>
+  </Link>
 );
 
 export default LeftPanel;

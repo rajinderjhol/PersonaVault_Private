@@ -10,11 +10,11 @@ export interface LogEntry {
 
 export const logsAPI = {
   streamLogs: async (onLog: (log: LogEntry) => void): Promise<() => void> => {
-    const response = await apiClient.get('/admin/dashboard/logs/stream', {
+    const data = await apiClient.get<any>('/admin/dashboard/logs/stream', {
       responseType: 'stream',
     });
 
-    const reader = response.data.getReader();
+    const reader = data.getReader();
     const decoder = new TextDecoder();
     let isActive = true;
 

@@ -1,29 +1,34 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Thermometer, BrainCircuit, History } from 'lucide-react';
 import { useTraceStore } from '../../store/traceStore';
-import { useThermodynamics } from '../../hooks/useThermodynamics';
+import { useAuthStore } from '../../store/authStore';
+import { useThermodynamicsQuery } from '../../hooks/query/useThermodynamicsQuery';
 import { motion } from 'framer-motion';
 
 const RightPanel: React.FC = () => {
   const { activeTrace } = useTraceStore();
-  const { phases, transitions, fetchPhases, fetchTransitions } = useThermodynamics(true, 30000);
+  const { isAuthenticated } = useAuthStore();
+  
+  const { data, isLoading } = useThermodynamicsQuery();
+  const { phases, transitions } = data || { phases: null, transitions: [] };
 
-  useEffect(() => {
-    fetchPhases();
-    fetchTransitions();
-  }, [fetchPhases, fetchTransitions]);
+  if (isLoading && !data) {
+     return <div>Loading...</div>;
+  }
 
   return (
-    <aside style={{
+    <aside className="glass-panel" style={{
       width: 'var(--right-panel-width)',
       height: '100vh',
-      backgroundColor: 'var(--color-bg-secondary)',
-      borderLeft: '1px solid var(--glass-border)',
       display: 'flex',
       flexDirection: 'column',
       padding: '20px',
       gap: '24px',
-      overflowY: 'auto'
+      overflowY: 'auto',
+      borderLeft: '1px solid var(--glass-border)',
+      borderTop: 'none',
+      borderBottom: 'none',
+      borderRight: 'none'
     }}>
       {/* Memory Phases */}
       <div>

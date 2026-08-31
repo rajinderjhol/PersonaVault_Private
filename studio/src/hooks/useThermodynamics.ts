@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useThermodynamicsStore } from '../store/thermodynamicsStore';
 
-export const useThermodynamics = (autoRefresh: boolean = true, interval: number = 30000) => {
+export const useThermodynamics = (autoRefresh: boolean = true, interval: number = 60000) => {
   const {
     phases,
     transitions,
@@ -22,9 +22,17 @@ export const useThermodynamics = (autoRefresh: boolean = true, interval: number 
   // Auto-refresh on mount and at interval
   useEffect(() => {
     if (autoRefresh) {
-      refreshAll();
+      // Small delay to allow auth to stabilize before fetching
+      const initialDelay = setTimeout(() => {
+        refreshAll();
+      }, 2000);
+      
       const timer = setInterval(refreshAll, interval);
-      return () => clearInterval(timer);
+      
+      return () => {
+        clearTimeout(initialDelay);
+        clearInterval(timer);
+      };
     }
   }, [autoRefresh, interval]);
 

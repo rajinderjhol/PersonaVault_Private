@@ -48,13 +48,7 @@ export const PredictiveInsights: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('predictions');
 
-  useEffect(() => {
-    fetchAllPredictiveData();
-    const interval = setInterval(fetchAllPredictiveData, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchAllPredictiveData = async () => {
+  const fetchAllPredictiveData = useCallback(async () => {
     try {
       const [predictionsRes, trendsRes, responsesRes] = await Promise.all([
         apiClient.get('/predictive/predictions'),
@@ -71,7 +65,13 @@ export const PredictiveInsights: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAllPredictiveData();
+    const interval = setInterval(fetchAllPredictiveData, 60000);
+    return () => clearInterval(interval);
+  }, [fetchAllPredictiveData]);
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {

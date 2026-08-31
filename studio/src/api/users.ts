@@ -12,8 +12,8 @@ export interface User {
 
 export const usersAPI = {
   listUsers: async (): Promise<User[]> => {
-    const response = await apiClient.get('/admin/users');
-    return response.data.users || [];
+    const data = await apiClient.get<any>('/admin/users');
+    return data.users || [];
   },
 
   updateRole: async (userId: string, role: string): Promise<void> => {
@@ -21,7 +21,7 @@ export const usersAPI = {
   },
 
   getRoles: async (): Promise<{ name: string; description: string }[]> => {
-    const response = await apiClient.get('/admin/roles');
-    return response.data.roles || [];
+    const data = await apiClient.get<any>('/admin/roles');
+    return data.roles || [];
   },
 };

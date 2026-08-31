@@ -12,8 +12,7 @@ export interface LoginResponse {
 
 export const authAPI = {
   login: async (username: string, password: string): Promise<LoginResponse> => {
-    const response = await apiClient.post('/auth/login', { username, password });
-    return response.data;
+    return await apiClient.post('/auth/login', { username, password });
   },
   
   logout: async (): Promise<void> => {
@@ -21,7 +20,6 @@ export const authAPI = {
   },
   
   getMe: async () => {
-    const response = await apiClient.get('/auth/me');
-    return response.data;
+    return await apiClient.get('/auth/me');
   },
 };

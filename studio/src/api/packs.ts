@@ -14,13 +14,13 @@ export interface Pack {
 
 export const packsAPI = {
   listPacks: async (): Promise<Pack[]> => {
-    const response = await apiClient.get('/marketplace/packs');
-    return response.data.packs || [];
+    const data = await apiClient.get<any>('/marketplace/packs');
+    return data.packs || [];
   },
 
   getInstalled: async (): Promise<Pack[]> => {
-    const response = await apiClient.get('/marketplace/installed');
-    return response.data.packs || [];
+    const data = await apiClient.get<any>('/marketplace/installed');
+    return data.packs || [];
   },
 
   installPack: async (packId: string): Promise<void> => {

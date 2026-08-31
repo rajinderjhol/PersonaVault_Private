@@ -35,7 +35,8 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       return;
     }
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/v1/thermodynamics/ws';
+    const clientId = Math.random().toString(36).substring(7);
+    const wsUrl = import.meta.env.VITE_WS_URL || `ws://localhost:8000/api/v1/thermodynamics/ws/${clientId}`;
     const ws = new IntelligenceWebSocket(wsUrl);
     
     ws.onMessage((msg: WebSocketMessage) => {

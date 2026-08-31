@@ -362,11 +362,12 @@ app.mount("/metrics", _protected_metrics_app)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS middleware — origins are driven by ALLOWED_ORIGINS env var
-# In development (CORS_ALLOW_ALL=true + APP_ENV=development): wildcard is permitted
+# In development (CORS_ALLOW_ALL=true + APP_ENV=development): wildcard is permitted via regex
 # In all other cases: only listed origins are allowed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if Config.CORS_ALLOW_ALL else Config.ALLOWED_ORIGINS,
+    allow_origins=Config.ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.cloudshell\.dev" if Config.CORS_ALLOW_ALL else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

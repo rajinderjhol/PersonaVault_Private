@@ -1,42 +1,50 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AppLayout from './components/layout/AppLayout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import Login from './components/modules/Login/Login';
+
+// Pages
 import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
+import { DataIngestion } from './pages/DataIngestion';
+import { Simulator } from './pages/Simulator';
+
+// Components
 import { AgentSwarmUI } from './components/chat/AgentSwarmUI';
-import { TemporalIntelligenceWidget } from './components/dashboard/TemporalIntelligenceWidget';
-import './App.css';
 
 function App() {
   return (
     <Router>
-      <div className="app">
-        <header className="app-header">
-          <h1>PersonaVault Studio</h1>
-          <nav>
-            <a href="/">Dashboard</a>
-            <a href="/search">Search</a>
-            <a href="/chat">Chat</a>
-          </nav>
-        </header>
-        
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={
-              <div className="page-content">
-                <Dashboard />
-                <TemporalIntelligenceWidget timeRange="30d" />
-                <AgentSwarmUI isActive={false} messages={[]} />
-              </div>
-            } />
-            <Route path="/search" element={<Search />} />
-            <Route path="/chat" element={
-              <div className="page-content">
-                <AgentSwarmUI isActive={true} messages={[]} />
-              </div>
-            } />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/*" element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/chat" element={<AgentSwarmUI isActive={true} messages={[]} />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/ingestion" element={<DataIngestion />} />
+                <Route path="/simulator" element={<Simulator />} />
+                
+                {/* Placeholder routes */}
+                <Route path="/marketplace" element={<div>Marketplace Component</div>} />
+                <Route path="/security" element={<div>Security Center Component</div>} />
+                <Route path="/mcp" element={<div>MCP Center Component</div>} />
+                <Route path="/trust" element={<div>Device Trust Component</div>} />
+                <Route path="/compiler" element={<div>Pattern Compiler Component</div>} />
+                <Route path="/governance" element={<div>Governance Component</div>} />
+                <Route path="/models" element={<div>Model Management Component</div>} />
+                <Route path="/settings" element={<div>Settings Component</div>} />
+                
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AppLayout>
+          </ProtectedRoute>
+        } />
+      </Routes>
     </Router>
   );
 }

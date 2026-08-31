@@ -192,7 +192,7 @@ export const TemporalInsights: React.FC = () => {
         </div>
         <div className="patterns-legend">
           <span className="legend-item">
-            <span className="legend-dot high"></span> High Confidence (>{' '}70%)
+            <span className="legend-dot high"></span> High Confidence (&gt; 70%)
           </span>
           <span className="legend-item">
             <span className="legend-dot medium"></span> Medium Confidence (50-70%)

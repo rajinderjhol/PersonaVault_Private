@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '../../../api/client';
 
 interface AgentMetric {
@@ -13,13 +13,7 @@ export const AgentMetrics: React.FC = () => {
   const [metrics, setMetrics] = useState<AgentMetric[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
       const response = await apiClient.get('/swarm/metrics');
       setMetrics(response.data.agents);
@@ -28,7 +22,13 @@ export const AgentMetrics: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 60000);
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
 
   if (isLoading) {
     return <div className="metrics-loading">Loading metrics...</div>;

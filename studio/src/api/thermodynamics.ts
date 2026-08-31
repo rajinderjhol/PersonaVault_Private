@@ -27,40 +27,33 @@ export interface Snowflake {
 export const thermodynamicsAPI = {
   // Get current phase distribution
   getPhaseDistribution: async (): Promise<PhaseDistribution> => {
-    const response = await apiClient.get('/thermodynamics/phase-distribution');
-    return response.data;
+    return await apiClient.get('/thermodynamics/phase-distribution');
   },
 
   // Get recent transitions
   getTransitions: async (limit: number = 10): Promise<Transition[]> => {
-    const response = await apiClient.get(`/thermodynamics/transitions?limit=${limit}`);
-    return response.data;
+    return await apiClient.get(`/thermodynamics/transitions?limit=${limit}`);
   },
 
   // List snowflakes
   getSnowflakes: async (): Promise<Snowflake[]> => {
-    const response = await apiClient.get('/thermodynamics/snowflakes');
-    return response.data;
+    return await apiClient.get('/thermodynamics/snowflakes');
   },
 
   // Manual phase controls
   manualFreeze: async (patternId: string): Promise<{ status: string; message: string; new_phase: string }> => {
-    const response = await apiClient.post('/thermodynamics/manual/freeze', { pattern_id: patternId });
-    return response.data;
+    return await apiClient.post('/thermodynamics/manual/freeze', { pattern_id: patternId });
   },
 
   manualMelt: async (patternId: string): Promise<{ status: string; message: string; new_phase: string }> => {
-    const response = await apiClient.post('/thermodynamics/manual/melt', { pattern_id: patternId });
-    return response.data;
+    return await apiClient.post('/thermodynamics/manual/melt', { pattern_id: patternId });
   },
 
   manualEvaporate: async (patternId: string): Promise<{ status: string; message: string; new_phase: string }> => {
-    const response = await apiClient.post('/thermodynamics/manual/evaporate', { pattern_id: patternId });
-    return response.data;
+    return await apiClient.post('/thermodynamics/manual/evaporate', { pattern_id: patternId });
   },
 
   manualSublimate: async (patternId: string): Promise<{ status: string; message: string; new_phase: string }> => {
-    const response = await apiClient.post('/thermodynamics/manual/sublimate', { pattern_id: patternId });
-    return response.data;
+    return await apiClient.post('/thermodynamics/manual/sublimate', { pattern_id: patternId });
   },
 };

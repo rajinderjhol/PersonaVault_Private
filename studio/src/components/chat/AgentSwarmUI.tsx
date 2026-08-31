@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getWebSocketService, AgentStatus } from '../../services/websocketService';
+import type { AgentStatus } from '../../types/agent';
+import { getWebSocketService } from '../../services/websocketService';
 import styles from './AgentSwarmUI.module.css';
 
 interface AgentSwarmUIProps {

@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      isAuthenticating: true,
+      isAuthenticating: false,
       error: null,
 
       login: async (username, password) => {
@@ -52,6 +52,7 @@ export const useAuthStore = create<AuthState>()(
           console.error('Logout error:', err);
         } finally {
           set({ user: null, token: null, isAuthenticated: false });
+          useAuthStore.persist.clearStorage();
         }
       },
 

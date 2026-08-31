@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { TimeFilter } from '../components/dashboard/TimeFilter';
-import { temporalService, SearchResult } from '../services/temporalService';
+import { temporalService } from '../services/temporalService';
+import type { SearchResult } from '../services/temporalService';
 import styles from './Search.module.css';
 
 export const Search: React.FC = () => {

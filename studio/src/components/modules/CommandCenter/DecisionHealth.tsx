@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { apiClient } from '../../../api/client';
 
 interface HealthMetric {
@@ -31,13 +31,7 @@ export const DecisionHealth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchHealth();
-    const interval = setInterval(fetchHealth, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchHealth = async () => {
+  const fetchHealth = useCallback(async () => {
     try {
       const response = await apiClient.get('/health/decision');
       setHealth(response.data);
@@ -47,7 +41,13 @@ export const DecisionHealth: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, [fetchHealth]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

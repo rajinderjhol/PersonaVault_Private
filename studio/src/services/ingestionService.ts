@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -10,15 +10,15 @@ const api = axios.create({
 export const ingestionApi = {
   // Folder Ingestion
   ingestFolder: (folderPath: string, userId: number = 1, recursive: boolean = true) => 
-    api.post('/api/v1/ingestion/folder', { folder_path: folderPath, user_id: userId, recursive }),
+    api.post('/ingestion/folder', { folder_path: folderPath, user_id: userId, recursive }),
   
   // Job Status
   getJobStatus: (jobId: string) => 
-    api.get(`/api/v1/ingestion/job/${jobId}`),
+    api.get(`/ingestion/job/${jobId}`),
 
   // Supported Extensions
   getSupportedExtensions: () => 
-    api.get('/api/v1/ingestion/supported-extensions'),
+    api.get('/ingestion/supported-extensions'),
 };
 
 export default api;

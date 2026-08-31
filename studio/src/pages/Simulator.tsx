@@ -17,7 +17,7 @@ export const Simulator: React.FC = () => {
         '2026-01-01T00:00:00Z',
         '2026-08-31T23:59:59Z'
       );
-      setResults(response.data);
+      setResults(response);
     } catch (error) {
       console.error('Simulation error:', error);
     } finally {

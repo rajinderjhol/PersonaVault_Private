@@ -21,6 +21,7 @@ _EXEMPT_PATHS = {
     "/health/liveness",
     "/health/readiness",
     "/health/engine",
+    "/api/v1/auth/login",
 }
 
 async def rate_limiter(request: Request, call_next):

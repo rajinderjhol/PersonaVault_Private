@@ -26,25 +26,21 @@ export interface TraceDetail extends Trace {
 export const tracesAPI = {
   // Get recent traces for the feed
   getRecent: async (limit: number = 10): Promise<Trace[]> => {
-    const response = await apiClient.get(`/traces/recent?limit=${limit}`);
-    return response.data;
+    return await apiClient.get(`/traces/recent?limit=${limit}`);
   },
 
   // Get traces for a specific session
   getSessionTraces: async (sessionId: number): Promise<Trace[]> => {
-    const response = await apiClient.get(`/traces/session/${sessionId}`);
-    return response.data;
+    return await apiClient.get(`/traces/session/${sessionId}`);
   },
 
   // Get a single trace with full details
   getTrace: async (traceId: string): Promise<TraceDetail> => {
-    const response = await apiClient.get(`/traces/${traceId}`);
-    return response.data;
+    return await apiClient.get(`/traces/${traceId}`);
   },
 
   // Crystallize a trace
   crystallize: async (traceId: string): Promise<{ status: string; trace_id: string }> => {
-    const response = await apiClient.post(`/traces/${traceId}/crystallize`);
-    return response.data;
+    return await apiClient.post(`/traces/${traceId}/crystallize`);
   },
 };

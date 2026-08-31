@@ -17,17 +17,16 @@ export interface MCPIntegration {
 
 export const mcpAPI = {
   listTools: async (): Promise<MCPTool[]> => {
-    const response = await apiClient.get('/mcp/tools');
-    return response.data.tools || [];
+    const data = await apiClient.get<any>('/mcp/tools');
+    return data.tools || [];
   },
 
   callTool: async (toolName: string, params: Record<string, any>): Promise<any> => {
-    const response = await apiClient.post(`/mcp/call/${toolName}`, params);
-    return response.data;
+    return await apiClient.post(`/mcp/call/${toolName}`, params);
   },
 
   listIntegrations: async (): Promise<MCPIntegration[]> => {
-    const response = await apiClient.get('/integrations/');
-    return response.data || [];
+    const data = await apiClient.get<MCPIntegration[]>('/integrations/');
+    return data || [];
   },
 };

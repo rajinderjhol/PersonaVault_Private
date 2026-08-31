@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect, status, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -13,6 +13,7 @@ from app.db.session import get_db
 from app.models import User, IoTDevice, IoTData, LegalMatter, UserSession, Memory
 from app.utils.websocket import manager
 from app.services.custom import AGENT_STATUS, CRYSTALLIZATION_VELOCITY, PLASMA_ACTIVE
+from app.services.temporal_analysis_service import TemporalAnalysisService
 from app.api.v1.endpoints.dashboard.utils import (
     _safe_metric_get, _check_ollama, _check_gemini, _get_storage_usage, 
     _get_cpu_usage, _get_memory_usage
@@ -21,6 +22,42 @@ from app.api.v1.endpoints.dashboard.utils import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["admin"])
+
+@router.get("/temporal/metrics")
+async def get_temporal_metrics(
+    time_range: str = Query("30d"),
+    user_id: int = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        temporal_service = TemporalAnalysisService(db)
+        # Simplify date range calculation for now
+        days = int(time_range.replace('d', ''))
+        
+        # Calculate velocity
+        velocity_data = await temporal_service.calculate_decision_velocity(
+            user_id=user_id.id,
+            days=days
+        )
+        
+        # Mocking the rest of the expected data structure for TemporalIntelligenceWidget
+        return {
+            "velocity": velocity_data.get("velocity", 0.0),
+            "decayRate": 0.1,
+            "agingPatterns": 0,
+            "trendData": {
+                "dates": ["Day 1", "Day 15", "Day 30"],
+                "values": [0.2, 0.5, velocity_data.get("velocity", 0.0)]
+            },
+            "patternHealth": {
+                "healthy": 10,
+                "decaying": 2,
+                "critical": 0
+            }
+        }
+    except Exception as e:
+        logger.error(f"Temporal metrics error: {e}")
+        return {"error": str(e)}
 
 @router.get("/metrics")
 async def get_system_metrics(request: Request, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):

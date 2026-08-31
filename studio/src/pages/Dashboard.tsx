@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TimeFilter } from '../components/dashboard/TimeFilter';
+import { TemporalIntelligenceWidget } from '../components/dashboard/TemporalIntelligenceWidget';
 import { api } from '../services/api';
 import styles from './Dashboard.module.css';
 
@@ -25,27 +26,33 @@ export const Dashboard: React.FC = () => {
     range: '30d'
   });
 
-  useEffect(() => {
-    fetchMetrics();
-  }, [filter]);
-
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/v1/dashboard/metrics', {
+      const response = await api.get('/admin/dashboard/metrics', {
         params: {
           time_range: filter.range,
           start_date: filter.startDate,
           end_date: filter.endDate
         }
       });
-      setMetrics(response.data);
+      setMetrics(response);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter.endDate, filter.range, filter.startDate]);
+
+  useEffect(() => {
+    fetchMetrics();
+    
+    // Poll every 30 seconds
+    const interval = setInterval(fetchMetrics, 30000);
+    
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
+
 
   const handleFilterChange = (startDate: string, endDate: string, range: string) => {
     setFilter({ startDate, endDate, range });
@@ -102,7 +109,9 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Additional dashboard content */}
+      <div style={{ marginTop: '2rem' }}>
+        <TemporalIntelligenceWidget timeRange={filter.range} />
+      </div>
     </div>
   );
 };

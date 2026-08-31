@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/authStore';
 import { Lock, User } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
   const { login, isAuthenticating, error } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await login(username, password);
+    // After login, check auth status from the store
+    // Since login is async, we can check the state if we had a way to wait for it or just check it here.
+    // For now, let's rely on authStore's state.
   };
+
+  // Effect to redirect once authenticated
+  const { isAuthenticated } = useAuthStore();
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div style={{ 
-      display: 'flex', 
+      display: 'flex',
       justifyContent: 'center', 
       alignItems: 'center', 
       height: '100vh', 

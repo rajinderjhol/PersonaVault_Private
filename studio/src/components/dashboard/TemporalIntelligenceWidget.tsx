@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -12,7 +12,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { temporalService } from '../../services/temporalService';
+import { useTemporalInsightsQuery } from '../../hooks/query/useTemporalInsightsQuery';
 import styles from './TemporalIntelligenceWidget.module.css';
 
 ChartJS.register(
@@ -27,46 +27,14 @@ ChartJS.register(
   Filler
 );
 
-interface TemporalMetrics {
-  velocity: number;
-  decayRate: number;
-  agingPatterns: number;
-  trendData: {
-    dates: string[];
-    values: number[];
-  };
-  patternHealth: {
-    healthy: number;
-    decaying: number;
-    critical: number;
-  };
-}
-
 export const TemporalIntelligenceWidget: React.FC<{ timeRange: string }> = ({ timeRange }) => {
-  const [metrics, setMetrics] = useState<TemporalMetrics | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { data: metrics, isLoading, error } = useTemporalInsightsQuery(timeRange);
 
-  useEffect(() => {
-    fetchTemporalMetrics();
-  }, [timeRange]);
-
-  const fetchTemporalMetrics = async () => {
-    setLoading(true);
-    try {
-      const response = await temporalService.getTemporalInsights({ time_range: timeRange });
-      setMetrics(response.data);
-    } catch (error) {
-      console.error('Error fetching temporal metrics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return <div className={styles.loading}>Loading temporal intelligence...</div>;
   }
 
-  if (!metrics) {
+  if (error || !metrics) {
     return <div className={styles.error}>Failed to load temporal metrics</div>;
   }
 

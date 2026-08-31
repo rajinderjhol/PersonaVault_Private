@@ -33,23 +33,19 @@ export interface Suggestion {
 
 export const predictiveAPI = {
   getDrift: async (): Promise<DriftData> => {
-    const response = await apiClient.get('/predictive/drift');
-    return response.data;
+    return await apiClient.get('/predictive/drift');
   },
 
   getRisks: async (): Promise<RiskData> => {
-    const response = await apiClient.get('/predictive/risks');
-    return response.data;
+    return await apiClient.get('/predictive/risks');
   },
 
   getInsights: async (): Promise<Insight[]> => {
-    const response = await apiClient.get('/predictive/insights');
-    return response.data;
+    return await apiClient.get('/predictive/insights');
   },
 
   getSuggestions: async (): Promise<Suggestion[]> => {
-    const response = await apiClient.get('/predictive/suggestions');
-    return response.data;
+    return await apiClient.get('/predictive/suggestions');
   },
 
   dismissSuggestion: async (suggestionId: string): Promise<void> => {
@@ -57,7 +53,6 @@ export const predictiveAPI = {
   },
 
   executeSuggestion: async (suggestionId: string): Promise<any> => {
-    const response = await apiClient.post(`/predictive/suggestions/${suggestionId}/execute`);
-    return response.data;
+    return await apiClient.post(`/predictive/suggestions/${suggestionId}/execute`);
   },
 };

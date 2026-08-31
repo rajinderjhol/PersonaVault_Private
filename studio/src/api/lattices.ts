@@ -26,8 +26,7 @@ export interface LatticeData {
 
 export const latticesAPI = {
   getLattices: async (): Promise<LatticeData> => {
-    const response = await apiClient.get('/admin/dashboard/blackboard/snapshot');
-    const data = response.data;
+    const data = await apiClient.get<any>('/admin/dashboard/blackboard/snapshot');
     
     // Transform blackboard data into lattice format
     const nodes: LatticeNode[] = [];

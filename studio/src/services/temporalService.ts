@@ -36,11 +36,11 @@ export interface SearchResponse {
 export const temporalService = {
   // Existing metrics method
   getMetrics: (params: { time_range?: string; start_date?: string; end_date?: string }) =>
-    api.get('/api/v1/dashboard/metrics', { params }),
+    api.get('/admin/dashboard/metrics', { params }),
   
   // Enhanced search method with temporal filtering
   search: async (params: SearchParams): Promise<SearchResponse> => {
-    const response = await api.get('/api/v1/search', { 
+    const response = await api.get('/search', { 
       params: {
         query: params.query,
         time_range: params.time_range,
@@ -55,5 +55,5 @@ export const temporalService = {
   
   // Method to get temporal insights for the widget
   getTemporalInsights: (params?: { time_range?: string }) =>
-    api.get('/api/v1/temporal/metrics', { params })
+    api.get('/admin/dashboard/temporal/metrics', { params })
 };

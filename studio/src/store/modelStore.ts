@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import { apiClient } from '../api/client';
 
 export interface AIModel {
   model_name: string;
@@ -26,13 +26,13 @@ export const useModelStore = create<ModelState>((set, get) => ({
   fetchModels: async () => {
     set({ isLoading: true });
     try {
-      const response = await axios.get('/api/v1/admin/models');
-      console.log('API Response Models:', response.data);
-      set({ models: response.data, isLoading: false });
+      const data = await apiClient.get('/admin/models');
+      console.log('API Response Models:', data);
+      set({ models: data, isLoading: false });
       
       // Auto-select first model if none selected
-      if (response.data.length > 0 && !get().selectedModel) {
-        set({ selectedModel: response.data[0].id });
+      if (data.length > 0 && !get().selectedModel) {
+        set({ selectedModel: data[0].id });
       }
     } catch (err) {
       console.error('Failed to fetch models:', err);

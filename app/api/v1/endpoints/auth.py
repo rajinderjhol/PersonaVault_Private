@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.db.session import get_db
 from app.models import User, UserSession
 import uuid
+import os
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 import logging
@@ -78,14 +79,17 @@ async def login(payload: LoginRequest, response: Response, request: Request, db:
     await db.commit()
     await db.refresh(user)
 
-    max_age = 60 * 60 * 24 * 30 if payload.stay_signed_in else None
+    # Detect if we are in Cloud Shell or Development to set appropriate cookie flags
+    is_dev = os.getenv("APP_ENV") == "development" or os.getenv("CLOUD_SHELL") == "true"
+    max_age = 30 * 24 * 60 * 60 if payload.stay_signed_in else 24 * 60 * 60
+    
     response.set_cookie(
         key="session_id",
         value=session_token,
         httponly=True,
-        secure=False,  # Set to False to allow session cookies over HTTP in development
+        secure=True if is_dev else False, # Secure must be True for SameSite=None
         max_age=max_age,
-        samesite="lax",
+        samesite="none" if is_dev else "lax",
         path="/",
     )
     
@@ -98,7 +102,6 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @router.post("/logout")
 async def logout(
     request: Request,
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -112,7 +115,6 @@ async def logout(
             # Find and deactivate the session
             stmt = select(UserSession).where(
                 UserSession.session_token == session_token,
-                UserSession.user_id == current_user.id,
                 UserSession.is_active == True
             )
             result = await db.execute(stmt)
@@ -122,7 +124,7 @@ async def logout(
                 session.is_active = False
                 # Assuming ended_at column exists, if not, skip this
                 if hasattr(session, 'ended_at'):
-                    session.ended_at = datetime.utcnow()
+                    session.ended_at = datetime.now(timezone.utc).replace(tzinfo=None)
                 await db.commit()
         
         # Clear the cookie

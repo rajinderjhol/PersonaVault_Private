@@ -1,9 +1,21 @@
 import React from 'react';
 import { Search, Bell, LogOut, User } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useLocation } from 'react-router-dom';
 
 const CorePanel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuthStore();
+  const location = useLocation();
+  
+  const getBreadcrumb = () => {
+    const path = location.pathname;
+    if (path === '/') return 'Dashboard';
+    if (path === '/chat') return 'Cognitive Lab';
+    if (path === '/search') return 'Universal Search';
+    if (path === '/ingestion') return 'Intelligence Vault';
+    if (path === '/simulator') return 'Policy Simulator';
+    return 'Studio';
+  };
   
   return (
     <main style={{
@@ -12,24 +24,26 @@ const CorePanel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       display: 'flex',
       flexDirection: 'column',
       backgroundColor: 'var(--color-bg-primary)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      position: 'relative'
     }}>
       {/* Header */}
-      <header style={{
+      <header className="glass-panel" style={{
         height: 'var(--header-height)',
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid var(--glass-border)',
-        backgroundColor: 'rgba(15, 23, 42, 0.5)',
-        backdropFilter: 'var(--glass-blur)'
+        borderTop: 'none',
+        borderLeft: 'none',
+        borderRight: 'none',
+        zIndex: 5
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
             <span>Studio</span>
             <span>/</span>
-            <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>Cognitive Lab</span>
+            <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{getBreadcrumb()}</span>
           </div>
         </div>
 

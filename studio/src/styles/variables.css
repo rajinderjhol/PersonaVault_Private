@@ -29,11 +29,45 @@
   
   /* Glassmorphism */
   --glass-bg: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(12px);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  /* Cyber-Industrial Accents */
+  --glow-cyan: 0 0 15px rgba(0, 242, 255, 0.4);
+  --glow-blue: 0 0 15px rgba(59, 130, 246, 0.4);
   
   /* Transitions */
   --transition-speed: 0.3s;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.cyber-button {
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid var(--color-gas);
+  color: var(--color-gas);
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--glow-cyan);
+}
+
+.cyber-button:hover {
+  background: var(--color-gas);
+  color: var(--color-bg-primary);
+  box-shadow: 0 0 25px rgba(0, 242, 255, 0.6);
 }
 
 body {
