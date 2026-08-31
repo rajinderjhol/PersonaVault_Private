@@ -32,42 +32,33 @@ export const Dashboard: React.FC = () => {
         <div className={styles.metricCard}>
           <div className={styles.metricIcon}>📊</div>
           <div className={styles.metricContent}>
-            <div className={styles.metricLabel}>Total Decisions</div>
-            <div className={styles.metricValue}>{metrics?.total_events || 0}</div>
-            <div className={`${styles.metricTrend} ${metrics?.temporal_trend === 'improving' ? styles.trendUp : ''}`}>
-              {metrics?.temporal_trend || 'stable'}
-            </div>
+            <div className={styles.metricLabel}>Total Memories</div>
+            <div className={styles.metricValue}>{metrics?.memories?.total || 0}</div>
+            <div className={styles.metricTrend}>stable</div>
           </div>
         </div>
 
         <div className={styles.metricCard}>
           <div className={styles.metricIcon}>🎯</div>
           <div className={styles.metricContent}>
-            <div className={styles.metricLabel}>Avg Confidence</div>
-            <div className={styles.metricValue}>{((metrics?.confidence_avg || 0) * 100).toFixed(1)}%</div>
-            <div className={styles.metricTrend}>+2.3%</div>
+            <div className={styles.metricLabel}>Active Sessions</div>
+            <div className={styles.metricValue}>{metrics?.sessions?.active || 0}</div>
           </div>
         </div>
 
         <div className={styles.metricCard}>
           <div className={styles.metricIcon}>⚡</div>
           <div className={styles.metricContent}>
-            <div className={styles.metricLabel}>Decision Velocity</div>
-            <div className={styles.metricValue}>{metrics?.velocity?.toFixed(2) || '0.00'}</div>
-            <div className={styles.metricTrend}>
-              {metrics?.velocity && metrics.velocity > 0.5 ? '🚀 accelerating' : '⚖️ stable'}
-            </div>
+            <div className={styles.metricLabel}>Crystallization Rate</div>
+            <div className={styles.metricValue}>{metrics?.system?.thermodynamics?.crystallization_rate?.toFixed(2) || '0.00'}</div>
           </div>
         </div>
 
         <div className={styles.metricCard}>
           <div className={styles.metricIcon}>⚠️</div>
           <div className={styles.metricContent}>
-            <div className={styles.metricLabel}>Aging Patterns</div>
-            <div className={styles.metricValue}>{metrics?.aging_patterns_count || 0}</div>
-            <div className={styles.metricTrend}>
-              {metrics?.aging_patterns_count && metrics.aging_patterns_count > 0 ? 'needs review' : '✅ healthy'}
-            </div>
+            <div className={styles.metricLabel}>Storage Used</div>
+            <div className={styles.metricValue}>{metrics?.system?.storage_used?.used_percent || 0}%</div>
           </div>
         </div>
       </div>

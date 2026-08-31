@@ -107,11 +107,14 @@ async def get_system_metrics(request: Request, user_id: int = Depends(require_ad
 
 @router.websocket("/ws/{client_id}")
 async def dashboard_websocket_endpoint(websocket: WebSocket, client_id: str):
+    logger.info(f"WebSocket connection attempt for {client_id}")
     if websocket.client_state.value == 0:
         await websocket.accept()
 
     session_id = websocket.cookies.get("session_id")
+    logger.info(f"WebSocket auth session_id: {session_id}")
     if not session_id:
+        logger.warning(f"WebSocket auth failed for {client_id}: No session_id cookie.")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 

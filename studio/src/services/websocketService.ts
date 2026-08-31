@@ -91,7 +91,7 @@ let wsService: WebSocketService | null = null;
 export const getWebSocketService = (): WebSocketService => {
   if (!wsService) {
     const clientId = Math.random().toString(36).substring(7);
-    const wsUrl = import.meta.env.VITE_WS_URL || `ws://localhost:8000/api/v1/admin/dashboard/ws/${clientId}`;
+    const wsUrl = import.meta.env.VITE_WS_URL || `/api/v1/admin/dashboard/ws/${clientId}`;
     wsService = new WebSocketService(wsUrl);
   }
   return wsService;

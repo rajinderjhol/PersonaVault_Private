@@ -49,7 +49,7 @@ export const AgentSwarmUI: React.FC<AgentSwarmUIProps> = ({
 
     return () => {
       unsubscribe();
-      ws.disconnect();
+      // ws.disconnect(); // Commented out to prevent unnecessary disconnects on StrictMode double-invocations
     };
   }, [isActive]);
 
