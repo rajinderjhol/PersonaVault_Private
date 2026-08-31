@@ -91,7 +91,7 @@ export const DecisionReplay: React.FC = () => {
           <div className="modal-content">
             <button onClick={() => setShowGraph(false)}>Close</button>
             <DecisionGraph 
-              decisionId={currentTrace.decision_id}
+              decisionId={currentTrace.id}
               onNodeClick={(node) => setSelectedNode(node)}
             />
             {selectedNode && (

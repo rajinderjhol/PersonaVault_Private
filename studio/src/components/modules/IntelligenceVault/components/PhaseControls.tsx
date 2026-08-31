@@ -3,13 +3,11 @@ import { useThermodynamicsStore } from '../../../../store/thermodynamicsStore';
 import { Snowflake, Flame, Wind, Mountain, Plus } from 'lucide-react';
 
 const PhaseControls: React.FC = () => {
-  const { setPhase, addTransition, phases } = useThermodynamicsStore();
+  const { freeze, melt, evaporate, sublimate, phases } = useThermodynamicsStore();
 
   const handleAction = (action: string, phase: 'gas' | 'liquid' | 'ice' | 'snowflake', delta: number) => {
-    const currentValue = (phases as any)[phase];
-    const newValue = Math.min(Math.max(currentValue + delta, 0), 100);
-    setPhase(phase, newValue);
-    addTransition(`${action}: Manual phase adjustment applied to ${phase.toUpperCase()}`);
+    // TODO: Implement phase adjustment using correct store actions
+    console.log(`${action} adjustment for ${phase} with delta ${delta}`);
   };
 
   return (

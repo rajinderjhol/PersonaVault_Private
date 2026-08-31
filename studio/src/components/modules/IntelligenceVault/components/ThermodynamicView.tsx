@@ -37,28 +37,28 @@ const ThermodynamicView: React.FC = () => {
         <Layer 
           name="Gas (Working)" 
           color="var(--color-gas)" 
-          percentage={phases.gas} 
+          percentage={phases?.gas ?? 0} 
           icon={<Wind size={14} />} 
           description="Transient context and IoT data"
         />
         <Layer 
           name="Liquid (Episodic)" 
           color="var(--color-liquid)" 
-          percentage={phases.liquid} 
+          percentage={phases?.liquid ?? 0} 
           icon={<Droplets size={14} />} 
           description="Interaction history and logs"
         />
         <Layer 
           name="Ice (Semantic)" 
           color="var(--color-ice)" 
-          percentage={phases.ice} 
+          percentage={phases?.ice ?? 0} 
           icon={<Snowflake size={14} />} 
           description="Crystallized patterns"
         />
         <Layer 
           name="Snowflakes (Domain)" 
           color="#a5f3fc" 
-          percentage={phases.snowflake} 
+          percentage={phases?.snowflakes ?? 0} 
           icon={<Sparkles size={14} />} 
           description="Specialized domain variants"
         />

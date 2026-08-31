@@ -30,7 +30,7 @@ const ThoughtNarrative: React.FC = () => {
             exit={{ opacity: 0 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
           >
-            {latestThought.split('...').map((t, i) => t.trim() && (
+            {latestThought.split('...').map((t: string, i: number) => t.trim() && (
               <div key={i} style={{ display: 'flex', gap: '8px', color: i === latestThought.split('...').length - 2 ? 'var(--color-gas)' : 'var(--color-text-muted)' }}>
                 <span style={{ opacity: 0.5 }}>{'>'}</span>
                 <span>{t.trim()}...</span>

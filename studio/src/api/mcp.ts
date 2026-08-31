@@ -1,10 +1,14 @@
 import { apiClient } from './client';
 
 export interface MCPTool {
+  id: string;
   name: string;
   description: string;
   parameters: Record<string, string>;
   enabled: boolean;
+  type: 'server' | 'client';
+  status: 'active' | 'inactive';
+  usageCount: number;
 }
 
 export interface MCPIntegration {

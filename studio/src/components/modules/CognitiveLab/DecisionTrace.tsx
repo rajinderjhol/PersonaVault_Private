@@ -44,7 +44,7 @@ export const DecisionTrace: React.FC<DecisionTraceProps> = ({ onTraceComplete })
     setIsActive(true);
 
     // Update trace steps based on thought narrative
-    const updatedSteps = traceSteps.map((step) => {
+    const updatedSteps = traceSteps.map((step): TraceStep => {
       // Check if this step has been completed in the thought narrative
       const thoughtMatch = steps.find((s) => 
         s.label.toLowerCase().includes(step.label.toLowerCase()) ||
@@ -52,7 +52,7 @@ export const DecisionTrace: React.FC<DecisionTraceProps> = ({ onTraceComplete })
       );
 
       if (thoughtMatch) {
-        const newStatus = thoughtMatch.status === 'in_progress' ? 'in_progress' : 'complete';
+        const newStatus = (thoughtMatch.status === 'in_progress' ? 'in_progress' : 'complete') as 'pending' | 'in_progress' | 'complete' | 'error';
         return { ...step, status: newStatus, description: thoughtMatch.description };
       }
 

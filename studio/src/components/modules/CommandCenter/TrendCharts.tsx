@@ -49,21 +49,25 @@ export const TrendCharts: React.FC = () => {
     ctx.fillStyle = '#94a3b8';
     ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    trends.forEach((trend, index) => {
-      const x = padding.left + (chartWidth / (trends.length - 1)) * index;
-      ctx.fillText(trend.label, x, canvas.height - 5);
-    });
+    
+    // Use the labels from the first domain if available
+    if (trends.length > 0) {
+      trends[0].labels.forEach((label, index) => {
+        const x = padding.left + (chartWidth / (trends[0].labels.length - 1)) * index;
+        ctx.fillText(label, x, canvas.height - 5);
+      });
+    }
 
     // Draw trends
     const colors = ['#3b82f6', '#10b981', '#f472b6', '#f59e0b', '#8b5cf6'];
-    domains.forEach((domain, domainIndex) => {
+    trends.forEach((trend, domainIndex) => {
       const color = colors[domainIndex % colors.length];
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
 
       ctx.beginPath();
-      domain.values.forEach((value, index) => {
-        const x = padding.left + (chartWidth / (domain.values.length - 1)) * index;
+      trend.values.forEach((value: number, index: number) => {
+        const x = padding.left + (chartWidth / (trend.values.length - 1)) * index;
         const y = padding.top + chartHeight - (value / 100) * chartHeight;
         if (index === 0) {
           ctx.moveTo(x, y);
@@ -74,8 +78,8 @@ export const TrendCharts: React.FC = () => {
       ctx.stroke();
 
       // Draw points
-      domain.values.forEach((value, index) => {
-        const x = padding.left + (chartWidth / (domain.values.length - 1)) * index;
+      trend.values.forEach((value: number, index: number) => {
+        const x = padding.left + (chartWidth / (trend.values.length - 1)) * index;
         const y = padding.top + chartHeight - (value / 100) * chartHeight;
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
@@ -88,14 +92,14 @@ export const TrendCharts: React.FC = () => {
     let legendX = padding.left + 10;
     const legendY = padding.top + 10;
     ctx.font = '11px system-ui, sans-serif';
-    domains.forEach((domain, index) => {
+    trends.forEach((trend, index) => {
       const color = colors[index % colors.length];
       ctx.fillStyle = color;
       ctx.fillRect(legendX, legendY, 12, 12);
       ctx.fillStyle = '#0f172a';
       ctx.textAlign = 'left';
-      ctx.fillText(domain.name, legendX + 16, legendY + 10);
-      legendX += ctx.measureText(domain.name).width + 30;
+      ctx.fillText(trend.name, legendX + 16, legendY + 10);
+      legendX += ctx.measureText(trend.name).width + 30;
     });
 
     // Draw title

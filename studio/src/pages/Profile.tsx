@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useUserQuery, useUpdateUserMutation } from '../hooks/query/useUserQuery';
 
+interface UserProfile {
+  name?: string;
+  email?: string;
+}
+
 export const Profile: React.FC = () => {
   const { data, isLoading, error } = useUserQuery();
   const updateMutation = useUpdateUserMutation();
   const [formData, setFormData] = useState({ name: '', email: '' });
 
   useEffect(() => {
-    if (data) {
-      setFormData({ name: data.name || '', email: data.email || '' });
+    const profile = data as UserProfile | undefined;
+    if (profile) {
+      setFormData({ name: profile.name || '', email: profile.email || '' });
     }
   }, [data]);
 

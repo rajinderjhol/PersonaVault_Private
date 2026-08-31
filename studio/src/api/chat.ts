@@ -4,6 +4,7 @@ export interface ChatMessage {
   id: number;
   role: 'user' | 'assistant';
   content: string;
+  thought?: string;
   provider?: string;
   trace_ids?: Record<string, string>;
   created_at: string;

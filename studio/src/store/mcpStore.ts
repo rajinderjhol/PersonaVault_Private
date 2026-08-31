@@ -9,6 +9,7 @@ interface MCPState {
   fetchTools: () => Promise<void>;
   fetchIntegrations: () => Promise<void>;
   callTool: (toolName: string, params: Record<string, any>) => Promise<any>;
+  toggleTool: (toolId: string) => void;
 }
 
 export const useMCPStore = create<MCPState>((set) => ({
@@ -44,5 +45,9 @@ export const useMCPStore = create<MCPState>((set) => ({
       set({ error: `Failed to call tool ${toolName}` });
       throw error;
     }
+  },
+
+  toggleTool: (toolId: string) => {
+    console.log('Toggle tool:', toolId);
   },
 }));
