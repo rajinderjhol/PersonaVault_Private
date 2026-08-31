@@ -317,17 +317,20 @@ __all__ = [
     'UserWidget',
     'UserPersona',
     'WorkflowTask',
-    'PendingAction'
+    'PendingAction',
+    'SimulationJob'
 ]
 
 # Learning models
 from app.models.learning.behaviour_event import BehaviourEvent
 from app.models.learning.decision_trajectory import DecisionTrajectory
 from app.models.learning.policy import Policy
-from app.models.evidence import EvidenceBlock, DecisionEvidenceLink, DocumentIngestionJob
+from app.models.evidence import EvidenceBlock, DecisionEvidenceLink, DocumentIngestionJob, BulkIngestionJob
+from app.models.simulation import SimulationJob
 # Behaviour Pack models
 from app.models.learning.behaviour_pack import BehaviourPack
 from app.models.learning.behaviour_event import BehaviourEvent
 from app.models.learning.decision_trajectory import DecisionTrajectory
 from app.models.learning.policy import Policy
-from app.models.evidence import EvidenceBlock, DecisionEvidenceLink, DocumentIngestionJob
+from app.models.evidence import EvidenceBlock, DecisionEvidenceLink, DocumentIngestionJob, BulkIngestionJob
+from app.models.simulation import SimulationJob

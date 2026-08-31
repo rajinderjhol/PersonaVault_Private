@@ -23,6 +23,7 @@ class EvidenceBlock(Base):
     quality_score = Column(Float, default=0.0)
     is_qualified = Column(Boolean, default=False)
     tags = Column(JSON, default=[])
+    verifiable_attestation = Column(String(255), nullable=True)
     extracted_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -62,6 +63,22 @@ class DocumentIngestionJob(Base):
     status = Column(String(20), default="pending")  # pending, processing, completed, failed
     total_blocks = Column(Integer, default=0)
     qualified_blocks = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    job_metadata = Column(JSON, default={})
+
+class BulkIngestionJob(Base):
+    """Tracks bulk ingestion jobs."""
+    __tablename__ = "bulk_ingestion_jobs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(String(64), unique=True, index=True, nullable=False)
+    folder_path = Column(String(512), nullable=False)
+    status = Column(String(20), default="pending")
+    total_files = Column(Integer, default=0)
+    successful_files = Column(Integer, default=0)
+    failed_files = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)

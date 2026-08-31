@@ -1,0 +1,33 @@
+.container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.inputGroup {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  background-color: #38bdf8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.statusBox {
+  background: #f1f5f9;
+  padding: 1rem;
+  border-radius: 8px;
+}

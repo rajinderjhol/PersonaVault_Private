@@ -202,6 +202,11 @@ class EvidenceExtractor:
             clauses["Full Text"] = text
         return clauses
     
+    def _generate_attestation(self, content: str, metadata: Dict) -> str:
+        """Generate a basic attestation for the evidence block."""
+        data_to_sign = f"{content[:100]}{json.dumps(metadata)}{datetime.utcnow().isoformat()}"
+        return f"vap:sha256:{hashlib.sha256(data_to_sign.encode()).hexdigest()[:32]}"
+
     async def _store_evidence_block(self, block_data: Dict, job_id: int) -> Dict:
         content = block_data.get("content", "")
         content_hash = hashlib.sha256(content.encode()).hexdigest()
@@ -225,6 +230,8 @@ class EvidenceExtractor:
         })
         assessment = EvidenceQualityAssessment.assess(temp_block)
         
+        attestation = self._generate_attestation(content, block_data.get("metadata", {}))
+        
         block = EvidenceBlock(
             block_id=block_id,
             content=content,
@@ -237,6 +244,7 @@ class EvidenceExtractor:
             quality_score=assessment["score"],
             is_qualified=assessment["is_qualified"],
             tags=block_data.get("tags", []),
+            verifiable_attestation=attestation,
             extracted_at=datetime.utcnow()
         )
         
