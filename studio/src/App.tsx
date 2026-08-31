@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
 import { DataIngestion } from './pages/DataIngestion';
 import { Simulator } from './pages/Simulator';
+import { Marketplace } from './pages/Marketplace';
 
 // Components
 import { AgentSwarmUI } from './components/chat/AgentSwarmUI';
@@ -36,7 +37,7 @@ function App() {
                 <Route path="/simulator" element={<Simulator />} />
                 
                 {/* Placeholder routes */}
-                <Route path="/marketplace" element={<div>Marketplace Component</div>} />
+                <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/security" element={<div>Security Center Component</div>} />
                 <Route path="/mcp" element={<div>MCP Center Component</div>} />
                 <Route path="/trust" element={<div>Device Trust Component</div>} />
