@@ -4,6 +4,23 @@ import { TemporalIntelligenceWidget } from '../components/dashboard/TemporalInte
 import { useDashboardMetricsQuery } from '../hooks/query/useDashboardMetricsQuery';
 import styles from './Dashboard.module.css';
 
+interface DashboardMetrics {
+  memories?: {
+    total: number;
+  };
+  sessions?: {
+    active: number;
+  };
+  system?: {
+    thermodynamics?: {
+      crystallization_rate: number;
+    };
+    storage_used?: {
+      used_percent: number;
+    };
+  };
+}
+
 export const Dashboard: React.FC = () => {
   const [filter, setFilter] = useState<{
     startDate: string;
@@ -15,7 +32,8 @@ export const Dashboard: React.FC = () => {
     range: '30d'
   });
 
-  const { data: metrics, isLoading } = useDashboardMetricsQuery(filter);
+  const { data, isLoading } = useDashboardMetricsQuery(filter);
+  const metrics = data as DashboardMetrics | undefined;
 
   const handleFilterChange = (startDate: string, endDate: string, range: string) => {
     setFilter({ startDate, endDate, range });
@@ -33,7 +51,7 @@ export const Dashboard: React.FC = () => {
           <div className={styles.metricIcon}>📊</div>
           <div className={styles.metricContent}>
             <div className={styles.metricLabel}>Total Memories</div>
-            <div className={styles.metricValue}>{metrics?.memories?.total || 0}</div>
+            <div className={styles.metricValue}>{metrics?.memories?.total ?? 0}</div>
             <div className={styles.metricTrend}>stable</div>
           </div>
         </div>
@@ -42,7 +60,7 @@ export const Dashboard: React.FC = () => {
           <div className={styles.metricIcon}>🎯</div>
           <div className={styles.metricContent}>
             <div className={styles.metricLabel}>Active Sessions</div>
-            <div className={styles.metricValue}>{metrics?.sessions?.active || 0}</div>
+            <div className={styles.metricValue}>{metrics?.sessions?.active ?? 0}</div>
           </div>
         </div>
 
@@ -50,7 +68,7 @@ export const Dashboard: React.FC = () => {
           <div className={styles.metricIcon}>⚡</div>
           <div className={styles.metricContent}>
             <div className={styles.metricLabel}>Crystallization Rate</div>
-            <div className={styles.metricValue}>{metrics?.system?.thermodynamics?.crystallization_rate?.toFixed(2) || '0.00'}</div>
+            <div className={styles.metricValue}>{metrics?.system?.thermodynamics?.crystallization_rate?.toFixed(2) ?? '0.00'}</div>
           </div>
         </div>
 
@@ -58,7 +76,7 @@ export const Dashboard: React.FC = () => {
           <div className={styles.metricIcon}>⚠️</div>
           <div className={styles.metricContent}>
             <div className={styles.metricLabel}>Storage Used</div>
-            <div className={styles.metricValue}>{metrics?.system?.storage_used?.used_percent || 0}%</div>
+            <div className={styles.metricValue}>{metrics?.system?.storage_used?.used_percent ?? 0}%</div>
           </div>
         </div>
       </div>
