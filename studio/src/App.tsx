@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
 import AppLayout from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Login from './components/modules/Login/Login';
@@ -14,6 +15,12 @@ import { Simulator } from './pages/Simulator';
 import { AgentSwarmUI } from './components/chat/AgentSwarmUI';
 
 function App() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <Router>
       <Routes>
@@ -23,7 +30,7 @@ function App() {
             <AppLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/chat" element={<AgentSwarmUI isActive={true} messages={[]} />} />
+                <Route path="/chat" element={<AgentSwarmUI isActive={true} />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/ingestion" element={<DataIngestion />} />
                 <Route path="/simulator" element={<Simulator />} />

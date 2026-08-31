@@ -1,20 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import LeftPanel from './LeftPanel';
 import CorePanel from './CorePanel';
 import RightPanel from './RightPanel';
-import { useAuthStore } from '../../store/authStore';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const { checkAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
   return (
     <div className="app-layout" style={{
       display: 'flex',
