@@ -48,6 +48,7 @@ from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
 from app.api.v1.endpoints.packs import router as packs_router
 from app.api.v1.endpoints.compiler import router as compiler_router
+from app.api.v1.endpoints.models import router as models_router
 from app.api.v1.endpoints.trust import router as trust_router
 from app.api.v1.endpoints.privacy import router as privacy_router
 from app.api.v1.endpoints.security import router as security_router
@@ -416,6 +417,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(security_router, prefix="/api/v1", tags=["security"])
 app.include_router(mcp.router, prefix="/api/v1", tags=["mcp"])
 app.include_router(compiler_router, prefix="/api/v1", tags=["compiler"])
+app.include_router(models_router, prefix="/api/v1", tags=["models"])
 app.include_router(trust_router, prefix="/api/v1", tags=["trust"])
 app.include_router(user_profile.router, prefix="/api/v1", tags=["user-profile"])
 app.include_router(organization.router, prefix="/api/v1", tags=["organizations"])
@@ -729,16 +731,19 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    # Configure uvicorn to also log to uvicorn.log
+    from logging.handlers import RotatingFileHandler
+    # Configure uvicorn to log to a rotating file
     LOGGING_CONFIG["handlers"]["file"] = {
-        "class": "logging.FileHandler",
+        "class": "logging.handlers.RotatingFileHandler",
         "filename": "storage/logs/uvicorn.log",
         "formatter": "default",
+        "maxBytes": 1024 * 1024,  # 1MB per file
+        "backupCount": 3,         # Keep 3 backups
     }
     LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"].append("file")
     LOGGING_CONFIG["loggers"]["uvicorn.access"] = {
         "handlers": ["file"],
-        "level": "INFO",
+        "level": "WARNING",  # Reduce verbosity: only log WARNING or higher
         "propagate": False,
     }
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_config=LOGGING_CONFIG)
