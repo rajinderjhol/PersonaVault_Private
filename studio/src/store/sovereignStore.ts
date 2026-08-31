@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { modeAPI, ModeConfig } from '../api/mode';
 
-type ExecutionMode = 'standard' | 'restricted' | 'simulation' | 'audit';
+export type ExecutionMode = 'standard' | 'restricted' | 'simulation' | 'audit';
 
 interface SovereignState {
   executionMode: ExecutionMode;

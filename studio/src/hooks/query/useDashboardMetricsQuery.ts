@@ -11,13 +11,14 @@ export const useDashboardMetricsQuery = (filter: {
   
   return useQuery({
     queryKey: ['dashboardMetrics', filter],
-    queryFn: () => api.get('/admin/dashboard/metrics', {
-        params: {
-          time_range: filter.range,
-          start_date: filter.startDate,
-          end_date: filter.endDate
-        }
-      }),
+    queryFn: () => {
+      const params = new URLSearchParams({
+        time_range: filter.range,
+        start_date: filter.startDate,
+        end_date: filter.endDate
+      });
+      return api.get(`/admin/dashboard/metrics?${params.toString()}`);
+    },
     enabled: isAuthenticated,
   });
 };

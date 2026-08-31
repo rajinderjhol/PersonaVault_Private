@@ -7,15 +7,15 @@ console.log('🔌 API Client VITE_API_URL:', import.meta.env.VITE_API_URL);
 console.log('🔌 API Client using base:', API_BASE_URL);
 
 export interface ApiClient {
-  get: <T = any>(endpoint: string, options?: { params?: Record<string, any> }) => Promise<T>;
-  post: <T = any>(endpoint: string, data?: any) => Promise<T>;
-  put: <T = any>(endpoint: string, data?: any) => Promise<T>;
-  patch: <T = any>(endpoint: string, data?: any) => Promise<T>;
-  delete: <T = any>(endpoint: string) => Promise<T>;
+  get: <T = any>(endpoint: string, options?: { params?: Record<string, any>; responseType?: 'stream' | 'json' }) => Promise<T>;
+  post: <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }) => Promise<T>;
+  put: <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }) => Promise<T>;
+  patch: <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }) => Promise<T>;
+  delete: <T = any>(endpoint: string, options?: { responseType?: 'stream' | 'json' }) => Promise<T>;
 }
 
 export const apiClient: ApiClient = {
-  get: async <T = any>(endpoint: string, options?: { params?: Record<string, any> }): Promise<T> => {
+  get: async <T = any>(endpoint: string, options?: { params?: Record<string, any>; responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       // Ensure endpoint starts with / and doesn't duplicate v1
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -54,7 +54,7 @@ export const apiClient: ApiClient = {
       throw error;
     }
   },
-  post: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+  post: async <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const baseUrl = API_BASE_URL.startsWith('http') 
@@ -75,7 +75,7 @@ export const apiClient: ApiClient = {
       throw error;
     }
   },
-  put: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+  put: async <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const baseUrl = API_BASE_URL.startsWith('http') 
@@ -96,7 +96,7 @@ export const apiClient: ApiClient = {
       throw error;
     }
   },
-  patch: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+  patch: async <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const baseUrl = API_BASE_URL.startsWith('http') 
@@ -117,7 +117,7 @@ export const apiClient: ApiClient = {
       throw error;
     }
   },
-  delete: async <T = any>(endpoint: string): Promise<T> => {
+  delete: async <T = any>(endpoint: string, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const baseUrl = API_BASE_URL.startsWith('http') 

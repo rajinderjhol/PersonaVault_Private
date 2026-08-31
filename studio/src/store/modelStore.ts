@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { apiClient } from '../api/client';
 
 export interface AIModel {
+  id: string;
+  name: string;
   model_name: string;
   provider_type: string;
   description: string;
