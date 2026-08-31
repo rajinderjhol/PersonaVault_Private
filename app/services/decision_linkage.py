@@ -35,6 +35,11 @@ class DecisionLinkageEngine:
         if not decision:
             raise ValueError(f"Decision {decision_id} not found")
         
+        # Integrate with GraphService
+        from app.services.graph_service import graph_service
+        # Assume decision_id string for GraphService
+        d_id_str = str(decision_id)
+        
         # Validate evidence blocks exist and create links
         linked = []
         for evidence_id in evidence_ids:
@@ -54,6 +59,12 @@ class DecisionLinkageEngine:
             )
             self.db.add(link)
             linked.append({"evidence_id": evidence_id})
+            
+            # Graph link
+            graph_service.link_decision_to_evidence(
+                decision_id=d_id_str,
+                evidence_id=str(evidence.block_id)
+            )
         
         await self.db.commit()
         

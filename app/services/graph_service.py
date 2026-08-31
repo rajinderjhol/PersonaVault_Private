@@ -50,18 +50,44 @@ class GraphService:
             self.driver = None
 
     @retry_on_failure(max_retries=3, delay=1)
-    def create_memory_node(self, memory_id: int, title: str, user_id: int):
-        """Create a memory node in Neo4j."""
-        if not self.driver:
-            return
-        try:
-            with self.driver.session() as session:
-                session.run(
-                    "MERGE (m:Memory {id: $id}) SET m.title = $title, m.user_id = $user_id",
-                    id=memory_id, title=title, user_id=user_id
-                )
-        except Exception as e:
-            logger.error(f"GraphService: Error creating node for memory_id={memory_id}: {e}")
+    def create_decision_node(self, decision_id: str, query: str, pack: str, timestamp: str, confidence: float):
+        """Create a decision node in Neo4j."""
+        if not self.driver: return
+        with self.driver.session() as session:
+            session.run(
+                "MERGE (d:Decision {id: $id}) SET d.query = $query, d.pack = $pack, d.timestamp = $timestamp, d.confidence = $confidence",
+                id=decision_id, query=query, pack=pack, timestamp=timestamp, confidence=confidence
+            )
+
+    @retry_on_failure(max_retries=3, delay=1)
+    def create_evidence_node(self, evidence_id: str, source_type: str, quality_score: float):
+        """Create an evidence node in Neo4j."""
+        if not self.driver: return
+        with self.driver.session() as session:
+            session.run(
+                "MERGE (e:Evidence {id: $id}) SET e.source_type = $source_type, e.quality_score = $quality_score",
+                id=evidence_id, source_type=source_type, quality_score=quality_score
+            )
+
+    @retry_on_failure(max_retries=3, delay=1)
+    def link_decision_to_evidence(self, decision_id: str, evidence_id: str):
+        """Create a USES_EVIDENCE relationship."""
+        if not self.driver: return
+        with self.driver.session() as session:
+            session.run(
+                "MATCH (d:Decision {id: $did}), (e:Evidence {id: $eid}) MERGE (d)-[:USES_EVIDENCE]->(e)",
+                did=decision_id, eid=evidence_id
+            )
+
+    @retry_on_failure(max_retries=3, delay=1)
+    def link_decision_to_policy(self, decision_id: str, policy_key: str):
+        """Create a FOLLOWS_POLICY relationship."""
+        if not self.driver: return
+        with self.driver.session() as session:
+            session.run(
+                "MATCH (d:Decision {id: $did}) MERGE (p:Policy {key: $pk}) MERGE (d)-[:FOLLOWS_POLICY]->(p)",
+                did=decision_id, pk=policy_key
+            )
 
     @retry_on_failure(max_retries=3, delay=1)
     def create_relationship(self, memory_id1: int, memory_id2: int, relation_type: str):

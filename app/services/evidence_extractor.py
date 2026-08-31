@@ -252,4 +252,12 @@ class EvidenceExtractor:
         await self.db.flush()
         await self.db.refresh(block)
         
+        # Integrate with GraphService
+        from app.services.graph_service import graph_service
+        graph_service.create_evidence_node(
+            evidence_id=str(block.block_id),
+            source_type=block.source_type,
+            quality_score=block.quality_score
+        )
+        
         return {"id": block.id, "block_id": block.block_id, "exists": False}

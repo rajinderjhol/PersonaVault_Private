@@ -27,7 +27,7 @@ from passlib.context import CryptContext
 # Internal Endpoints
 from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
-    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion, swarm, integrations, user_preferences, thermodynamics, simulation
+    robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion, swarm, integrations, user_preferences, thermodynamics, simulation, graph
 )
 from app.api.v1.endpoints.user_preferences import router as user_preferences_router
 
@@ -446,6 +446,7 @@ from app.api.v1.endpoints.traces import router as traces_router
 app.include_router(traces_router)
 app.include_router(decisions.router)
 app.include_router(simulation.router)
+app.include_router(graph.router)
 
 app.include_router(swarm.router)
 app.include_router(integrations.router)

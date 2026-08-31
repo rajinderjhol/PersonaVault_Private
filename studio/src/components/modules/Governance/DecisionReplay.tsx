@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTraces } from '../../../hooks/useTraces';
+import { DecisionGraph } from '../../graph/DecisionGraph';
 
 export const DecisionReplay: React.FC = () => {
   const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
   const [replayStep, setReplayStep] = useState(0);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [showGraph, setShowGraph] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
   const { recentTraces, fetchRecent, fetchTrace, currentTrace } = useTraces();
 
   useEffect(() => {
@@ -74,8 +77,32 @@ export const DecisionReplay: React.FC = () => {
           <button onClick={() => { setReplayStep(0); setIsReplaying(false); }}>
             ⏹ Reset
           </button>
+          <button 
+            onClick={() => setShowGraph(true)}
+            disabled={!selectedTraceId}
+          >
+            📊 View Provenance Graph
+          </button>
         </div>
       </div>
+
+      {showGraph && currentTrace && (
+        <div className="graph-modal">
+          <div className="modal-content">
+            <button onClick={() => setShowGraph(false)}>Close</button>
+            <DecisionGraph 
+              decisionId={currentTrace.decision_id}
+              onNodeClick={(node) => setSelectedNode(node)}
+            />
+            {selectedNode && (
+              <div className="node-detail">
+                <h4>Node Details</h4>
+                <pre>{JSON.stringify(selectedNode.data, null, 2)}</pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {selectedTraceId && currentTrace && (
         <div className="replay-content">

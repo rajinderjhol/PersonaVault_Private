@@ -295,7 +295,22 @@ class MultiAgentOrchestrator:
                 latency_ms=latency_ms
             )
             await self.trace_service.store_trace(trace_obj)
-            
+
+            # Integrate with GraphService
+            from app.services.graph_service import graph_service
+            # Create Decision Node
+            graph_service.create_decision_node(
+                decision_id=decision_id,
+                query=query,
+                pack=pack_result["metadata"].get("pack", "unknown"),
+                timestamp=datetime.now().isoformat(),
+                confidence=confidence
+            )
+            # Link to Policy
+            policy_id = pack_result["decision"].get("policy")
+            if policy_id and policy_id != "no_match":
+                graph_service.link_decision_to_policy(decision_id, f"policy_{policy_id}")
+
             return {
                 "answer": response_text,
                 "confidence": confidence,
