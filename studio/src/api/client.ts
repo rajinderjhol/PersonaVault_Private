@@ -6,7 +6,15 @@ const API_BASE_URL = VITE_API_URL ? VITE_API_URL.replace(/\/$/, '') : '/api/v1';
 console.log('🔌 API Client VITE_API_URL:', import.meta.env.VITE_API_URL);
 console.log('🔌 API Client using base:', API_BASE_URL);
 
-export const apiClient = {
+export interface ApiClient {
+  get: <T = any>(endpoint: string, options?: { params?: Record<string, any> }) => Promise<T>;
+  post: <T = any>(endpoint: string, data?: any) => Promise<T>;
+  put: <T = any>(endpoint: string, data?: any) => Promise<T>;
+  patch: <T = any>(endpoint: string, data?: any) => Promise<T>;
+  delete: <T = any>(endpoint: string) => Promise<T>;
+}
+
+export const apiClient: ApiClient = {
   get: async <T = any>(endpoint: string, options?: { params?: Record<string, any> }): Promise<T> => {
     try {
       // Ensure endpoint starts with / and doesn't duplicate v1
@@ -67,5 +75,68 @@ export const apiClient = {
       throw error;
     }
   },
+  put: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+    try {
+      const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      const baseUrl = API_BASE_URL.startsWith('http') 
+        ? API_BASE_URL 
+        : `${window.location.origin}${API_BASE_URL}`;
+        
+      const response = await fetch(`${baseUrl}${path}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: data ? JSON.stringify(data) : undefined,
+      });
+      
+      if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error('API PUT error:', error);
+      throw error;
+    }
+  },
+  patch: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+    try {
+      const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      const baseUrl = API_BASE_URL.startsWith('http') 
+        ? API_BASE_URL 
+        : `${window.location.origin}${API_BASE_URL}`;
+        
+      const response = await fetch(`${baseUrl}${path}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: data ? JSON.stringify(data) : undefined,
+      });
+      
+      if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error('API PATCH error:', error);
+      throw error;
+    }
+  },
+  delete: async <T = any>(endpoint: string): Promise<T> => {
+    try {
+      const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      const baseUrl = API_BASE_URL.startsWith('http') 
+        ? API_BASE_URL 
+        : `${window.location.origin}${API_BASE_URL}`;
+        
+      const response = await fetch(`${baseUrl}${path}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      console.error('API DELETE error:', error);
+      throw error;
+    }
+  },
 };
 export default apiClient;
+

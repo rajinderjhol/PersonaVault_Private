@@ -25,13 +25,13 @@
 | **Universal Search** | `/search` | `/api/v1/memory/...` | Tested-Ok | `pages/Search.tsx` | Migrated to RQ. |
 | **Data Ingestion** | `/ingestion` | `/api/v1/ingestion/...` | Tested-Ok | `pages/DataIngestion.tsx` | Migrated to RQ. |
 | **Simulator** | `/simulator` | `/api/v1/simulation/...` | Tested-Ok | `pages/Simulator.tsx` | Migrated to RQ. |
-| **Marketplace** | `/marketplace` | `/api/v1/marketplace/...` | Operational | `pages/Marketplace.tsx` | Migrated to RQ. |
-| **Security Center** | `/security` | `/api/v1/security/...` | Placeholder | `pages/SecurityCenter.tsx` | |
-| **MCP Center** | `/mcp` | `/api/v1/mcp/...` | Placeholder | `pages/MCPCenter.tsx` | MCP management. |
-| **Device Trust** | `/trust` | `/api/v1/trust/...` | Placeholder | `pages/DeviceTrust.tsx` | |
-| **Pattern Compiler** | `/compiler` | `/api/v1/compiler/...` | Placeholder | `pages/PatternCompiler.tsx` | Behaviour Pack IDE. |
-| **Governance Center** | `/governance` | `/api/v1/governance/...` | Placeholder | `pages/Governance.tsx` | |
-| **Model Management** | `/models` | `/api/v1/models/...` | Placeholder | `pages/ModelManagement.tsx` | |
+| Marketplace | `/marketplace` | `/api/v1/marketplace/...` | Tested-Ok | `pages/Marketplace.tsx` | Migrated to RQ. |
+| **Security Center** | `/security` | `/api/v1/security/...` | Wired | `pages/SecurityCenter.tsx` | |
+| **MCP Center** | `/mcp` | `/api/v1/mcp/...` | Wired | `pages/MCPCenter.tsx` | MCP management. |
+| **Device Trust** | `/trust` | `/api/v1/trust/...` | Wired | `pages/DeviceTrust.tsx` | |
+| **Pattern Compiler** | `/compiler` | `/api/v1/compiler/...` | Wired | `pages/PatternCompiler.tsx` | Behaviour Pack IDE. |
+| **Governance Center** | `/governance` | `/api/v1/governance/...` | Wired | `pages/Governance.tsx` | |
+| **Model Management** | `/models` | `/api/v1/models/...` | Wired | `pages/ModelManagement.tsx` | |
 | **Settings** | `/settings` | `/api/v1/settings/...` | Placeholder | `pages/Settings.tsx` | |
 
 ---
@@ -40,11 +40,11 @@
 
 | Component | Route / Location | API Endpoint | Status | File | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **User Profile** | `/profile` | `/api/v1/auth/me`, `/api/v1/users/me` | Operational | `pages/Profile.tsx` | |
-| **User Management** | `/admin/users` | `/api/v1/admin/users` | Placeholder | `pages/Admin/UserManagement.tsx` | |
-| **Role Management** | `/admin/roles` | `/api/v1/admin/roles` | Placeholder | `pages/Admin/RoleManagement.tsx` | |
-| **Constitution Editor** | `/governance/constitution` | `/api/v1/governance/constitution` | Placeholder | `pages/Governance/ConstitutionEditor.tsx` | |
-| **Policy Management** | `/governance/policies` | `/api/v1/governance/policies` | Placeholder | `pages/Governance/PolicyManagement.tsx` | |
+| **User Profile** | `/profile` | `/api/v1/auth/me`, `/api/v1/users/me` | Wired | `pages/Profile.tsx` | |
+| **User Management (Admin)** | `/admin/users` | `/api/v1/admin/users` | Wired | `pages/Admin/UserManagement.tsx` | |
+| **Role Management (Admin)** | `/admin/roles` | `/api/v1/admin/roles` | Wired | `pages/Admin/RoleManagement.tsx` | |
+| **Constitution Editor** | `/governance/constitution` | `/api/v1/governance/constitution` | Wired | `pages/ConstitutionEditor.tsx` | |
+| **Policy Management** | `/governance/policies` | `/api/v1/governance/policies` | Wired | `pages/PolicyManagement.tsx` | |
 | **Behaviour Pack Manager** | `/governance/packs` | `/api/v1/packs/...` | Placeholder | `pages/Governance/PackManager.tsx` | |
 | **Audit Log Viewer** | `/governance/audit` | `/api/v1/audit/...` | Placeholder | `pages/Governance/AuditLog.tsx` | |
 | **Execution Mode Control** | `/sovereign/mode` | `/api/v1/mode/...` | Placeholder | `pages/Sovereign/ModeControl.tsx` | |
@@ -56,9 +56,9 @@
 
 | Component | Route / Location | API Endpoint | Status | File | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Crystallization Dashboard** | `/cognitive/crystallization` | `/api/v1/thermodynamics/crystallization` | Placeholder | `pages/Cognitive/CrystallizationDashboard.tsx` | |
-| **Snowflake Manager** | `/cognitive/snowflakes` | `/api/v1/thermodynamics/snowflakes` | Placeholder | `pages/Cognitive/SnowflakeManager.tsx` | |
-| **Memory Lattice Viewer** | `/cognitive/memory-lattice` | `/api/v1/thermodynamics/lattice` | Placeholder | `pages/Cognitive/MemoryLattice.tsx` | |
+| **Crystallization Dashboard** | `/cognitive/crystallization` | `/api/v1/thermodynamics/crystallization` | Wired | `pages/CrystallizationDashboard.tsx` | |
+| **Snowflake Manager** | `/cognitive/snowflakes` | `/api/v1/thermodynamics/snowflakes` | Wired | `pages/SnowflakeManager.tsx` | |
+| **Memory Lattice Viewer** | `/cognitive/memory-lattice` | `/api/v1/thermodynamics/lattice` | Wired | `pages/MemoryLattice.tsx` | |
 | **Temporal Intelligence Widget** | (Dashboard) | `/api/v1/admin/dashboard/temporal/metrics` | Tested-Ok | `components/dashboard/TemporalIntelligenceWidget.tsx` | |
 | **Decision Replay** | (Modal/View) | `/api/v1/traces/...` | Operational | `components/modules/Governance/DecisionReplay.tsx` | |
 | **Decision Graph** | (Modal/View) | `/api/v1/graph/decision/{decision_id}` | Operational | `components/graph/DecisionGraph.tsx` | |
@@ -69,10 +69,10 @@
 
 | Component | Route / Location | API Endpoint | Status | File | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **System Health Dashboard** | `/admin/health` | `/api/v1/admin/health`, `/api/v1/admin/metrics` | Placeholder | `pages/Admin/SystemHealth.tsx` | |
-| **API Explorer** | `/dev/api-explorer` | All `/api/v1/...` endpoints | Placeholder | `pages/Dev/APIExplorer.tsx` | |
-| **WebSocket Monitor** | `/dev/ws-monitor` | `/ws/...` | Placeholder | `pages/Dev/WebSocketMonitor.tsx` | |
-| **VeriLink Status** | `/governance/verilink` | `/api/v1/verilink/status` | Placeholder | `pages/Governance/VeriLinkStatus.tsx` | |
+| **System Health Dashboard** | `/admin/health` | `/api/v1/admin/health`, `/api/v1/admin/metrics` | Wired | `pages/SystemHealth.tsx` | |
+| **API Explorer** | `/dev/api-explorer` | All `/api/v1/...` endpoints | Wired | `pages/APIExplorer.tsx` | |
+| **WebSocket Monitor** | `/dev/ws-monitor` | `/ws/...` | Wired | `pages/WSMonitor.tsx` | |
+| **VeriLink Status** | `/governance/verilink` | `/api/v1/verilink/status` | Wired | `pages/VeriLinkStatus.tsx` | |
 
 ---
 

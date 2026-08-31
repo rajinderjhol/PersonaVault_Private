@@ -5,7 +5,24 @@ import AppLayout from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Login from './components/modules/Login/Login';
 
-// Pages
+import { WSMonitor } from './pages/WSMonitor';
+import { ModelManagement } from './pages/ModelManagement';
+import { RoleManagement } from './pages/Admin/RoleManagement';
+import { UserManagement } from './pages/Admin/UserManagement';
+import { VeriLinkStatus } from './pages/VeriLinkStatus';
+import { APIExplorer } from './pages/APIExplorer';
+import { MemoryLattice } from './pages/MemoryLattice';
+import { SnowflakeManager } from './pages/SnowflakeManager';
+import { SystemHealth } from './pages/SystemHealth';
+import { CrystallizationDashboard } from './pages/CrystallizationDashboard';
+import { Governance } from './pages/Governance';
+import { ConstitutionEditor } from './pages/ConstitutionEditor';
+import { PolicyManagement } from './pages/PolicyManagement';
+import { Profile } from './pages/Profile';
+import { DeviceTrust } from './pages/DeviceTrust';
+import { MCPCenter } from './pages/MCPCenter';
+import { PatternCompiler } from './pages/PatternCompiler';
+import { SecurityCenter } from './pages/SecurityCenter';
 import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
 import { DataIngestion } from './pages/DataIngestion';
@@ -36,14 +53,25 @@ function App() {
                 <Route path="/ingestion" element={<DataIngestion />} />
                 <Route path="/simulator" element={<Simulator />} />
                 
-                {/* Placeholder routes */}
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/security" element={<div>Security Center Component</div>} />
-                <Route path="/mcp" element={<div>MCP Center Component</div>} />
-                <Route path="/trust" element={<div>Device Trust Component</div>} />
-                <Route path="/compiler" element={<div>Pattern Compiler Component</div>} />
-                <Route path="/governance" element={<div>Governance Component</div>} />
-                <Route path="/models" element={<div>Model Management Component</div>} />
+                <Route path="/security" element={<SecurityCenter />} />
+                <Route path="/mcp" element={<MCPCenter />} />
+                <Route path="/trust" element={<DeviceTrust />} />
+                <Route path="/compiler" element={<PatternCompiler />} />
+                <Route path="/governance/policies" element={<PolicyManagement />} />
+                <Route path="/governance/constitution" element={<ConstitutionEditor />} />
+                <Route path="/governance" element={<Governance />} />
+                <Route path="/cognitive/crystallization" element={<CrystallizationDashboard />} />
+                <Route path="/cognitive/snowflakes" element={<SnowflakeManager />} />
+                <Route path="/cognitive/memory-lattice" element={<MemoryLattice />} />
+                <Route path="/admin/health" element={<SystemHealth />} />
+                                <Route path="/admin/users" element={<UserManagement />} />
+                <Route path="/admin/roles" element={<RoleManagement />} />
+                <Route path="/models" element={<ModelManagement />} />
+                <Route path="/dev/ws-monitor" element={<WSMonitor />} />
+                <Route path="/dev/api-explorer" element={<APIExplorer />} />
+                <Route path="/governance/verilink" element={<VeriLinkStatus />} />
                 <Route path="/settings" element={<div>Settings Component</div>} />
                 
                 {/* Fallback */}
