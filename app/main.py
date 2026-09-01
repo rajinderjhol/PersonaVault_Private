@@ -339,6 +339,18 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Set up Prometheus metrics
+from prometheus_fastapi_instrumentator import Instrumentator
+instrumentator = Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics", "/health", "/docs", "/redoc", "/openapi.json"],
+)
+instrumentator.instrument(app)
+# Expose is handled by _protected_metrics_app later
+
 # Serve static files
 static_dir = "app/static"
 if os.path.exists(static_dir):

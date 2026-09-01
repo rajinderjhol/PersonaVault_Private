@@ -1,6 +1,9 @@
+import time
+import json
 from typing import Dict, Any, List, Optional
 from app.api.v2.models.environment import Environment
 from app.services.memory_service import MemoryService
+from app.api.v2.services.metrics import track_crystallization
 
 class CrystallizationService:
     def __init__(self, memory_service: MemoryService):
@@ -16,17 +19,39 @@ class CrystallizationService:
         Store a crystallized pattern within a specific environment.
         Returns the memory ID of the crystallized pattern.
         """
-        # Store the crystallized pattern in memory
-        memory_id = await self.memory_service.save_memory(
-            user_id=1, # Simplified, should resolve from env context
-            memory_type="crystallized_pattern",
-            content=pattern_data.get("content", ""),
-            tags=pattern_data.get("tags", []),
-            title=pattern_data.get("title", "Crystallized Pattern"),
-            environment_id=environment.id
-        )
+        start_time = time.time()
+        
+        try:
+            # Store the crystallized pattern in memory
+            memory_id = await self.memory_service.save_memory(
+                user_id=1, # Simplified, should resolve from env context
+                memory_type="crystallized_pattern",
+                content=pattern_data.get("content", ""),
+                tags=pattern_data.get("tags", []),
+                title=pattern_data.get("title", "Crystallized Pattern"),
+                environment_id=environment.id
+            )
+            
+            # Track success
+            duration = time.time() - start_time
+            track_crystallization(
+                environment_id=environment.id,
+                source_type="automated_learning",
+                duration=duration,
+                status="success"
+            )
 
-        return str(memory_id.id)
+            return str(memory_id.id)
+        except Exception as e:
+            # Track failure
+            duration = time.time() - start_time
+            track_crystallization(
+                environment_id=environment.id,
+                source_type="automated_learning",
+                duration=duration,
+                status="failed"
+            )
+            raise e
 
     async def retrieve_crystallized_patterns(
         self,
