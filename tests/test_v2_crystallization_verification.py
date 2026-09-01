@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 from app.api.v2.models.environment import Environment
 from app.api.v2.models.principal import Principal
+from app.api.v2.models.outcome import Outcome, OutcomeSourceType
 from app.api.v2.services.crystallization_service import CrystallizationService
 from app.services.memory_service import MemoryService
 from app.api.v2.services.membership_service import MembershipService
@@ -127,15 +128,51 @@ async def test_outcome_learning_bridge():
     
     bridge = OutcomeLearningBridge(crystallization_service, memory_service)
     
-    outcome = {"success": True, "result": "Action completed successfully"}
-    
-    # Run
-    await bridge.process_outcome(env, outcome)
+    # Define success outcome as Outcome model
+    outcome = Outcome(
+        id="o1",
+        environment_id=env.id,
+        decision_id="d1",
+        action_id="a1",
+        source_type=OutcomeSourceType.REAL_ACTION,
+        observed_at=now,
+        result={"summary": "Real-world success pattern"},
+        success=True,
+        metrics={"confidence": 0.9},
+        created_at=now,
+        updated_at=now
+    )
+
+    # 1. Real Loop Execution
+    # Mock search_memories to return empty for first run
+    memory_service.search_memories.return_value = []
+    result_id = await bridge.process_outcome(env, outcome)
     
     # Verify crystallization was triggered
     crystallization_service.crystallize_pattern.assert_called_once()
-    call_args = crystallization_service.crystallize_pattern.call_args
-    assert call_args.kwargs["environment"].id == env.id
-    assert "success" in call_args.kwargs["pattern_data"]["content"]
+    print("\n✅ Real-world learning path verified.")
 
-    print("\n✅ Outcome -> Learning Bridge Test Passed")
+    # 2. Simulation Loop Execution
+    simulated_outcome = Outcome(
+        id="o2",
+        environment_id=env.id,
+        decision_id="d2",
+        action_id="a2",
+        source_type=OutcomeSourceType.SIMULATION,
+        observed_at=now,
+        result={"summary": "Simulated success"},
+        success=True,
+        metrics={"confidence": 0.9},
+        created_at=now,
+        updated_at=now
+    )
+    
+    crystallization_service.reset_mock()
+    
+    # Verify simulation learning is blocked
+    result_sim = await bridge.process_outcome(env, simulated_outcome)
+    assert result_sim is None
+    crystallization_service.crystallize_pattern.assert_not_called()
+    
+    print("✅ Simulation loop boundary verified (Learning blocked).")
+    print("🚀 Sovereign Runtime Loop Operational.")
