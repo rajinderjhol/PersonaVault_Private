@@ -22,6 +22,13 @@ class SecurityAgent(BaseAgent):
         
         # 3. Make governed decision
         if await self.context.check_authority("respond_to_threat"):
+            # Trigger learning event
+            await self.context.learn_pattern({
+                "content": f"Successfully handled threat: {threat_data}",
+                "confidence": 0.9,
+                "title": "Security Threat Response",
+                "tags": ["security", "threat"]
+            })
             return {
                 "status": "responded",
                 "prediction": prediction,
