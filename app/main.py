@@ -500,8 +500,9 @@ app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
 # V2 API Registration
-from app.api.v2.endpoints import intelligence_packs
+from app.api.v2.endpoints import intelligence_packs, environments
 app.include_router(intelligence_packs.router)
+app.include_router(environments.router)
 
 
 # Dashboard UI Redirect

@@ -55,6 +55,7 @@ class Memory(Base):
     __tablename__ = "memories"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    environment_id = Column(String, index=True, nullable=True) # <-- NEW
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     query = Column(Text)

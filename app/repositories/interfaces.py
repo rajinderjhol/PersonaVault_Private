@@ -10,7 +10,7 @@ class IMemoryRepository(IBaseRepository):
     """Interface for Relational/Episodic Memory (Layer 2)."""
     
     @abstractmethod
-    async def add(self, user_id: int, title: str, content: str, modality: str, tags: str) -> Any:
+    async def add(self, user_id: int, title: str, content: str, modality: str, tags: str, environment_id: Optional[str] = None) -> Any:
         pass
 
     @abstractmethod
@@ -18,7 +18,7 @@ class IMemoryRepository(IBaseRepository):
         pass
 
     @abstractmethod
-    async def search(self, user_id: int, query: str, limit: int = 5) -> List[Any]:
+    async def search(self, user_id: int, query: str, limit: int = 5, environment_id: Optional[str] = None) -> List[Any]:
         pass
 
     @abstractmethod
@@ -33,11 +33,11 @@ class IVectorRepository(IBaseRepository):
     """Interface for Vector/Semantic Memory (Layer 3)."""
     
     @abstractmethod
-    async def add(self, memory_id: int, content: str, user_id: int) -> bool:
+    async def add(self, memory_id: int, content: str, user_id: int, environment_id: Optional[str] = None) -> bool:
         pass
 
     @abstractmethod
-    async def search(self, query: str, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+    async def search(self, query: str, user_id: int, limit: int = 10, environment_id: Optional[str] = None) -> List[Dict[str, Any]]:
         pass
 
     @abstractmethod

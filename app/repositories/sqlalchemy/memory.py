@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class SQLMemoryRepository(SQLBaseRepository, IMemoryRepository):
     """SQLAlchemy implementation for L2 memory."""
     
-    async def add(self, user_id: int, title: str, content: str, modality: str, tags: str) -> Memory:
+    async def add(self, user_id: int, title: str, content: str, modality: str, tags: str, environment_id: Optional[str] = None) -> Memory:
         session = await self._get_session()
         try:
             new_memory = Memory(
@@ -20,7 +20,8 @@ class SQLMemoryRepository(SQLBaseRepository, IMemoryRepository):
                 title=title,
                 content=content,
                 tags=tags,
-                modality=modality
+                modality=modality,
+                environment_id=environment_id
             )
             session.add(new_memory)
             await session.commit()
@@ -42,17 +43,21 @@ class SQLMemoryRepository(SQLBaseRepository, IMemoryRepository):
         finally:
             await self._close_session(session)
 
-    async def search(self, user_id: int, query: str, limit: int = 5) -> List[Memory]:
+    async def search(self, user_id: int, query: str, limit: int = 5, environment_id: Optional[str] = None) -> List[Memory]:
         session = await self._get_session()
         try:
-            stmt = select(Memory).where(
+            filters = [
                 Memory.user_id == user_id,
                 or_(
                     Memory.content.ilike(f"%{query}%"),
                     Memory.tags.ilike(f"%{query}%"),
                     Memory.title.ilike(f"%{query}%")
                 )
-            ).limit(limit)
+            ]
+            if environment_id:
+                filters.append(Memory.environment_id == environment_id)
+            
+            stmt = select(Memory).where(*filters).limit(limit)
             result = await session.execute(stmt)
             return result.scalars().all()
         finally:

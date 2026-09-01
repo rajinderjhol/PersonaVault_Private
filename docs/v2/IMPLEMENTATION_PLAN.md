@@ -10,7 +10,7 @@ V2 is implemented as an additive extension to the existing PersonaVault Decision
 | V2 Architectural Concept | Implementation Location | Notes |
 | :--- | :--- | :--- |
 | **V2 API Namespace** | `backend/app/api/v2/` | New API version, preserves V1 compatibility. |
-| **Domain Models** | `backend/app/api/v2/models/` | Richer V2 structures (e.g., `intelligence_pack.py`). |
+| **Domain Models** | `backend/app/api/v2/models/` | Richer V2 structures (e.g., `environment.py`, `principal.py`, `membership.py`, `authority.py`). |
 | **Adapter Layer** | `backend/app/api/v2/adapters/` | Transforms V1 concepts (e.g., `Behavior Packs`) to V2 (e.g., `Intelligence Packs`). |
 | **Endpoints** | `backend/app/api/v2/endpoints/` | Exposes V2 functionality. |
 | **Core Logic** | `backend/app/core/` | Shared logic remains in existing core. |

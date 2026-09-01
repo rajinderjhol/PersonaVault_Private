@@ -19,9 +19,9 @@ class MemoryService:
         self.vector_repo = vector_repo
         self.graph_repo = graph_repo
 
-    async def search_memories(self, user_id: int, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    async def search_memories(self, user_id: int, query: str, limit: int = 5, environment_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Hybrid search: Semantic (Vector) + Relational (Graph) + Keyword (SQL).
+        Hybrid search: Semantic (Vector) + Relational (Graph) + Keyword (SQL), optionally scoped to an environment.
         """
         results = []
         seen_ids = set()
@@ -29,21 +29,21 @@ class MemoryService:
         try:
             # 1. Semantic search (Vector)
             if self.vector_repo:
-                vector_results = await self.vector_repo.search(query, user_id, limit=limit)
+                vector_results = await self.vector_repo.search(query, user_id, limit=limit, environment_id=environment_id)
                 for res in vector_results:
                     if res["id"] not in seen_ids:
                         results.append(res)
                         seen_ids.add(res["id"])
 
             # 2. Keyword search (SQL) - Fallback or supplementary
-            sql_results = await self.memory_repo.search(user_id, query, limit=limit)
+            sql_results = await self.memory_repo.search(user_id, query, limit=limit, environment_id=environment_id)
             for m in sql_results:
                 if m.id not in seen_ids:
                     results.append({
                         "id": m.id,
                         "content": m.content,
                         "score": 0.5,  # Default score for keyword match
-                        "metadata": {"tags": m.tags, "title": m.title}
+                        "metadata": {"tags": m.tags, "title": m.title, "environment_id": getattr(m, 'environment_id', None)}
                     })
                     seen_ids.add(m.id)
             
@@ -52,19 +52,19 @@ class MemoryService:
             logger.error(f"MemoryService: Search error: {e}")
             return []
 
-    async def save_memory(self, user_id: int, memory_type: str, content: str, tags: Union[str, List[str]], title: Optional[str] = None) -> Any:
-        """Save a memory and trigger multi-modal indexing across repositories."""
+    async def save_memory(self, user_id: int, memory_type: str, content: str, tags: Union[str, List[str]], title: Optional[str] = None, environment_id: Optional[str] = None) -> Any:
+        """Save a memory, optionally scoped to an environment, and trigger multi-modal indexing."""
         tags_str = ",".join(tags) if isinstance(tags, list) else tags
         if not title:
             title = content[:50] + ("..." if len(content) > 50 else "")
         
         # 1. Save to L2 (SQL)
-        new_memory = await self.memory_repo.add(user_id, title, content, memory_type, tags_str)
+        new_memory = await self.memory_repo.add(user_id, title, content, memory_type, tags_str, environment_id=environment_id)
         
         # 2. Trigger side-effects (L3 Vector / Graph)
         if new_memory:
             if self.vector_repo:
-                await self.vector_repo.add(new_memory.id, content, user_id)
+                await self.vector_repo.add(new_memory.id, content, user_id, environment_id=environment_id)
             if self.graph_repo:
                 await self.graph_repo.add_node(new_memory.id, new_memory.title, "Memory", user_id)
         

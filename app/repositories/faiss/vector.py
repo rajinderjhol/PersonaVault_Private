@@ -72,7 +72,7 @@ class FAISSSemanticRepository(IVectorRepository):
             logger.error(f"FAISSSemanticRepository: Embedding error: {e}")
         return np.zeros(self.dimension).astype(np.float32)
 
-    async def add(self, memory_id: int, content: str, user_id: int) -> bool:
+    async def add(self, memory_id: int, content: str, user_id: int, environment_id: Optional[str] = None) -> bool:
         embedding = await self._get_embedding(content)
         if np.all(embedding == 0):
             return False
@@ -84,30 +84,44 @@ class FAISSSemanticRepository(IVectorRepository):
         self.metadata[idx] = {
             "id": memory_id,
             "content": content,
-            "user_id": user_id
+            "user_id": user_id,
+            "environment_id": environment_id
         }
         self._save_index()
         return True
 
-    async def search(self, query: str, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+    async def search(self, query: str, user_id: int, limit: int = 10, environment_id: Optional[str] = None) -> List[Dict[str, Any]]:
         if self.index.ntotal == 0:
             return []
         
         embedding = await self._get_embedding(query)
         embedding = embedding / (np.linalg.norm(embedding) + 1e-10)
         
-        distances, indices = self.index.search(embedding.reshape(1, -1), min(limit, self.index.ntotal))
+        distances, indices = self.index.search(embedding.reshape(1, -1), min(limit * 2, self.index.ntotal))
         
         results = []
         for i, idx in enumerate(indices[0]):
             if idx != -1 and idx in self.metadata:
                 meta = self.metadata[idx]
-                if meta["user_id"] == user_id:
-                    results.append({
-                        "id": meta["id"],
-                        "content": meta["content"],
-                        "score": float(1 / (1 + distances[0][i]))
-                    })
+                
+                # Check user_id
+                if meta["user_id"] != user_id:
+                    continue
+                
+                # Check environment_id
+                if environment_id and meta.get("environment_id") != environment_id:
+                    continue
+                
+                results.append({
+                    "id": meta["id"],
+                    "content": meta["content"],
+                    "score": float(1 / (1 + distances[0][i])),
+                    "metadata": {"environment_id": meta.get("environment_id")}
+                })
+                
+                if len(results) >= limit:
+                    break
+                    
         return results
 
     async def delete(self, memory_id: int) -> bool:
