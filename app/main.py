@@ -499,6 +499,10 @@ app.include_router(multimodal_router)
 app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
+# V2 API Registration
+from app.api.v2.endpoints import intelligence_packs
+app.include_router(intelligence_packs.router)
+
 
 # Dashboard UI Redirect
 @app.get("/admin/dashboard", response_class=HTMLResponse)
