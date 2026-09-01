@@ -114,6 +114,8 @@ from app.services.vector_service import vector_service
 from app.services.rate_limit_service import RateLimitService
 from app.services.task_service import init_scheduler
 from app.swarm.specialized.security_agent import SecurityAgent
+from app.swarm.specialized.perception_agent import PerceptionAgent
+from app.swarm.specialized.prediction_agent import PredictionAgent
 from app.api.v2.services.crystallization_service import crystallization_service
 from app.api.v2.services.prediction_service import PredictionService
 from app.api.v2.services.simulation_service import SimulationService
@@ -199,6 +201,8 @@ async def lifespan(app: FastAPI):
     )
 
     app.state.security_agent = SecurityAgent()
+    app.state.perception_agent = PerceptionAgent()
+    app.state.prediction_agent = PredictionAgent()
     
     # Initialize V2 services
     prediction_service = PredictionService(memory_service=app.state.memory_service, crystallization_service=crystallization_service)
@@ -225,7 +229,9 @@ async def lifespan(app: FastAPI):
             "hitl": app.state.hitl_service,
             "episodic": app.state.episodic_memory,
             "semantic": app.state.semantic_memory,
-            "security": app.state.security_agent
+            "security": app.state.security_agent,
+            "perception": app.state.perception_agent,
+            "prediction": app.state.prediction_agent
         }
     )
     
