@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Dict, Any
 from app.api.v2.models.environment import Environment
 from app.api.v2.services.simulation_service import SimulationService
@@ -9,16 +9,8 @@ from app.api.v2.services.crystallization_service import crystallization_service
 router = APIRouter(prefix="/v2/environments/{env_id}/simulations", tags=["v2-simulations"])
 
 # Factory for Prediction and Simulation Services
-def get_simulation_service():
-    from app.services.memory_service import MemoryService
-    from app.repositories.sqlalchemy.memory import SQLMemoryRepository
-    from app.repositories.faiss.vector import FAISSSemanticRepository
-    
-    # Constructing service dependencies
-    mem_repo = SQLMemoryRepository(db=None) 
-    vec_repo = FAISSSemanticRepository()
-    memory_service = MemoryService(memory_repo=mem_repo, vector_repo=vec_repo)
-    
+def get_simulation_service(request: Request):
+    memory_service = request.app.state.memory_service
     prediction_service = PredictionService(
         memory_service=memory_service,
         crystallization_service=crystallization_service

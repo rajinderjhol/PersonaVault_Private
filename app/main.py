@@ -113,6 +113,11 @@ from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
 from app.services.rate_limit_service import RateLimitService
 from app.services.task_service import init_scheduler
+from app.swarm.specialized.security_agent import SecurityAgent
+from app.api.v2.services.crystallization_service import crystallization_service
+from app.api.v2.services.prediction_service import PredictionService
+from app.api.v2.services.simulation_service import SimulationService
+# V2 memory service is already initialized in lifespan
 
 # Password hashing for seeding
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -182,19 +187,47 @@ async def lifespan(app: FastAPI):
     app.state.hitl_service = HITLService(SessionLocal)
     app.state.approval_service = ApprovalService(SessionLocal)
 
-    app.state.orchestrator = MultiAgentOrchestrator(db_session=SessionLocal, blackboard=app.state.blackboard, confidence_threshold=0.5, agents={
-        "planner": app.state.planning_agent,
-        "retriever": app.state.retrieval_agent,
-        "reasoner": app.state.reasoner_agent,
-        "validator": app.state.validator_agent,
-        "generator": app.state.generator_agent,
-        "judge": app.state.judge_agent,
-        "router": app.state.ai_router,
-        "empathy": app.state.empathy_agent,
-        "hitl": app.state.hitl_service,
-        "episodic": app.state.episodic_memory,
-        "semantic": app.state.semantic_memory
-    })
+    # Initialize Cognitive Lattices
+    logger.info("Lifespan: Initializing memory lattices...")
+    app.state.repos["vector"]._load_or_create_index()
+            
+    # Initialize MemoryService
+    app.state.memory_service = MemoryService(
+        memory_repo=app.state.repos["memory"],
+        vector_repo=app.state.repos["vector"],
+        graph_repo=app.state.repos["graph"]
+    )
+
+    app.state.security_agent = SecurityAgent()
+    
+    # Initialize V2 services
+    prediction_service = PredictionService(memory_service=app.state.memory_service, crystallization_service=crystallization_service)
+    simulation_service = SimulationService(prediction_service=prediction_service)
+
+    app.state.orchestrator = MultiAgentOrchestrator(
+        db_session=SessionLocal, 
+        blackboard=app.state.blackboard, 
+        memory_service=app.state.memory_service,
+        authority_service=None,
+        crystallization_service=crystallization_service,
+        prediction_service=prediction_service,
+        simulation_service=simulation_service,
+        confidence_threshold=0.5, 
+        agents={
+            "planner": app.state.planning_agent,
+            "retriever": app.state.retrieval_agent,
+            "reasoner": app.state.reasoner_agent,
+            "validator": app.state.validator_agent,
+            "generator": app.state.generator_agent,
+            "judge": app.state.judge_agent,
+            "router": app.state.ai_router,
+            "empathy": app.state.empathy_agent,
+            "hitl": app.state.hitl_service,
+            "episodic": app.state.episodic_memory,
+            "semantic": app.state.semantic_memory,
+            "security": app.state.security_agent
+        }
+    )
     
     # Initialize database tables (Lattices)
     logger.info("Lifespan: Synchronizing database lattices...")
@@ -500,13 +533,14 @@ app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
 # V2 API Registration
-from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation
+from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents
 app.include_router(intelligence_packs.router)
 app.include_router(environments.router)
 app.include_router(memberships.router)
 app.include_router(authorities.router)
 app.include_router(crystallization.router)
 app.include_router(simulation.router)
+app.include_router(agents.router)
 
 
 # Dashboard UI Redirect
