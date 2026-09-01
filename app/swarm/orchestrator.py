@@ -21,14 +21,21 @@ logger = logging.getLogger(__name__)
 from app.swarm.context import AgentEnvironmentContext
 from app.services.memory_service import MemoryService
 from app.api.v2.services.authority_service import AuthorityService
+from app.api.v2.services.crystallization_service import CrystallizationService
 
 class MultiAgentOrchestrator:
-    def __init__(self, db_session, blackboard, memory_service: Optional[MemoryService] = None, authority_service: Optional[AuthorityService] = None, agents: Dict[str, Any] = None, confidence_threshold: float = 0.6):
+    def __init__(self, db_session, blackboard, 
+                 memory_service: Optional[MemoryService] = None, 
+                 authority_service: Optional[AuthorityService] = None, 
+                 crystallization_service: Optional[CrystallizationService] = None,
+                 agents: Dict[str, Any] = None, 
+                 confidence_threshold: float = 0.6):
         self.db = db_session
         self.blackboard = blackboard
         self.agents = agents or {}
         self.memory_service = memory_service
         self.authority_service = authority_service
+        self.crystallization_service = crystallization_service
         self.working_memory = WorkingMemory()
         self.trace_service = get_trace_service(db_session)
         self.perception = RoboticsPerceptionService(db_session, self.trace_service)
@@ -206,8 +213,13 @@ class MultiAgentOrchestrator:
 
         # Inject Environment Context if provided
         env_id = context.get("environment_id")
-        if env_id and self.memory_service and self.authority_service:
-            agent_context = AgentEnvironmentContext(env_id, self.memory_service, self.authority_service)
+        if env_id and self.memory_service and self.authority_service and self.crystallization_service:
+            agent_context = AgentEnvironmentContext(
+                env_id, 
+                self.memory_service, 
+                self.authority_service, 
+                self.crystallization_service
+            )
             for agent in self.agents.values():
                 if hasattr(agent, 'set_context'):
                     agent.set_context(agent_context)
