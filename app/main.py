@@ -115,8 +115,16 @@ from app.services.rate_limit_service import RateLimitService
 from app.services.task_service import init_scheduler
 from app.swarm.specialized.security_agent import SecurityAgent
 from app.swarm.specialized.perception_agent import PerceptionAgent
+from app.swarm.specialized.perception_agent import PerceptionAgent
 from app.swarm.specialized.prediction_agent import PredictionAgent
+from app.swarm.specialized.simulation_agent import SimulationAgent
+from app.swarm.specialized.state_agent import StateAgent
+from app.swarm.specialized.governance_agent import GovernanceAgent
+from app.swarm.specialized.action_agent import ActionAgent
+from app.swarm.specialized.knowledge_agent import KnowledgeAgent
 from app.api.v2.services.crystallization_service import crystallization_service
+
+
 from app.api.v2.services.prediction_service import PredictionService
 from app.api.v2.services.simulation_service import SimulationService
 # V2 memory service is already initialized in lifespan
@@ -200,14 +208,19 @@ async def lifespan(app: FastAPI):
         graph_repo=app.state.repos["graph"]
     )
 
-    app.state.security_agent = SecurityAgent()
-    app.state.perception_agent = PerceptionAgent()
-    app.state.prediction_agent = PredictionAgent()
-    
     # Initialize V2 services
     prediction_service = PredictionService(memory_service=app.state.memory_service, crystallization_service=crystallization_service)
     simulation_service = SimulationService(prediction_service=prediction_service)
 
+    app.state.security_agent = SecurityAgent()
+    app.state.perception_agent = PerceptionAgent()
+    app.state.prediction_agent = PredictionAgent()
+    app.state.simulation_agent = SimulationAgent(simulation_service=simulation_service)
+    app.state.state_agent = StateAgent()
+    app.state.governance_agent = GovernanceAgent()
+    app.state.action_agent = ActionAgent()
+    app.state.knowledge_agent = KnowledgeAgent()
+    
     app.state.orchestrator = MultiAgentOrchestrator(
         db_session=SessionLocal, 
         blackboard=app.state.blackboard, 
@@ -231,7 +244,12 @@ async def lifespan(app: FastAPI):
             "semantic": app.state.semantic_memory,
             "security": app.state.security_agent,
             "perception": app.state.perception_agent,
-            "prediction": app.state.prediction_agent
+            "prediction": app.state.prediction_agent,
+            "simulation": app.state.simulation_agent,
+            "state": app.state.state_agent,
+            "governance": app.state.governance_agent,
+            "action": app.state.action_agent,
+            "knowledge": app.state.knowledge_agent
         }
     )
     
