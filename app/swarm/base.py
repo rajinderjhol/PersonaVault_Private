@@ -4,6 +4,11 @@ from typing import Optional, Dict, Any, List, Union
 from datetime import datetime
 from app.services.trace_service import TraceService, TraceStep
 
+from typing import Optional, Dict, Any, List, Union
+from datetime import datetime
+from app.services.trace_service import TraceService, TraceStep
+from app.swarm.context import AgentEnvironmentContext
+
 class BaseAgent:
     """Foundation for all PersonaVault Swarm Agents with Auditable Trace support."""
     def __init__(self, name: str, client: Optional[httpx.AsyncClient] = None, trace_service: Optional[TraceService] = None):
@@ -12,6 +17,10 @@ class BaseAgent:
         self.trace_service = trace_service
         self.logger = logging.getLogger(f"persona.swarm.{name}")
         self.temporal_context: Optional[Dict[str, Any]] = None
+        self.context: Optional[AgentEnvironmentContext] = None # <-- NEW
+
+    def set_context(self, context: AgentEnvironmentContext):
+        self.context = context
 
     @property
     def client(self) -> httpx.AsyncClient:

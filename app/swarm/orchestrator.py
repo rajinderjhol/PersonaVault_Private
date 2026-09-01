@@ -18,15 +18,22 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+from app.swarm.context import AgentEnvironmentContext
+from app.services.memory_service import MemoryService
+from app.api.v2.services.authority_service import AuthorityService
+
 class MultiAgentOrchestrator:
-    def __init__(self, db_session, blackboard, agents: Dict[str, Any] = None, confidence_threshold: float = 0.6):
+    def __init__(self, db_session, blackboard, memory_service: Optional[MemoryService] = None, authority_service: Optional[AuthorityService] = None, agents: Dict[str, Any] = None, confidence_threshold: float = 0.6):
         self.db = db_session
         self.blackboard = blackboard
         self.agents = agents or {}
+        self.memory_service = memory_service
+        self.authority_service = authority_service
         self.working_memory = WorkingMemory()
-        self.trace_service = get_trace_service(db_session) # ✅ Integrated Trace Service
+        self.trace_service = get_trace_service(db_session)
         self.perception = RoboticsPerceptionService(db_session, self.trace_service)
-        self.pack_executor = PackExecutor(trace_service=self.trace_service)  # ✅ Integrated Behavior Pack Compiler
+        self.pack_executor = PackExecutor(trace_service=self.trace_service)
+        
         logger.info(f"Agents initialized: {list(self.agents.keys())}")
 
         # Inject trace service into all agents
@@ -196,12 +203,21 @@ class MultiAgentOrchestrator:
     async def run(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the cognitive pipeline with Auditable Traces"""
         logger.info(f"Processing query: {query[:50]}...")
-        
+
+        # Inject Environment Context if provided
+        env_id = context.get("environment_id")
+        if env_id and self.memory_service and self.authority_service:
+            agent_context = AgentEnvironmentContext(env_id, self.memory_service, self.authority_service)
+            for agent in self.agents.values():
+                if hasattr(agent, 'set_context'):
+                    agent.set_context(agent_context)
+
         all_traces = []
         start_time = datetime.now()
-        
+
         try:
-            # Step 1: Get user ID and Session ID
+            # ... rest of the original run method ...
+
             user_val = context.get("user_id", 1)
             user_id = user_val.id if hasattr(user_val, 'id') else user_val
             session_id = context.get("session_id")
