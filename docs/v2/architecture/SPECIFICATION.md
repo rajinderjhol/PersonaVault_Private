@@ -171,6 +171,8 @@ PersonaVault distinguishes between:
 
 The system MUST NOT treat simulated, proposed or predicted information as observed reality.
 
+> **Crucial Invariant:** A simulated, predicted, proposed, or hypothetical outcome MUST NOT mutate authoritative real-world learning state unless explicitly promoted through an authorized validation process.
+
 This is a very important safety and correctness primitive, especially if PersonaVault eventually controls devices or physical systems.
 
 ## 3.3 Intelligence vs Model
