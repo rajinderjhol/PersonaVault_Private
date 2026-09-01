@@ -1,7 +1,9 @@
 from typing import Dict, Any
 from app.api.v2.models.environment import Environment
+from app.api.v2.models.outcome import OutcomeSourceType
 from app.api.v2.services.prediction_service import PredictionService
 from datetime import datetime
+import uuid
 
 class SimulationService:
     def __init__(self, prediction_service: PredictionService):
@@ -27,12 +29,23 @@ class SimulationService:
             scenario=scenario
         )
 
-        # 4. Return simulation results
+        # 4. Create outcome with SIMULATION source type
+        simulated_outcome = {
+            "id": str(uuid.uuid4()),
+            "environment_id": environment.id,
+            "source_type": OutcomeSourceType.SIMULATION,  # CRITICAL
+            "success": predicted_outcome.get("confidence", 0) > 0.5,
+            "result": predicted_outcome,
+            "metrics": {"confidence": predicted_outcome.get("confidence", 0.5)}
+        }
+
+        # 5. Return simulation results
         return {
             "simulation_id": simulation_id,
             "environment_id": environment.id,
             "scenario": scenario.get("name", "Unnamed scenario"),
             "predicted_outcome": predicted_outcome,
+            "outcome": simulated_outcome,
             "status": "completed"
         }
 

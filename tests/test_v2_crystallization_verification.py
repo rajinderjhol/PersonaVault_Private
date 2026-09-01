@@ -108,7 +108,34 @@ async def test_crystallization_verification():
     assert len(patterns_a) > 0
     assert patterns_a[0]["metadata"]["environment_id"] == env_a.id
     
-    print("\n✅ Crystallization Verification Test Passed:")
-    print(f"   - Pattern learned in Environment A: {env_a.id}")
-    print(f"   - Pattern isolated from Environment B: {env_b.id}")
-    print(f"   - Pattern successfully recalled in Environment A")
+from app.api.v2.services.runtime.outcome_learning_bridge import OutcomeLearningBridge
+
+@pytest.mark.asyncio
+async def test_outcome_learning_bridge():
+    """
+    Verification Test for Outcome -> Learning Bridge:
+    1. Simulate an 'Outcome' event.
+    2. Ensure OutcomeLearningBridge detects the success.
+    3. Verify it automatically triggers crystallization.
+    """
+    # Setup
+    now = datetime.utcnow()
+    env = Environment(id="env_test", name="Test Env", owner_principal_id="p1", status="active", type="standard", created_at=now, updated_at=now)
+    
+    memory_service = AsyncMock(spec=MemoryService)
+    crystallization_service = AsyncMock(spec=CrystallizationService)
+    
+    bridge = OutcomeLearningBridge(crystallization_service, memory_service)
+    
+    outcome = {"success": True, "result": "Action completed successfully"}
+    
+    # Run
+    await bridge.process_outcome(env, outcome)
+    
+    # Verify crystallization was triggered
+    crystallization_service.crystallize_pattern.assert_called_once()
+    call_args = crystallization_service.crystallize_pattern.call_args
+    assert call_args.kwargs["environment"].id == env.id
+    assert "success" in call_args.kwargs["pattern_data"]["content"]
+
+    print("\n✅ Outcome -> Learning Bridge Test Passed")
