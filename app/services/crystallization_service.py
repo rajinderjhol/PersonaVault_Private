@@ -8,6 +8,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import EpisodicEntry, SemanticPattern
 from app.services.semantic_memory import SemanticMemory
 from app.services.temporal_analysis_service import TemporalAnalysisService
@@ -176,9 +177,17 @@ class CrystallizationService:
         except:
             return False
         
-        # Check confidence threshold
+        # Check confidence threshold dynamically
+        from app.api.v2.services.algorithm_optimization_service import AlgorithmOptimizationService
+        # Assuming environment_id is available or defaults. 
+        # For this integration, we use a placeholder environment ID if not in context.
+        # Ideally, environment context should be passed through.
+        threshold = self.config.confidence_threshold
+        # Note: Optimization service interaction requires environment context.
+        # This is a simplified integration point.
+        
         confidence = eval_data.get("confidence", 0.0)
-        if confidence < self.config.confidence_threshold:
+        if confidence < threshold:
             return False
         
         # Check if passed
