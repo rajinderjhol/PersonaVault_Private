@@ -46,17 +46,21 @@ class OutcomeLearningBridge:
         
         if pattern:
             # 5. Auto-crystallize
-            memory_id = await self.crystallization_service.crystallize_pattern(
-                environment=environment,
-                pattern_data=pattern,
-                source_decision_id=outcome.decision_id
-            )
-            
-            # 6. Mark outcome as processed
-            await self._mark_outcome_processed(environment.id, idempotency_key, memory_id)
-            
-            logger.info(f"✅ Crystallized pattern from outcome {idempotency_key} in env {environment.id}")
-            return memory_id
+            try:
+                memory_id = await self.crystallization_service.crystallize_pattern(
+                    environment=environment,
+                    pattern_data=pattern,
+                    source_decision_id=outcome.decision_id
+                )
+                
+                # 6. Mark outcome as processed
+                await self._mark_outcome_processed(environment.id, idempotency_key, memory_id)
+                
+                logger.info(f"✅ Crystallized pattern from outcome {idempotency_key} in env {environment.id}")
+                return memory_id
+            except Exception as e:
+                logger.error(f"❌ Crystallization failed for outcome {idempotency_key} in env {environment.id}: {e}")
+                return None
         
         return None
 

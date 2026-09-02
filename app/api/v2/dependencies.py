@@ -2,10 +2,9 @@ from fastapi import Depends, HTTPException, status
 from typing import Optional
 from app.api.v2.models.environment import Environment
 from app.api.v2.models.principal import Principal
-from app.api.v2.services.authority_service import AuthorityService
+from app.api.v2.services.authority_service import AuthorityService, authority_service
 from app.api.v2.services.environment_service import environment_service, EnvironmentService
-from app.api.v2.services.membership_service import MembershipService
-from app.api.v2.endpoints.memberships import membership_service
+from app.api.v2.services.membership_service import MembershipService, membership_service
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from datetime import datetime
@@ -15,7 +14,6 @@ def get_environment_service() -> 'EnvironmentService':
     return environment_service
 
 def get_authority_service() -> 'AuthorityService':
-    from app.api.v2.endpoints.authorities import authority_service
     return authority_service
 
 def get_membership_service() -> 'MembershipService':

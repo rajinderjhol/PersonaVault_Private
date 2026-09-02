@@ -37,3 +37,6 @@ class MembershipService:
     ) -> List[Membership]:
         """Get all members of an Environment."""
         return [m for m in self._memberships if m.environment_id == environment.id]
+
+# Singleton instance
+membership_service = MembershipService(session_factory=None)

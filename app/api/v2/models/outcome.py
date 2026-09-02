@@ -15,6 +15,7 @@ class Outcome(BaseModel):
     environment_id: str
     decision_id: Optional[str] = None
     action_id: Optional[str] = None
+    trace_id: Optional[str] = None
     
     # Provenance field
     source_type: OutcomeSourceType = OutcomeSourceType.REAL_ACTION

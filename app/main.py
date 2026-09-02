@@ -569,7 +569,7 @@ app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
 # V2 API Registration
-from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents
+from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents, health
 app.include_router(intelligence_packs.router)
 app.include_router(environments.router)
 app.include_router(memberships.router)
@@ -577,6 +577,7 @@ app.include_router(authorities.router)
 app.include_router(crystallization.router)
 app.include_router(simulation.router)
 app.include_router(agents.router)
+app.include_router(health.router)
 
 
 # Dashboard UI Redirect

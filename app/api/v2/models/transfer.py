@@ -21,6 +21,7 @@ class TransferCandidate(BaseModel):
     id: str
     source_environment_id: str
     target_environment_id: Optional[str] = None
+    trace_id: Optional[str] = None
     
     # The payload (e.g., Crystallized Pattern)
     pattern_id: str

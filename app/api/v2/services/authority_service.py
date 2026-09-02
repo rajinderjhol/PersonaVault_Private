@@ -60,3 +60,7 @@ class AuthorityService:
             g.capability == required_capability
             for g in self._grants.values()
         )
+
+# Singleton instance
+from app.api.v2.services.membership_service import membership_service
+authority_service = AuthorityService(membership_service=membership_service)

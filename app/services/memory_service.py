@@ -70,6 +70,30 @@ class MemoryService:
         
         return new_memory
 
+    async def get_memory(self, memory_id: int, environment_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a single memory by ID, optionally scoped to an environment.
+        In V2, environment_id is strongly recommended to prevent breakout.
+        """
+        memory = await self.memory_repo.get_by_id(memory_id)
+        if memory:
+            # Scoping check
+            if environment_id and getattr(memory, 'environment_id', None) != environment_id:
+                logger.warning(f"🛡️ Isolation Guard: Access denied to memory {memory_id} from env {environment_id}")
+                return None
+                
+            return {
+                "id": memory.id,
+                "content": memory.content,
+                "metadata": {
+                    "type": memory.modality,
+                    "tags": memory.tags.split(",") if memory.tags else [],
+                    "title": memory.title,
+                    "environment_id": getattr(memory, 'environment_id', None)
+                }
+            }
+        return None
+
     async def delete_expired_memories(self) -> int:
         """Logic for the 'Living Memory' concept."""
         return await self.memory_repo.delete_expired()

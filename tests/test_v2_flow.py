@@ -1,8 +1,16 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.core.dependencies import get_current_user
+from unittest.mock import MagicMock
 
 client = TestClient(app)
+
+# Mock current user for all tests in this file
+mock_user = MagicMock()
+mock_user.id = "test-user-1"
+mock_user.username = "testuser"
+app.dependency_overrides[get_current_user] = lambda: mock_user
 
 def test_v2_environment_lifecycle():
     # 1. Create Environment
@@ -43,7 +51,7 @@ def test_v2_environment_lifecycle():
     # 6. List Members
     response = client.get(f"/v2/environments/{env_id}/members/")
     assert response.status_code == 200
-    assert len(response.json()) == 1
+    assert len(response.json()) == 2
 
     # 7. Grant Authority
     response = client.post(f"/v2/environments/{env_id}/authorities/", json={

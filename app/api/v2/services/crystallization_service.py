@@ -72,6 +72,12 @@ class CrystallizationService:
         # Filter by type in Python
         return [m for m in memories if m.get("metadata", {}).get("type") == "crystallized_pattern"]
 
+    async def get_pattern(self, pattern_id: str, environment_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a single crystallized pattern by ID, scoped to an environment.
+        """
+        return await self.memory_service.get_memory(int(pattern_id), environment_id=environment_id)
+
 # Singleton instance
 from app.services.memory_service import MemoryService
 from app.repositories.sqlalchemy.memory import SQLMemoryRepository
