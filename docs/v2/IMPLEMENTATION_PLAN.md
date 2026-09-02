@@ -15,6 +15,7 @@ V2 is implemented as an additive extension to the existing PersonaVault Decision
 | **Endpoints** | `backend/app/api/v2/endpoints/` | ✅ Done |
 | **Core Logic** | `backend/app/core/` | In Progress |
 | **Governance Service** | `backend/app/api/v2/services/` | ✅ Done |
+| **Transfer Service** | `backend/app/api/v2/services/` | ✅ Done |
 
 ## Development Rules
 1. **Compatibility First**: No breaking changes to V1 APIs.
