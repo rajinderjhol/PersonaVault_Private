@@ -78,7 +78,7 @@ const LeftPanel: React.FC = () => {
         <NavItem 
           to="/models" 
           icon={<Cpu size={20} />} 
-          label="Engine Room" 
+          label="Model Management" 
           collapsed={collapsed} 
           active={activePath === '/models'} 
         />
@@ -148,13 +148,6 @@ const LeftPanel: React.FC = () => {
           label="Governance" 
           collapsed={collapsed} 
           active={activePath === '/governance'} 
-        />
-        <NavItem 
-          to="/models"
-          icon={<Server size={20} />} 
-          label="Model Management" 
-          collapsed={collapsed} 
-          active={activePath === '/models'} 
         />
       </nav>
 

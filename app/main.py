@@ -587,7 +587,7 @@ app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
 # V2 API Registration
-from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents, health as v2_health_router, models as v2_models_router
+from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents, health as v2_health_router, models as v2_models_router, ingestion as v2_ingestion_router
 app.include_router(intelligence_packs.router, prefix="/v2/intelligence-packs")
 app.include_router(environments.router, prefix="/v2/environments")
 app.include_router(memberships.router, prefix="/v2/environments")
@@ -597,10 +597,19 @@ app.include_router(simulation.router, prefix="/v2/environments")
 app.include_router(agents.router, prefix="/v2/environments")
 app.include_router(v2_models_router.router, prefix="/v2/environments")
 app.include_router(v2_health_router.router, prefix="/v2/health")
+app.include_router(v2_ingestion_router.router, prefix="/v2/environments")
 
 
 
 # Global Health Endpoints
+@app.get("/admin/dashboard", response_class=RedirectResponse)
+async def redirect_to_dashboard():
+    return RedirectResponse(url="/api/v1/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/", response_class=RedirectResponse)
+async def redirect_to_root():
+    return RedirectResponse(url="/api/v1/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
 @app.get("/health/liveness")
 async def liveness_check():
     return {"status": "alive"}

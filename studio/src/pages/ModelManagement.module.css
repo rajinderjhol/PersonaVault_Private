@@ -1,10 +1,31 @@
-.container { padding: 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.title { font-size: 24px; font-weight: bold; }
-.activeEngine { background: #1e293b; color: white; padding: 20px; border-radius: 8px; margin-bottom: 24px; }
-.engineHeader { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-.engineMetrics { display: flex; gap: 24px; }
-.metricItem { display: flex; flex-direction: column; }
-.metricLabel { font-size: 12px; color: #94a3b8; }
-.metricValue { font-size: 18px; font-weight: bold; }
-.modelsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.container { padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #0f172a; min-height: 100vh; }
+.header { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+.title { font-size: 18px; font-weight: 600; color: #38bdf8; margin: 0; }
+
+/* Widget Structure */
+.card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+}
+.cardTitle { margin-top: 0; margin-bottom: 6px; font-size: 14px; color: #f1f5f9; }
+.description { margin-bottom: 8px; font-size: 12px; color: #94a3b8; }
+
+/* Form Elements */
+.configRow { display: flex; gap: 10px; align-items: center; }
+.inputField { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; color: #f1f5f9; font-size: 13px; }
+.pullRow { display: flex; gap: 10px; }
+.actionBtn { background: #38bdf8; color: #0f172a; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+/* Tag */
+.tag { padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #1e3a5f; color: #38bdf8; }
+
+/* Grid */
+.cardsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}

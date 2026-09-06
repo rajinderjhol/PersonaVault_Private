@@ -1,0 +1,7 @@
+.container { background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border); color: var(--color-text-primary); }
+.title { margin-top: 0; font-size: 1.1rem; color: var(--color-text-primary); margin-bottom: 1rem; }
+.stats { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+.stat strong { color: var(--color-gas); }
+.table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.table th { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--glass-border); color: var(--color-text-secondary); }
+.table td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--glass-border); }

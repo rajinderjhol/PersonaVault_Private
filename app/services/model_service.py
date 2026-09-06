@@ -31,3 +31,13 @@ class ModelService:
         except Exception as e:
             logger.error(f"Error listing models: {e}")
             return {"models": [], "active_model": active_model}
+
+    async def pull_model(self, name: str):
+        """Pull a model from Ollama."""
+        res = await self.ai_client.post(f"{Config.OLLAMA_BASE_URL}/api/pull", json={"name": name})
+        return res.json()
+
+    async def delete_model(self, name: str):
+        """Delete a model from Ollama."""
+        res = await self.ai_client.post(f"{Config.OLLAMA_BASE_URL}/api/delete", json={"name": name})
+        return res.status_code == 200

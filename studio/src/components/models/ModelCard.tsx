@@ -32,18 +32,19 @@ export const ModelCard: React.FC<ModelCardProps> = ({
       </div>
       <div className={styles.cardMetrics}>
         <div className={styles.metric}>
-          <span className={styles.label}>Confidence</span>
-          <span className={styles.value}>{model.confidence}%</span>
+          <span className={styles.label}>Status</span>
+          <span className={`${styles.value} ${styles[model.status]}`}>{model.status}</span>
         </div>
         <div className={styles.metric}>
-          <span className={styles.label}>Latency</span>
-          <span className={styles.value}>{model.latency}ms</span>
+          <span className={styles.label}>Size</span>
+          <span className={styles.value}>{model.size}</span>
         </div>
       </div>
       <div className={styles.cardActions}>
         {!isActive && (
           <button className={styles.actionBtn} onClick={() => onSetActive(model.id)}>Activate</button>
         )}
+        <button className={styles.deleteBtn} onClick={() => onDelete(model.name)}>Delete</button>
       </div>
     </div>
   );

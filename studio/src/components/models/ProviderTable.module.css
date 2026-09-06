@@ -1,0 +1,9 @@
+.container { background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border); }
+.title { margin-top: 0; font-size: 1.1rem; color: var(--color-text-primary); }
+.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }
+.table th { text-align: left; padding: 0.75rem; border-bottom: 2px solid var(--glass-border); color: var(--color-text-secondary); font-size: 0.8rem; text-transform: uppercase; }
+.table td { padding: 0.75rem; border-bottom: 1px solid var(--glass-border); color: var(--color-text-primary); }
+.statusActive { color: var(--color-gas); font-size: 0.8rem; }
+.actionBtn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; font-size: 0.9rem; margin-right: 10px; }
+.deleteBtn { background: none; border: none; color: var(--color-danger); cursor: pointer; font-size: 0.9rem; }
+.addBtn { margin-top: 1rem; padding: 8px 16px; background: var(--color-gas); color: var(--bg-primary); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }

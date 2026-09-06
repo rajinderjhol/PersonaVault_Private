@@ -1,0 +1,8 @@
+.container { background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border); }
+.title { margin-top: 0; font-size: 1.1rem; color: var(--color-text-primary); }
+.statsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1rem; }
+.statItem { padding: 0.5rem; background: var(--bg-primary); border-radius: 4px; border: 1px solid var(--glass-border); font-size: 0.85rem; }
+.providerName { font-weight: 600; color: var(--color-text-primary); margin-bottom: 4px; }
+.statDetails { display: flex; gap: 10px; color: var(--color-text-secondary); font-size: 0.75rem; }
+.status { color: var(--color-gas); margin-top: 4px; font-size: 0.75rem; }
+.refreshBtn { margin-top: 1rem; padding: 4px 8px; font-size: 0.8rem; background: none; border: 1px solid var(--glass-border); color: var(--color-text-secondary); cursor: pointer; border-radius: 4px; }

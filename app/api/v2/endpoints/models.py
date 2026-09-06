@@ -62,15 +62,32 @@ async def get_model_metrics(
         ]
     }
 
-@router.get("/providers", response_model=List[Dict[str, Any]])
-async def get_providers(
+@router.post("/pull")
+async def pull_model(
     env_id: str,
-    env: Environment = Depends(require_membership)
+    body: Dict[str, str],
+    request: Request,
+    env: Environment = Depends(require_membership),
+    db: AsyncSession = Depends(get_db)
 ):
-    """Get available AI providers."""
-    # Keep as is, providers seem to be static or managed elsewhere
-    return [
-        {"id": "ollama", "name": "Ollama"},
-        {"id": "groq", "name": "Groq"},
-        {"id": "gemini", "name": "Gemini"}
-    ]
+    """Pull a new model."""
+    name = body.get("name")
+    if not name:
+        raise HTTPException(status_code=400, detail="Model name required")
+    service = ModelService(db, request.app.state.ai_client)
+    return await service.pull_model(name)
+
+@router.delete("/{model_name}")
+async def delete_model(
+    env_id: str,
+    model_name: str,
+    request: Request,
+    env: Environment = Depends(require_membership),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a model."""
+    service = ModelService(db, request.app.state.ai_client)
+    success = await service.delete_model(model_name)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to delete model")
+    return {"status": "success"}

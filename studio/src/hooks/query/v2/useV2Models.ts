@@ -23,7 +23,7 @@ export const useV2Models = () => {
       if (!currentEnvId) throw new Error('No environment selected');
       
       // Use the newly implemented V2 endpoint
-      const data = await v2ApiClient.get<{models: any[], active_model: string}>(`/environments/${currentEnvId}/models`);
+      const data = await v2ApiClient.get<{models: any[], active_model: string}>(`/environments/${currentEnvId}/models/`);
       
       return data.models.map((model: any) => ({
         id: model.name || model.id,
