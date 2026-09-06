@@ -27,7 +27,7 @@ import { SecurityCenter } from './pages/SecurityCenter';
 import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
 import { DataIngestion } from './pages/DataIngestion';
-import { Simulator } from './pages/Simulator';
+import { PolicySimulator } from './pages/PolicySimulator';
 import { Marketplace } from './pages/Marketplace';
 
 // Modules
@@ -54,7 +54,7 @@ function App() {
                 <Route path="/models" element={<ModelManagement />} />
                 <Route path="/intelligence-vault" element={<IntelligenceVault />} />
                 <Route path="/ingestion" element={<DataIngestion />} />
-                <Route path="/simulator" element={<Simulator />} />
+                <Route path="/simulator" element={<PolicySimulator />} />
                 
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/marketplace" element={<Marketplace />} />
