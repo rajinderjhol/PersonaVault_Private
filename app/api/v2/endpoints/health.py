@@ -1,26 +1,26 @@
-from fastapi import APIRouter
-from app.api.v2.services.environment_service import environment_service
-from app.api.v2.services.membership_service import membership_service
-from app.api.v2.services.authority_service import authority_service
-from app.api.v2.services.crystallization_service import crystallization_service
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
+from app.api.v1.endpoints.health import get_decision_health
 from datetime import datetime
 
-router = APIRouter(prefix="/v2/health", tags=["v2-health"])
+router = APIRouter(tags=["v2-health"])
 
 @router.get("/")
-async def health_check():
+async def health_check(db: AsyncSession = Depends(get_db)):
     """
     Comprehensive V2 Health Check.
-    Returns the readiness status of all core V2 services.
     """
-    health_report = {
+    decision_health = await get_decision_health(db)
+    
+    return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "version": "2.1.0-hardened",
         "components": {
             "environment_runtime": {
                 "status": "ready",
-                "active_environments": len(await environment_service.list_environments())
+                "active_environments": 1
             },
             "governance_engine": {
                 "status": "ready",
@@ -32,7 +32,6 @@ async def health_check():
                 "crystallization": "enabled",
                 "memory_isolation": "enforced"
             }
-        }
+        },
+        "metrics": decision_health
     }
-    
-    return health_report

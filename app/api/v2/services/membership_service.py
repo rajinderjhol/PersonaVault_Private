@@ -36,7 +36,9 @@ class MembershipService:
         environment: Environment
     ) -> List[Membership]:
         """Get all members of an Environment."""
-        return [m for m in self._memberships if m.environment_id == environment.id]
+        members = [m for m in self._memberships if m.environment_id == environment.id]
+        print(f"DEBUG: Membership check for env {environment.id}. Members found: {[m.principal_id for m in members]}")
+        return members
 
 # Singleton instance
 membership_service = MembershipService(session_factory=None)

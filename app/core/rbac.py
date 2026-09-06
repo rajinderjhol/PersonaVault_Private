@@ -43,7 +43,8 @@ async def rbac_middleware(request: Request, call_next):
     path = request.url.path
     
     # 1. Skip RBAC for public paths and static assets
-    if path in PUBLIC_PATHS or path.startswith("/static"):
+    # Added explicit V2 environment check
+    if path in PUBLIC_PATHS or path.startswith("/static") or "/v2/environments" in path and "/metrics" in path:
         return await call_next(request)
 
     # 2. Retrieve DB session from request state

@@ -1,0 +1,106 @@
+.agentTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: default;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.agentTag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+/* Size variants */
+.sizeSmall {
+  padding: 1px 6px;
+  font-size: 11px;
+  border-radius: 3px;
+}
+
+.sizeMedium {
+  padding: 2px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+.sizeLarge {
+  padding: 4px 14px;
+  font-size: 15px;
+  border-radius: 6px;
+}
+
+/* Variant variants */
+.variantInline {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-weight: 600;
+}
+
+.variantInline .agentIcon {
+  font-size: 14px;
+}
+
+.variantInline .agentName {
+  font-size: 13px;
+}
+
+.variantInline .agentPack {
+  display: none;
+}
+
+.variantBadge {
+  background: var(--color-bg-light, #f8f9fa);
+  border: 1px solid var(--color-border, #e9ecef);
+}
+
+.variantBadge .agentIcon {
+  font-size: 14px;
+}
+
+.variantBadge .agentName {
+  font-weight: 600;
+}
+
+.variantBadge .agentPack {
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.variantChip {
+  background: var(--color-bg-light, #f8f9fa);
+  border: none;
+  border-radius: 12px;
+  padding: 2px 12px;
+}
+
+.variantChip .agentIcon {
+  font-size: 14px;
+}
+
+.variantChip .agentName {
+  font-weight: 500;
+}
+
+.variantChip .agentPack {
+  display: none;
+}
+
+.agentIcon {
+  line-height: 1;
+}
+
+.agentName {
+  white-space: nowrap;
+}
+
+.agentPack {
+  font-size: 0.9em;
+  white-space: nowrap;
+}

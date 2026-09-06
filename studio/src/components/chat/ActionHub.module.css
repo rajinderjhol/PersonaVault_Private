@@ -1,0 +1,128 @@
+.container {
+  margin: 12px 0 8px 0;
+  border-radius: 8px;
+  background: var(--color-bg-white, #ffffff);
+  border: 1px solid var(--color-border, #e9ecef);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--color-bg-light, #f8f9fa);
+  border-bottom: 1px solid var(--color-border-light, #f1f3f5);
+}
+
+.headerIcon { font-size: 16px; }
+
+.headerTitle {
+  font-weight: 600;
+  color: var(--color-text-primary, #212529);
+  font-size: 14px;
+}
+
+.decisionId {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-muted, #6c757d);
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.actionsList {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border, #e9ecef);
+  border-radius: 6px;
+  background: var(--color-bg-white, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: var(--color-text-primary, #212529);
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--color-bg-hover, #f1f3f5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.actionButton.primary {
+  border-color: var(--color-primary, #4A90D9);
+  background: var(--color-primary-light, #e8f0fe);
+}
+
+.actionButton.primary:hover:not(:disabled) {
+  background: var(--color-primary, #4A90D9);
+  color: white;
+}
+
+.actionContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1;
+}
+
+.actionMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionIcon { font-size: 16px; }
+
+.actionLabel { font-weight: 500; }
+
+.actionBadge {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--color-primary, #4A90D9);
+  color: white;
+  font-weight: 600;
+}
+
+.actionDescription {
+  font-size: 13px;
+  color: var(--color-text-secondary, #6c757d);
+  margin-left: 28px;
+}
+
+.loadingSpinner {
+  font-size: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-bg-light, #f8f9fa);
+  border-top: 1px solid var(--color-border-light, #f1f3f5);
+}
+
+.footerIcon { font-size: 14px; }
+
+.footerText {
+  font-size: 12px;
+  color: var(--color-text-muted, #6c757d);
+}

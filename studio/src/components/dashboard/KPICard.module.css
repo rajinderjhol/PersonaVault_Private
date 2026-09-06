@@ -1,0 +1,30 @@
+.card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.trend {
+  font-size: 0.75rem;
+}
+
+.up { color: var(--color-success); }
+.down { color: var(--color-danger); }
+.stable { color: var(--color-text-muted); }

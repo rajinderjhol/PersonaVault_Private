@@ -29,8 +29,8 @@ import { DataIngestion } from './pages/DataIngestion';
 import { Simulator } from './pages/Simulator';
 import { Marketplace } from './pages/Marketplace';
 
-// Components
-import { AgentSwarmUI } from './components/chat/AgentSwarmUI';
+// Modules
+import CognitiveLab from './components/modules/CognitiveLab/CognitiveLab';
 
 function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -48,7 +48,7 @@ function App() {
             <AppLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/chat" element={<AgentSwarmUI isActive={true} />} />
+                <Route path="/chat" element={<CognitiveLab />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/ingestion" element={<DataIngestion />} />
                 <Route path="/simulator" element={<Simulator />} />

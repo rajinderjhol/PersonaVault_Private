@@ -1,13 +1,68 @@
 import { apiClient } from './client';
 
+export interface IntelligenceResolution {
+  packId: string;
+  packName: string;
+  memories: {
+    layer: 1 | 2 | 3;
+    count: number;
+    summary?: string;
+  }[];
+  policies: {
+    count: number;
+    matched?: string[];
+  };
+}
+
+export interface DecisionGate {
+  decisionId: string;
+  verdict: 'APPROVED' | 'CONTAINED' | 'ESCALATED' | 'REFUSED';
+  reasonCode: string;
+  summary: string;
+  consensus: {
+    total: number;
+    agreed: number;
+  };
+  timeline: {
+    perception: any;
+    policyMatch: any;
+    aiRecommendation: any;
+    decisionMade: any;
+    provenanceLogged: any;
+  };
+  evidenceId?: string;
+  timestamp: string;
+}
+
+export interface SuggestedAction {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  action: string;
+  payload?: any;
+  primary?: boolean;
+}
+
 export interface ChatMessage {
-  id: number;
-  role: 'user' | 'assistant';
+  id?: string;
+  role: 'user' | 'assistant' | 'system';
   content: string;
   thought?: string;
   provider?: string;
+  timestamp?: string;
+  created_at?: string;
   trace_ids?: Record<string, string>;
-  created_at: string;
+  resolutions?: IntelligenceResolution[];
+  decision?: DecisionGate;
+  actions?: SuggestedAction[];
+  isStreaming?: boolean;
+  agentAttribution?: {
+    agentId: string;
+    agentName: string;
+    packId: string;
+    packName: string;
+  }[];
 }
 
 export interface ChatSession {
@@ -24,10 +79,9 @@ export interface ChatResponse {
   finalResponse?: string;
   session_id?: number;
   trace_ids?: Record<string, string>;
-  attribution?: {
-    phase: string;
-    pattern?: string;
-  };
+  attribution?: IntelligenceResolution[];
+  decision?: DecisionGate;
+  actions?: SuggestedAction[];
   reasoningTrace?: Array<{
     step: number;
     label: string;
@@ -36,7 +90,8 @@ export interface ChatResponse {
 }
 
 export const chatAPI = {
-  // Send a message (non-streaming)
+  // ... rest of the file remains unchanged
+
   sendMessage: async (query: string, sessionId?: number, provider?: string): Promise<ChatResponse> => {
     return await apiClient.post('/chat/', {
       query,

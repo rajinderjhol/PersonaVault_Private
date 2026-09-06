@@ -47,3 +47,52 @@
   color: var(--text-secondary, #9ca3af);
   cursor: pointer;
 }
+
+.thermoSection {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.thermoSection h5 {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.thermoGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thermoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.thermoLabel {
+  font-size: 0.8rem;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.thermoValue {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9ca3af);
+  align-self: flex-end;
+  margin-top: -16px;
+}
+
+.thermoBar {
+  height: 4px;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.temporalContextSection {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+}

@@ -1,0 +1,75 @@
+.inlineGroup {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.inlineItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.inlineText {
+  font-size: 13px;
+  color: var(--color-text-secondary, #6c757d);
+  margin: 0 2px;
+}
+
+.inlineSeparator {
+  color: var(--color-text-muted, #6c757d);
+  margin: 0 4px;
+}
+
+.compactGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.stackedGroup {
+  margin: 8px 0;
+  border: 1px solid var(--color-border, #e9ecef);
+  border-radius: 6px;
+  background: var(--color-bg-white, #ffffff);
+  overflow: hidden;
+}
+
+.stackedHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-bg-light, #f8f9fa);
+  border-bottom: 1px solid var(--color-border-light, #f1f3f5);
+}
+
+.stackedIcon {
+  font-size: 14px;
+}
+
+.stackedTitle {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-primary, #212529);
+}
+
+.stackedList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.stackedItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stackedText {
+  font-size: 13px;
+  color: var(--color-text-secondary, #6c757d);
+}

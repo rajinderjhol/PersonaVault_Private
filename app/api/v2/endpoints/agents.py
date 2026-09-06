@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
+from typing import Dict, Any, List
 from app.api.v2.models.environment import Environment
 from app.api.v2.dependencies import require_membership
 from app.swarm.orchestrator import get_orchestrator
@@ -11,7 +11,7 @@ from app.api.v2.services.simulation_service import SimulationService
 from app.repositories.sqlalchemy.memory import SQLMemoryRepository
 from app.repositories.faiss.vector import FAISSSemanticRepository
 
-router = APIRouter(prefix="/v2/environments/{env_id}/agents", tags=["v2-agents"])
+router = APIRouter(prefix="/{env_id}/agents", tags=["v2-agents"])
 
 # Service Factory
 def get_full_orchestrator():
@@ -32,6 +32,22 @@ def get_full_orchestrator():
         prediction_service=prediction_service,
         simulation_service=simulation_service
     )
+
+@router.get("/", response_model=List[Dict[str, Any]])
+async def list_agents(
+    env_id: str,
+    env: Environment = Depends(lambda env_id: require_membership(env_id))
+):
+    """List all available agents within the context of a specific environment."""
+    # In a production system, this would query the orchestrator or registry
+    # For now, return the standard swarm configuration
+    return [
+        {"id": "agent-orch-001", "name": "Orchestrator", "type": "orchestrator", "status": "active", "confidence": 0.98},
+        {"id": "agent-reas-001", "name": "Reasoning Engine", "type": "reasoning", "status": "active", "confidence": 0.95},
+        {"id": "agent-sec-001", "name": "Security Sentinel", "type": "policy", "status": "idle", "confidence": 0.92},
+        {"id": "agent-mem-001", "name": "Memory Custodian", "type": "memory", "status": "active", "confidence": 0.99},
+        {"id": "agent-act-001", "name": "Action Dispatcher", "type": "action", "status": "idle", "confidence": 0.90}
+    ]
 
 @router.post("/chat")
 async def chat_with_agent(

@@ -1,0 +1,79 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-light, #f8f9fa);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color, #e9ecef);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #212529);
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: white;
+  border: 1px solid var(--border-color, #e9ecef);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-secondary, #6c757d);
+}
+
+.button:hover {
+  background: var(--bg-light, #f8f9fa);
+}
+
+.button.active {
+  background: var(--primary-color, #4a90d9);
+  color: white;
+  border-color: var(--primary-color, #4a90d9);
+}
+
+.customRange {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color, #e9ecef);
+}
+
+.input {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border-color, #e9ecef);
+  border-radius: 4px;
+  outline: none;
+}
+
+.separator {
+  font-size: 12px;
+  color: var(--text-secondary, #6c757d);
+}
+
+.applyBtn {
+  padding: 4px 12px;
+  font-size: 12px;
+  background: var(--primary-color, #4a90d9);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.applyBtn:hover {
+  opacity: 0.9;
+}

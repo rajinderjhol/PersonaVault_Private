@@ -1,38 +1,50 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useChat } from '../../../../hooks/useChat';
 import { Send, Paperclip, Mic, User, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IntelligenceResolutionFeed } from '../../../chat/IntelligenceResolutionFeed';
+import { DecisionGate } from '../../../decision/DecisionGate';
+import { ActionHub } from '../../../chat/ActionHub';
+import { AttributionGroup } from '../../../chat/AttributionGroup';
+import { ChatMessage } from '../../../../api/chat';
 
-const ChatInterface: React.FC = () => {
-  const { messages, sendMessage, isStreaming } = useChat(true);
+interface ChatInterfaceProps {
+  messages: ChatMessage[];
+  currentMessage: ChatMessage | null;
+  onSendMessage: (message: string) => void;
+  isStreaming: boolean;
+  error: string | null;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  messages,
+  currentMessage,
+  onSendMessage,
+  isStreaming,
+  error,
+}) => {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
     const content = input;
-    console.log('🔍 Chat: Sending message:', content);
     setInput('');
-    try {
-      await sendMessage(content);
-      console.log('✅ Chat: Message sent successfully');
-    } catch (error) {
-      console.error('❌ Chat error:', error);
-    }
+    onSendMessage(content);
   };
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, currentMessage]);
 
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      gap: '20px'
+      gap: '20px',
+      position: 'relative'
     }}>
       {/* Messages Area */}
       <div 
@@ -50,7 +62,11 @@ const ChatInterface: React.FC = () => {
           {messages.map((msg, index) => (
             <MessageItem key={index} message={msg} />
           ))}
+          {currentMessage && (
+            <MessageItem key="current" message={currentMessage} />
+          )}
         </AnimatePresence>
+        {error && <div style={{ color: 'var(--color-danger)' }}>⚠️ {error}</div>}
       </div>
       
       {/* Input Area */}
@@ -116,9 +132,12 @@ const ChatInterface: React.FC = () => {
 };
 
 const MessageItem: React.FC<{ message: any }> = ({ message }) => {
-  console.log('🔍 MessageItem rendering:', message);
   const isUser = message.role === 'user';
   
+  const handleActionClick = async (action: any) => {
+    console.log('Action clicked:', action);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -151,6 +170,19 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
         maxWidth: '80%',
         alignItems: isUser ? 'flex-end' : 'flex-start'
       }}>
+        {/* Agent Attribution */}
+        {!isUser && message.agentAttribution && (
+          <AttributionGroup 
+            attributions={message.agentAttribution}
+            variant="inline"
+          />
+        )}
+
+        {/* Intelligence Resolution Feed */}
+        {!isUser && message.resolutions && (
+          <IntelligenceResolutionFeed resolutions={message.resolutions} />
+        )}
+
         <div style={{
           backgroundColor: isUser ? 'var(--color-bg-secondary)' : 'rgba(15, 23, 42, 0.3)',
           padding: '16px',
@@ -164,7 +196,28 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
           {message.content}
         </div>
         
-        {!isUser && message.trace_ids && (
+        {/* Decision Gate */}
+        {!isUser && message.decision && (
+          <DecisionGate 
+            decision={message.decision}
+            onReplay={(id) => console.log('Replay:', id)}
+            onDownloadEvidence={(id) => console.log('Download:', id)}
+            onCopyId={(id) => console.log('Copy:', id)}
+          />
+        )}
+        
+        {/* Action Hub */}
+        {!isUser && message.actions && (
+          <ActionHub 
+            actions={message.actions}
+            decisionId={message.decision?.decisionId}
+            verdict={message.decision?.verdict}
+            onActionClick={handleActionClick}
+            isLoading={message.isStreaming}
+          />
+        )}
+        
+        {!isUser && message.trace_ids && !message.decision && !message.actions && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -184,5 +237,3 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
     </motion.div>
   );
 };
-
-export default ChatInterface;

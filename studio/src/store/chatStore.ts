@@ -96,10 +96,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // Add user message immediately
     const userMessage: ChatMessage = {
-      id: Date.now(),
+      id: Date.now().toString(),
       role: 'user',
       content: query,
-      created_at: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
     };
     set((state) => ({
       messages: [...state.messages, userMessage],
@@ -117,7 +117,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Add assistant message
       const assistantMessage: ChatMessage = {
-        id: Date.now() + 1,
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: cleanResponse(response.response || response.finalResponse || 'No response'),
         provider: provider,
@@ -140,7 +140,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ error: (error as Error).message, isStreaming: false });
       // Add error message
       const errorMessage: ChatMessage = {
-        id: Date.now() + 1,
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: '❌ Error: ' + (error as Error).message,
         created_at: new Date().toISOString(),

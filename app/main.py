@@ -146,6 +146,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown events, including database seeding."""
+    from app.api.v2.services.environment_service import environment_service
+    await environment_service.seed_admin_membership()
+    
     # Initialize scheduler for background tasks
     init_scheduler()
     
@@ -363,6 +366,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.websocket("/v2/environments/{env_id}/ws/agents")
+async def agent_websocket_endpoint(websocket: WebSocket, env_id: str):
+    await websocket.accept()
+    # Simple broadcast loop for development
+    try:
+        while True:
+            await asyncio.sleep(5)
+            await websocket.send_json({
+                "type": "agent_status",
+                "agentId": "agent-orch-001",
+                "payload": {"status": "active", "lastActivity": datetime.now().isoformat()}
+            })
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected for env {env_id}")
+
 # Set up Prometheus metrics
 from prometheus_fastapi_instrumentator import Instrumentator
 instrumentator = Instrumentator(
@@ -569,161 +587,21 @@ app.include_router(system_admin.router, prefix="/api/v1", tags=["system"])
 app.include_router(clinical_router, tags=["clinical"])
 
 # V2 API Registration
-from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents, health
-app.include_router(intelligence_packs.router)
-app.include_router(environments.router)
-app.include_router(memberships.router)
-app.include_router(authorities.router)
-app.include_router(crystallization.router)
-app.include_router(simulation.router)
-app.include_router(agents.router)
-app.include_router(health.router)
+from app.api.v2.endpoints import intelligence_packs, environments, memberships, authorities, crystallization, simulation, agents, health as v2_health_router
+app.include_router(intelligence_packs.router, prefix="/v2/intelligence-packs")
+app.include_router(environments.router, prefix="/v2/environments")
+app.include_router(memberships.router, prefix="/v2/environments")
+app.include_router(authorities.router, prefix="/v2/environments")
+app.include_router(crystallization.router, prefix="/v2/environments")
+app.include_router(simulation.router, prefix="/v2/environments")
+app.include_router(agents.router, prefix="/v2/environments")
+app.include_router(v2_health_router.router, prefix="/v2/health")
 
-
-# Dashboard UI Redirect
-@app.get("/admin/dashboard", response_class=HTMLResponse)
-async def admin_dashboard_redirect(request: Request):
-    """Redirect to the actual dashboard location."""
-    return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=302)
-
-@app.get("/admin/test/layout", response_class=HTMLResponse)
-async def test_layout_page(request: Request):
-    """Render the layout verification test page."""
-    from fastapi.templating import Jinja2Templates
-    templates = Jinja2Templates(directory="app/templates")
-    return templates.TemplateResponse(
-        "dashboard/test_layout.html",
-        {"request": request}
-    )
-
-# Global Exception Handler for Graceful Degradation
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled Exception: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal Cognitive Engine Error", "code": "SERV_001"}
-    )
-
-# WebSocket endpoint for real-time IoT and communication
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    # Complete the handshake first to avoid proxy timeout/errors
-    await websocket.accept()
-
-    # SECURITY HANDSHAKE: Validate session token against the database
-    session_id = websocket.cookies.get("session_id")
-    if not session_id:
-        logger.warning(f"WebSocket auth failed for {client_id}: No session_id cookie.")
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    # Verify the session exists, is active, and has not expired
-    try:
-        async with SessionLocal() as _ws_db:
-            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
-            session_stmt = select(UserSession).where(
-                UserSession.session_token == session_id,
-                UserSession.is_active == True,
-                UserSession.expires_at > now_utc,
-            )
-            result = await _ws_db.execute(session_stmt)
-            db_session = result.scalars().first()
-
-        if not db_session:
-            logger.warning(
-                f"WebSocket auth failed for {client_id}: "
-                f"session '{session_id[:8]}…' not found, expired, or inactive."
-            )
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
-    except Exception as ws_auth_err:
-        logger.error(f"WebSocket session lookup error for {client_id}: {ws_auth_err}")
-        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
-        return
-
-    await manager.connect(client_id, websocket)  # manager.connect must NOT call accept() again
-    try:
-        while True:
-            data = await websocket.receive_text()
-            try:
-                parsed = json.loads(data)
-                
-                # Log and process based on type
-                if parsed.get("type") == "iot_data":
-                    # In production, we'd verify the owner matches the session user here
-                    await IoTService.process_realtime_data(parsed["data"])
-                
-                await manager.send_personal_message(
-                    json.dumps({
-                        "status": "processed",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }),
-                    client_id
-                )
-            except json.JSONDecodeError:
-                logger.error(f"Invalid JSON received on WebSocket from {client_id}: {data}")
-    except WebSocketDisconnect:
-        manager.disconnect(client_id, websocket)
-
-# Root endpoint - redirects to dashboard or login
-@app.get("/")
-async def root(request: Request):
-    if request.cookies.get("session_id"):
-        return RedirectResponse(url="/admin/dashboard")
-    return RedirectResponse(url="/login")
-
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page():
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>PersonaVault Login</title>
-        <style>
-            body { background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }
-            .login-card { background: #1e293b; padding: 40px; border-radius: 8px; width: 320px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-            h2 { color: #38bdf8; margin-top: 0; }
-            p { color: #94a3b8; font-size: 14px; }
-            input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-            button { width: 100%; padding: 12px; background: #38bdf8; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
-            button:hover { background: #7dd3fc; }
-            .error { color: #f87171; margin-top: 10px; display: none; }
-        </style>
-    </head>
-    <body>
-        <div class="login-card">
-            <h2>🛡️ PersonaVault</h2>
-            <p>Admin Login</p>
-            <input type="text" id="username" placeholder="Username" value="admin">
-            <input type="password" id="password" placeholder="Password" value="admin123">
-            <button onclick="login()">Sign In</button>
-            <div id="error" class="error">Invalid credentials. Try admin/admin123</div>
-        </div>
-        <script>
-            async function login() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                const res = await fetch('/api/v1/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ username, password })
-                });
-                if (res.ok) window.location.href = '/admin/dashboard';
-                else document.getElementById('error').style.display = 'block';
-            }
-        </script>
-    </body>
-    </html>
-    """
-
-# Kubernetes liveness probe
+# Global Health Endpoints
 @app.get("/health/liveness")
 async def liveness_check():
     return {"status": "alive"}
 
-# Kubernetes readiness probe - checks DB connectivity
 @app.get("/health/readiness")
 async def readiness_check(db: AsyncSession = Depends(get_db)):
     try:
@@ -732,7 +610,6 @@ async def readiness_check(db: AsyncSession = Depends(get_db)):
     except Exception:
         return {"status": "not_ready", "database": "disconnected"}
 
-# Engine health check (for dev_restart.sh) - Moved above uvicorn.run
 @app.get("/health/engine")
 async def engine_health():
     return {
@@ -742,105 +619,3 @@ async def engine_health():
         "vector_store": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
-
-# Detailed health check for administrators
-@app.get("/health/detailed")
-async def detailed_health_check(
-    user_id: int = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
-):
-    """Detailed health check for administrators."""
-    import time
-    
-    health_status = {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "services": {},
-        "metrics": {}
-    }
-    
-    # Check database
-    try:
-        await db.execute(text("SELECT 1"))
-        health_status["services"]["database"] = "connected"
-    except Exception as e:
-        health_status["services"]["database"] = f"error: {str(e)}"
-        health_status["status"] = "degraded"
-    
-    # Check Ollama
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            response = await client.get("http://localhost:11434/api/tags")
-            if response.status_code == 200:
-                health_status["services"]["ollama"] = "connected"
-            else:
-                health_status["services"]["ollama"] = f"error: {response.status_code}"
-    except Exception as e:
-        health_status["services"]["ollama"] = f"error: {str(e)}"
-        health_status["status"] = "degraded"
-    
-    # Check vector service
-    try:
-        if vector_service.index:
-            health_status["services"]["vector"] = f"healthy ({vector_service.index.ntotal} entries)"
-        else:
-            health_status["services"]["vector"] = "not initialized"
-    except Exception as e:
-        health_status["services"]["vector"] = f"error: {str(e)}"
-    
-    # Check WebSocket
-    try:
-        health_status["metrics"]["websocket_connections"] = len(manager.active_connections)
-    except:
-        pass
-    
-    # Get system metrics
-    health_status["metrics"]["active_sessions"] = (await db.execute(select(func.count(UserSession.id)))).scalar_one_or_zero() or 0
-    health_status["metrics"]["total_memories"] = (await db.execute(select(func.count(Memory.id)))).scalar_one_or_zero() or 0
-    
-    return health_status
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "service": "PersonaVault API",
-        "version": "1.0.0",
-        "environment": "production"
-    }
-
-
-if __name__ == "__main__":
-    from logging.handlers import RotatingFileHandler
-    # Configure uvicorn to log to a rotating file
-    LOGGING_CONFIG["handlers"]["file"] = {
-        "class": "logging.handlers.RotatingFileHandler",
-        "filename": "storage/logs/uvicorn.log",
-        "formatter": "default",
-        "maxBytes": 1024 * 1024,  # 1MB per file
-        "backupCount": 3,         # Keep 3 backups
-    }
-    LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"].append("file")
-    LOGGING_CONFIG["loggers"]["uvicorn.access"] = {
-        "handlers": ["file"],
-        "level": "WARNING",  # Reduce verbosity: only log WARNING or higher
-        "propagate": False,
-    }
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_config=LOGGING_CONFIG)
-
-# Warm up Ollama to prevent first-request timeout
-async def warmup_ollama():
-    """Warm up Ollama by sending a small test request."""
-    try:
-        import httpx
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(
-                "http://localhost:11434/api/generate",
-                json={"model": "tinydolphin", "prompt": "Hello", "stream": False}
-            )
-        logger.info("✅ Ollama warmed up")
-    except Exception as e:
-        logger.warning(f"Ollama warmup failed: {e}")
-
-# Add to lifespan startup
-# Find where lifespan starts and add the warmup

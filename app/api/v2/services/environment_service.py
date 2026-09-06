@@ -5,8 +5,28 @@ from app.api.v2.models.environment import Environment, EnvironmentStatus
 
 class EnvironmentService:
     def __init__(self):
-        # In-memory store for development/prototyping
-        self._environments: Dict[str, Environment] = {}
+        print("DEBUG: EnvironmentService __init__ called")
+        self._environments: Dict[str, Environment] = {
+            "env-default-001": Environment(
+                id="env-default-001",
+                type="standard",
+                name="Default Sovereign Environment",
+                owner_principal_id="1",
+                status=EnvironmentStatus.ACTIVE,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+        }
+
+    async def seed_admin_membership(self):
+        print("DEBUG: seed_admin_membership started")
+        from app.api.v2.services.membership_service import membership_service
+        from app.api.v2.models.principal import Principal
+        now = datetime.utcnow()
+        admin_principal = Principal(id="1", type="person", name="admin", created_at=now, updated_at=now)
+        env = self._environments["env-default-001"]
+        await membership_service.add_member(env, admin_principal, "owner")
+        print(f"DEBUG: Seeded admin membership for principal: {admin_principal.id}")
 
     async def create_environment(self, name: str, owner_id: str, type: str = "standard") -> Environment:
         env_id = str(uuid.uuid4())

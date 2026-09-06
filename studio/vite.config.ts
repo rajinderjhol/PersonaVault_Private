@@ -12,6 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      '/v2': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        ws: true,
+      },
     },
     hmr: {
       overlay: false, // Temporarily disable overlay to see the actual error

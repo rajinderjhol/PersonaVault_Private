@@ -65,3 +65,18 @@
 .trendUp {
     color: var(--color-success);
 }
+
+.envSelect {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.envSelect:hover {
+    border-color: var(--color-gas);
+}

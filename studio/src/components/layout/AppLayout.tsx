@@ -1,4 +1,5 @@
-import React from 'react';
+import { useLocation } from 'react-router-dom';
+import { CommandBar } from './CommandBar';
 import LeftPanel from './LeftPanel';
 import CorePanel from './CorePanel';
 import RightPanel from './RightPanel';
@@ -8,24 +9,33 @@ interface AppLayoutProps {
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const location = useLocation();
+  const isCognitiveLab = location.pathname === '/chat';
+
   return (
     <div className="app-layout" style={{
       display: 'flex',
+      flexDirection: 'column',
       width: '100vw',
       height: '100vh',
       overflow: 'hidden',
       backgroundColor: 'var(--color-bg-primary)'
     }}>
-      {/* Sidebar Navigation */}
-      <LeftPanel />
+      {/* Sovereign Cockpit Command Bar */}
+      <CommandBar />
 
-      {/* Main Content Area */}
-      <CorePanel>
-        {children}
-      </CorePanel>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Sidebar Navigation */}
+        <LeftPanel />
 
-      {/* Contextual Intelligence Panel */}
-      <RightPanel />
+        {/* Main Content Area */}
+        <CorePanel>
+          {children}
+        </CorePanel>
+
+        {/* Contextual Intelligence Panel - Hidden in Cognitive Lab as it has its own cockpit */}
+        {!isCognitiveLab && <RightPanel />}
+      </div>
     </div>
   );
 };

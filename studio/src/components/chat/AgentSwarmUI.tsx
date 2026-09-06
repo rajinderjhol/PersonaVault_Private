@@ -1,64 +1,43 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { AgentStatus } from '../../types/agent';
 import { getWebSocketService } from '../../services/websocketService';
+import { Agent } from '../../hooks/query/v2/useV2Agents';
+import { ThermodynamicsData } from '../../hooks/query/v2/useV2Thermodynamics';
 import styles from './AgentSwarmUI.module.css';
 
 interface AgentSwarmUIProps {
-  initialMessages?: AgentStatus[];
+  agents?: Agent[];
+  thermodynamics?: ThermodynamicsData | null;
+  isLoading?: boolean;
+  onAgentClick?: (agent: any) => void;
   isActive?: boolean;
-  onAgentClick?: (agent: AgentStatus) => void;
 }
 
 export const AgentSwarmUI: React.FC<AgentSwarmUIProps> = ({ 
-  initialMessages = [],
-  isActive = false,
-  onAgentClick 
+  agents = [], 
+  thermodynamics = null,
+  isLoading = false,
+  onAgentClick,
+  isActive = false
 }) => {
-  const [messages, setMessages] = useState<AgentStatus[]>(initialMessages);
   const [expanded, setExpanded] = useState<boolean>(true);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentTemporalContext = useMemo(() => {
     // Find the latest temporal context from agent messages
-    const lastWithContext = messages
-      .filter(m => m.temporalContext)
+    const lastWithContext = agents
+      .filter(m => (m as any).temporalContext)
       .pop();
-    return lastWithContext?.temporalContext || null;
-  }, [messages]);
-
-  // WebSocket subscription
-  useEffect(() => {
-    if (!isActive) return;
-
-    const ws = getWebSocketService();
-    ws.connect();
-
-    const unsubscribe = ws.subscribe((newStatus: AgentStatus) => {
-      setMessages(prev => {
-        // Update if message already exists, otherwise add
-        const index = prev.findIndex(m => m.id === newStatus.id);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = newStatus;
-          return updated;
-        }
-        return [...prev, newStatus];
-      });
-    });
-
-    return () => {
-      unsubscribe();
-      // ws.disconnect(); // Commented out to prevent unnecessary disconnects on StrictMode double-invocations
-    };
-  }, [isActive]);
+    return (lastWithContext as any)?.temporalContext || null;
+  }, [agents]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [agents]);
 
   const formatDate = (dateStr: string) => {
     try {
@@ -95,17 +74,17 @@ export const AgentSwarmUI: React.FC<AgentSwarmUIProps> = ({
   };
 
   const activeCount = useMemo(() => {
-    return messages.filter(m => m.status === 'active' || m.status === 'thinking').length;
-  }, [messages]);
+    return agents.filter(m => m.status === 'active' || m.status === 'thinking').length;
+  }, [agents]);
 
   return (
-    <div className={`${styles.agentSwarmUI} ${isActive ? styles.active : ''}`}>
+    <div className={`${styles.agentSwarmUI} ${isActive || agents.length > 0 ? styles.active : ''}`}>
       <div className={styles.swarmHeader} onClick={() => setExpanded(!expanded)}>
         <div className={styles.swarmTitle}>
           <span className={styles.swarmIcon}>🐝</span>
           <span>Agent Swarm</span>
-          <span className={styles.agentCount}>{messages.length} agents</span>
-          {isActive && (
+          <span className={styles.agentCount}>{agents.length} agents</span>
+          {(isActive || agents.length > 0) && (
             <span className={styles.liveBadge}>
               <span className={styles.pulseDot}></span>
               Live
@@ -123,9 +102,6 @@ export const AgentSwarmUI: React.FC<AgentSwarmUIProps> = ({
               <span className={styles.timeRange}>
                 {formatDate(currentTemporalContext.startDate)} - {formatDate(currentTemporalContext.endDate)}
               </span>
-              {currentTemporalContext.originalExpression && (
-                <span className={styles.originalQuery}>"{currentTemporalContext.originalExpression}"</span>
-              )}
             </div>
           )}
           <button className={styles.expandBtn}>
@@ -136,6 +112,30 @@ export const AgentSwarmUI: React.FC<AgentSwarmUIProps> = ({
 
       {expanded && (
         <div className={styles.swarmContent}>
+          {/* Thermodynamics Section */}
+          {thermodynamics && (
+            <div className={styles.thermoSection}>
+              <h5>🔥 Memory Phases</h5>
+              <div className={styles.thermoGrid}>
+                <div className={styles.thermoItem}>
+                  <span className={styles.thermoLabel}>Gas</span>
+                  <span className={styles.thermoValue}>{thermodynamics.gas}</span>
+                  <div className={styles.thermoBar} style={{ width: `${(thermodynamics.gas / thermodynamics.total) * 100}%`, background: '#ff4d4d' }} />
+                </div>
+                <div className={styles.thermoItem}>
+                  <span className={styles.thermoLabel}>Liquid</span>
+                  <span className={styles.thermoValue}>{thermodynamics.liquid}</span>
+                  <div className={styles.thermoBar} style={{ width: `${(thermodynamics.liquid / thermodynamics.total) * 100}%`, background: '#3399ff' }} />
+                </div>
+                <div className={styles.thermoItem}>
+                  <span className={styles.thermoLabel}>Ice</span>
+                  <span className={styles.thermoValue}>{thermodynamics.ice}</span>
+                  <div className={styles.thermoBar} style={{ width: `${(thermodynamics.ice / thermodynamics.total) * 100}%`, background: '#b3e0ff' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.temporalContextSection}>
             <h5>🕐 Temporal Context</h5>
             {currentTemporalContext ? (
@@ -146,86 +146,60 @@ export const AgentSwarmUI: React.FC<AgentSwarmUIProps> = ({
                     {formatDate(currentTemporalContext.startDate)} → {formatDate(currentTemporalContext.endDate)}
                   </span>
                 </div>
-                {currentTemporalContext.intervalType && (
-                  <div className={styles.contextItem}>
-                    <span className={styles.label}>Type:</span>
-                    <span className={styles.value}>{currentTemporalContext.intervalType}</span>
-                  </div>
-                )}
-                {currentTemporalContext.daysSpan && (
-                  <div className={styles.contextItem}>
-                    <span className={styles.label}>Span:</span>
-                    <span className={styles.value}>{currentTemporalContext.daysSpan} days</span>
-                  </div>
-                )}
-                {currentTemporalContext.originalExpression && (
-                  <div className={`${styles.contextItem} ${styles.original}`}>
-                    <span className={styles.label}>Query:</span>
-                    <span className={`${styles.value} ${styles.highlight}`}>
-                      "{currentTemporalContext.originalExpression}"
-                    </span>
-                  </div>
-                )}
               </div>
             ) : (
               <div className={styles.noContext}>
                 <span>No temporal filter active</span>
-                <span className={styles.hint}>Ask about specific time ranges like "last week" or "yesterday"</span>
               </div>
             )}
           </div>
 
           <div className={styles.agentMessages}>
             <h5>🤖 Agent Activity</h5>
-            <div className={styles.messagesList}>
-              {messages.map(msg => (
-                <div 
-                  key={msg.id} 
-                  className={`${styles.agentMessage} ${selectedAgent === msg.id ? styles.selected : ''}`}
-                  onClick={() => {
-                    setSelectedAgent(selectedAgent === msg.id ? null : msg.id);
-                    onAgentClick?.(msg);
-                  }}
-                >
-                  <div className={styles.agentHeader}>
-                    <div className={styles.agentName}>
-                      <span className={styles.agentIcon}>{getAgentIcon(msg.agentType)}</span>
-                      {msg.agentName}
-                      {msg.temporalContext && (
-                        <span className={styles.temporalBadge}>🕐</span>
-                      )}
-                      {msg.confidence && (
-                        <span className={styles.confidenceBadge}>
-                          {Math.round(msg.confidence * 100)}%
-                        </span>
-                      )}
-                    </div>
-                    <div className={styles.agentStatus}>
-                      <span 
-                        className={styles.statusDot}
-                        style={{ backgroundColor: getStatusColor(msg.status) }}
-                      />
-                      <span className={styles.statusText}>{msg.status || 'idle'}</span>
-                    </div>
-                  </div>
-                  <div className={styles.agentContent}>{msg.content}</div>
-                  {selectedAgent === msg.id && msg.temporalContext && (
-                    <div className={styles.agentTemporalContext}>
-                      <div className={styles.temporalDetail}>
-                        <span>📅 {formatDate(msg.temporalContext.startDate)} → {formatDate(msg.temporalContext.endDate)}</span>
+            {isLoading && agents.length === 0 ? (
+              <div className={styles.loading}>Loading agents...</div>
+            ) : (
+              <div className={styles.messagesList}>
+                {agents.map(msg => (
+                  <div 
+                    key={msg.id} 
+                    className={`${styles.agentMessage} ${selectedAgent === msg.id ? styles.selected : ''}`}
+                    onClick={() => {
+                      setSelectedAgent(selectedAgent === msg.id ? null : msg.id);
+                      onAgentClick?.(msg);
+                    }}
+                  >
+                    <div className={styles.agentHeader}>
+                      <div className={styles.agentName}>
+                        <span className={styles.agentIcon}>{getAgentIcon(msg.type)}</span>
+                        {msg.name}
+                        {(msg as any).confidence && (
+                          <span className={styles.confidenceBadge}>
+                            {Math.round((msg as any).confidence * 100)}%
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.agentStatus}>
+                        <span 
+                          className={styles.statusDot}
+                          style={{ backgroundColor: getStatusColor(msg.status) }}
+                        />
+                        <span className={styles.statusText}>{msg.status || 'idle'}</span>
                       </div>
                     </div>
-                  )}
-                  <div className={styles.agentTimestamp}>
-                    🕐 {new Date(msg.timestamp).toLocaleTimeString()}
+                    {msg.content && <div className={styles.agentContent}>{msg.content}</div>}
+                    <div className={styles.agentTimestamp}>
+                      🕐 {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 };
+

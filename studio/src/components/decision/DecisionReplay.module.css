@@ -1,0 +1,145 @@
+.container {
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e9ecef);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color, #e9ecef);
+}
+
+.titleInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 20px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #212529);
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.controlBtn {
+  padding: 4px 12px;
+  font-size: 13px;
+  background: var(--bg-light, #f8f9fa);
+  border: 1px solid var(--border-color, #e9ecef);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.controlBtn:hover {
+  background: #e9ecef;
+}
+
+.summary {
+  font-size: 14px;
+  color: var(--text-secondary, #6c757d);
+  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--bg-light, #f8f9fa);
+  border-radius: 6px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-color, #e9ecef);
+  z-index: 0;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  cursor: pointer;
+  z-index: 1;
+  transition: transform 0.2s;
+}
+
+.step:hover {
+  transform: translateX(4px);
+}
+
+.stepIndicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid var(--border-color, #e9ecef);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.step.completed .stepIndicator {
+  border-color: #22c55e;
+}
+
+.step.active .stepIndicator {
+  border-color: #4a90d9;
+  background: #ebf5ff;
+}
+
+.stepContent {
+  flex: 1;
+}
+
+.stepHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.stepLabel {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary, #212529);
+}
+
+.stepTime {
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.stepDetails {
+  font-size: 13px;
+  color: var(--text-secondary, #6c757d);
+}
+
+.loading, .error {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary, #6c757d);
+}

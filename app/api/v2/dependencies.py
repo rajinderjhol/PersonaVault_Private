@@ -80,10 +80,13 @@ async def require_membership(
         )
         
     members = await membership_service.get_members(environment)
+    member_ids = [m.principal_id for m in members]
+    print(f"DEBUG: Membership check for env {environment.id}. Current User ID: {current_user.id}, Members found: {member_ids}")
+    
     if not any(m.principal_id == str(current_user.id) for m in members):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is not a member of this environment"
+            detail=f"User {current_user.id} is not a member of this environment. Members: {member_ids}"
         )
     
     return environment
