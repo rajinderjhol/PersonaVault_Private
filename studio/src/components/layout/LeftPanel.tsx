@@ -128,11 +128,18 @@ const LeftPanel: React.FC = () => {
           active={activePath === '/trust'} 
         />
         <NavItem 
-          to="/compiler"
+          to="/pattern-compiler"
           icon={<Terminal size={20} />} 
           label="Pattern Compiler" 
           collapsed={collapsed} 
-          active={activePath === '/compiler'} 
+          active={activePath === '/pattern-compiler'} 
+        />
+        <NavItem 
+          to="/intelligence-lattice"
+          icon={<Layers size={20} />} 
+          label="Intelligence Lattice" 
+          collapsed={collapsed} 
+          active={activePath === '/intelligence-lattice'} 
         />
         <NavItem 
           to="/governance"
