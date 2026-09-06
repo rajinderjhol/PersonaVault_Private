@@ -69,6 +69,13 @@ const LeftPanel: React.FC = () => {
           active={activePath === '/universal-search'} 
         />
         <NavItem 
+          to="/admin-tools"
+          icon={<Terminal size={20} />} 
+          label="Admin Tools" 
+          collapsed={collapsed} 
+          active={activePath === '/admin-tools'} 
+        />
+        <NavItem 
           to="/"
           icon={<LayoutDashboard size={20} />} 
           label="Dashboard" 
