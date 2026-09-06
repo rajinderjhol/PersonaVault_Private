@@ -50,6 +50,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/chat" element={<CognitiveLab />} />
                 <Route path="/search" element={<Search />} />
+                <Route path="/models" element={<ModelManagement />} />
                 <Route path="/ingestion" element={<DataIngestion />} />
                 <Route path="/simulator" element={<Simulator />} />
                 
@@ -66,9 +67,8 @@ function App() {
                 <Route path="/cognitive/snowflakes" element={<SnowflakeManager />} />
                 <Route path="/cognitive/memory-lattice" element={<MemoryLattice />} />
                 <Route path="/admin/health" element={<SystemHealth />} />
-                                <Route path="/admin/users" element={<UserManagement />} />
+                <Route path="/admin/users" element={<UserManagement />} />
                 <Route path="/admin/roles" element={<RoleManagement />} />
-                <Route path="/models" element={<ModelManagement />} />
                 <Route path="/dev/ws-monitor" element={<WSMonitor />} />
                 <Route path="/dev/api-explorer" element={<APIExplorer />} />
                 <Route path="/governance/verilink" element={<VeriLinkStatus />} />

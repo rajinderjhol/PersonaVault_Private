@@ -69,19 +69,27 @@ const LeftPanel: React.FC = () => {
           active={activePath === '/'} 
         />
         <NavItem 
-          to="/chat"
+          to="/chat" 
           icon={<MessageSquare size={20} />} 
           label="Cognitive Lab" 
           collapsed={collapsed} 
           active={activePath === '/chat'} 
         />
         <NavItem 
-          to="/search"
+          to="/models" 
+          icon={<Cpu size={20} />} 
+          label="Engine Room" 
+          collapsed={collapsed} 
+          active={activePath === '/models'} 
+        />
+        <NavItem 
+          to="/search" 
           icon={<Search size={20} />} 
           label="Universal Search" 
           collapsed={collapsed} 
           active={activePath === '/search'} 
         />
+
         <NavItem 
           to="/ingestion"
           icon={<Database size={20} />} 

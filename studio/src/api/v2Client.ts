@@ -1,94 +1,73 @@
 // V2 API Client for PersonaVault Studio
-const V2_BASE_URL = '/v2';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-import { ApiClient } from './client';
+class V2ApiClient {
+  private baseUrl: string;
 
-// Simple factory for creating V2 client based on existing ApiClient interface
-// This keeps V2 calls isolated from V1 base URL logic
-export const v2ApiClient: ApiClient = {
-  get: async <T = any>(endpoint: string, options?: { params?: Record<string, any>; responseType?: 'stream' | 'json' }): Promise<T> => {
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    // Use relative URL to let Vite/browser handle origin and proxying
-    const url = new URL(`${V2_BASE_URL}${path}`, window.location.origin);
+  constructor() {
+    this.baseUrl = API_BASE_URL;
+  }
+
+  async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseUrl}/v2${path}`;
     
+    console.log(`📡 V2 ${options.method || 'GET'}: ${url}`);
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      credentials: 'include', // ✅ Use cookies instead of Bearer token
+    });
+
+    if (!response.ok) {
+      console.error(`❌ V2 ${options.method || 'GET'} Error: ${response.status} at ${url}`);
+      throw new Error(`API V2 Error: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async get<T>(path: string, options?: { params?: Record<string, any> }): Promise<T> {
+    let url = path;
     if (options?.params) {
+      const searchParams = new URLSearchParams();
       Object.entries(options.params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          url.searchParams.append(key, value.toString());
+          searchParams.append(key, value.toString());
         }
       });
+      url += `?${searchParams.toString()}`;
     }
-    
-    console.log(`📡 V2 GET: ${url.pathname}${url.search}`);
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      console.error(`❌ V2 GET Error: ${response.status} ${response.statusText} at ${url.pathname}`);
-      throw new Error(`API V2 Error: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
-  },
-  post: async <T = any>(endpoint: string, data?: any): Promise<T> => {
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = new URL(`${V2_BASE_URL}${path}`, window.location.origin);
-    
-    console.log(`📡 V2 POST: ${url.pathname}`, data);
-    const response = await fetch(url.toString(), {
+    return this.request<T>(url, { method: 'GET' });
+  }
+
+  async post<T>(path: string, body: any): Promise<T> {
+    return this.request<T>(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: data ? JSON.stringify(data) : undefined,
+      body: JSON.stringify(body),
     });
-    
-    if (!response.ok) {
-      console.error(`❌ V2 POST Error: ${response.status} ${response.statusText} at ${url.pathname}`);
-      throw new Error(`API V2 Error: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
-  },
-  put: async <T = any>(endpoint: string, data?: any): Promise<T> => {
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = new URL(`${V2_BASE_URL}${path}`, window.location.origin);
-    
-    const response = await fetch(url.toString(), {
+  }
+
+  async put<T>(path: string, body: any): Promise<T> {
+    return this.request<T>(path, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: data ? JSON.stringify(data) : undefined,
+      body: JSON.stringify(body),
     });
-    
-    if (!response.ok) throw new Error(`API V2 Error: ${response.status} ${response.statusText}`);
-    return await response.json();
-  },
-  patch: async <T = any>(endpoint: string, data?: any): Promise<T> => {
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = new URL(`${V2_BASE_URL}${path}`, window.location.origin);
-    
-    const response = await fetch(url.toString(), {
+  }
+  
+  async patch<T>(path: string, body: any): Promise<T> {
+    return this.request<T>(path, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: data ? JSON.stringify(data) : undefined,
+      body: JSON.stringify(body),
     });
-    
-    if (!response.ok) throw new Error(`API V2 Error: ${response.status} ${response.statusText}`);
-    return await response.json();
-  },
-  delete: async <T = any>(endpoint: string): Promise<T> => {
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = new URL(`${V2_BASE_URL}${path}`, window.location.origin);
-    
-    const response = await fetch(url.toString(), {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-    
-    if (!response.ok) throw new Error(`API V2 Error: ${response.status} ${response.statusText}`);
-    return await response.json();
-  },
-};
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    return this.request<T>(path, { method: 'DELETE' });
+  }
+}
+
+export const v2ApiClient = new V2ApiClient();

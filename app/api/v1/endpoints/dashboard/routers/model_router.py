@@ -10,6 +10,7 @@ from app.db.session import get_db
 from app.models import SystemConfig
 from app.config import Config
 from app.services.rate_limit_service import RateLimitService
+from app.services.model_service import ModelService
 
 logger = logging.getLogger(__name__)
 
@@ -18,26 +19,8 @@ router = APIRouter(prefix="/models", tags=["admin"])
 @router.get("/")
 async def list_models(request: Request, user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """List installed Ollama models and identify the active one from DB."""
-    active_model = "tinydolphin"
-    try:
-        stmt = select(SystemConfig).where(SystemConfig.key == "ai_provider_ollama_model")
-        result = await db.execute(stmt)
-        config = result.scalars().first()
-        if config:
-            active_model = config.value
-            
-        logger.info(f"DEBUG: DB active model: {active_model}")
-        
-        res = await request.app.state.ai_client.get(f"{Config.OLLAMA_BASE_URL}/api/tags")
-        data = res.json()
-        logger.info(f"DEBUG: Ollama models from API: {data.get('models', [])}")
-        return {
-            "models": data.get("models", []),
-            "active_model": active_model
-        }
-    except Exception as e:
-        logger.error(f"Error listing models: {e}")
-        return {"models": [], "active_model": active_model}
+    service = ModelService(db, request.app.state.ai_client)
+    return await service.list_models()
 
 
 @router.post("/pull")

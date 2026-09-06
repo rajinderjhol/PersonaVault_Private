@@ -1,0 +1,10 @@
+.container { padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.title { font-size: 24px; font-weight: bold; }
+.activeEngine { background: #1e293b; color: white; padding: 20px; border-radius: 8px; margin-bottom: 24px; }
+.engineHeader { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.engineMetrics { display: flex; gap: 24px; }
+.metricItem { display: flex; flex-direction: column; }
+.metricLabel { font-size: 12px; color: #94a3b8; }
+.metricValue { font-size: 18px; font-weight: bold; }
+.modelsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }

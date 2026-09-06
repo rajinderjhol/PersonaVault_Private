@@ -1,0 +1,9 @@
+.card { background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.cardHeader { display: flex; justify-content: space-between; margin-bottom: 12px; }
+.modelName { font-weight: bold; }
+.provider { font-size: 12px; color: #64748b; }
+.cardMetrics { display: flex; gap: 16px; margin-bottom: 12px; }
+.metric { display: flex; flex-direction: column; }
+.label { font-size: 10px; color: #64748b; }
+.value { font-weight: bold; }
+.actionBtn { width: 100%; padding: 8px; background: #38bdf8; border: none; border-radius: 4px; color: white; cursor: pointer; }

@@ -8,6 +8,14 @@ interface Environment {
   ownerPrincipalId: string;
 }
 
+// ✅ Add a fallback for when the API fails
+const DEFAULT_ENVIRONMENT = {
+  id: 'env-default-001',
+  name: 'Default Environment',
+  type: 'default',
+  ownerPrincipalId: 'admin',
+};
+
 interface EnvironmentState {
   currentEnvId: string | null;
   environments: Environment[];
@@ -29,6 +37,17 @@ export const useEnvironmentStore = create<EnvironmentState>((set, get) => ({
     try {
       const environments = await v2ApiClient.get<Environment[]>('/environments/');
       console.log('✅ EnvironmentStore: Received environments:', environments);
+      
+      if (!environments || environments.length === 0) {
+        console.warn('No environments found, using default');
+        set({
+          environments: [DEFAULT_ENVIRONMENT],
+          currentEnvId: DEFAULT_ENVIRONMENT.id,
+          isLoading: false,
+        });
+        return;
+      }
+      
       set({ environments });
       
       // Auto-select logic:
@@ -41,7 +60,15 @@ export const useEnvironmentStore = create<EnvironmentState>((set, get) => ({
       }
     } catch (error) {
       console.error('❌ EnvironmentStore: Fetch failed:', error);
-      set({ error: (error as Error).message });
+      
+      // ✅ On error, still provide a default environment
+      console.warn('Using default environment due to API error');
+      set({
+        environments: [DEFAULT_ENVIRONMENT],
+        currentEnvId: DEFAULT_ENVIRONMENT.id,
+        error: (error as Error).message,
+        isLoading: false,
+      });
     } finally {
       set({ isLoading: false });
     }
@@ -52,7 +79,7 @@ export const useEnvironmentStore = create<EnvironmentState>((set, get) => ({
     try {
       const newEnv = await v2ApiClient.post<Environment>('/environments/', {
         name,
-        owner_principal_id: 'user-1', // Placeholder owner
+        ownerPrincipalId: 'user-1', // Placeholder owner
         type: 'standard'
       });
       await get().fetchEnvironments();
