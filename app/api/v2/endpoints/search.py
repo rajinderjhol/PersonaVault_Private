@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from typing import Dict, Any, List
 from app.api.v2.models.environment import Environment
 from app.api.v2.dependencies import require_authority
-from app.api.v2.services.memory_service import MemoryService
+from app.services.memory_service import MemoryService
 
 router = APIRouter(prefix="/v2/environments/{env_id}/search", tags=["v2-search"])
 

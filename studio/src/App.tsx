@@ -16,7 +16,6 @@ import { IntelligenceVault } from './pages/IntelligenceVault';
 import { SnowflakeManager } from './pages/SnowflakeManager';
 import { SystemHealth } from './pages/SystemHealth';
 import { CrystallizationDashboard } from './pages/CrystallizationDashboard';
-import { Governance } from './pages/Governance';
 import { ConstitutionEditor } from './pages/ConstitutionEditor';
 import { PolicyManagement } from './pages/PolicyManagement';
 import { Profile } from './pages/Profile';

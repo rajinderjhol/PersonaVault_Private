@@ -26,3 +26,17 @@ export const useV2IngestionStatus = (jobId: string | null) => {
     refetchInterval: (query) => (query.state.data?.status === 'completed' ? false : 2000),
   });
 };
+
+export const useV2Documents = () => {
+  const { currentEnvId } = useEnvironmentStore();
+
+  return useQuery({
+    queryKey: ['v2', 'documents', currentEnvId],
+    queryFn: async () => {
+      if (!currentEnvId) throw new Error('No environment selected');
+      return await v2ApiClient.get(`/environments/${currentEnvId}/documents`);
+    },
+    enabled: !!currentEnvId,
+    staleTime: 30000,
+  });
+};
