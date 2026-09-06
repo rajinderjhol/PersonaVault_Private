@@ -83,19 +83,11 @@ const LeftPanel: React.FC = () => {
           active={activePath === '/models'} 
         />
         <NavItem 
-          to="/search" 
-          icon={<Search size={20} />} 
-          label="Universal Search" 
-          collapsed={collapsed} 
-          active={activePath === '/search'} 
-        />
-
-        <NavItem 
-          to="/ingestion"
+          to="/intelligence-vault" 
           icon={<Database size={20} />} 
           label="Intelligence Vault" 
           collapsed={collapsed} 
-          active={activePath === '/ingestion'} 
+          active={activePath === '/intelligence-vault'} 
         />
         <NavItem 
           to="/simulator"

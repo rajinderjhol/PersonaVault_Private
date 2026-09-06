@@ -12,6 +12,7 @@ import { UserManagement } from './pages/Admin/UserManagement';
 import { VeriLinkStatus } from './pages/VeriLinkStatus';
 import { APIExplorer } from './pages/APIExplorer';
 import { MemoryLattice } from './pages/MemoryLattice';
+import { IntelligenceVault } from './pages/IntelligenceVault';
 import { SnowflakeManager } from './pages/SnowflakeManager';
 import { SystemHealth } from './pages/SystemHealth';
 import { CrystallizationDashboard } from './pages/CrystallizationDashboard';
@@ -51,6 +52,7 @@ function App() {
                 <Route path="/chat" element={<CognitiveLab />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/models" element={<ModelManagement />} />
+                <Route path="/intelligence-vault" element={<IntelligenceVault />} />
                 <Route path="/ingestion" element={<DataIngestion />} />
                 <Route path="/simulator" element={<Simulator />} />
                 
