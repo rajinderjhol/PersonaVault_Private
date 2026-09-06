@@ -23,6 +23,7 @@ import { Profile } from './pages/Profile';
 import { DeviceTrust } from './pages/DeviceTrust';
 import { MCPCenter } from './pages/MCPCenter';
 import { IntelligenceLattice } from './pages/IntelligenceLattice';
+import { Governance } from './pages/Governance';
 import { PatternCompiler } from './pages/PatternCompiler';
 import { SecurityCenter } from './pages/SecurityCenter';
 import { Dashboard } from './pages/Dashboard';
@@ -63,10 +64,10 @@ function App() {
                 <Route path="/mcp" element={<MCPCenter />} />
                 <Route path="/trust" element={<DeviceTrust />} />
                 <Route path="/intelligence-lattice" element={<IntelligenceLattice />} />
+                <Route path="/governance" element={<Governance />} />
                 <Route path="/compiler" element={<PatternCompiler />} />
                 <Route path="/governance/policies" element={<PolicyManagement />} />
                 <Route path="/governance/constitution" element={<ConstitutionEditor />} />
-                <Route path="/governance" element={<Governance />} />
                 <Route path="/cognitive/crystallization" element={<CrystallizationDashboard />} />
                 <Route path="/cognitive/snowflakes" element={<SnowflakeManager />} />
                 <Route path="/cognitive/memory-lattice" element={<MemoryLattice />} />
