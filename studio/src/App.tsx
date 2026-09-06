@@ -22,6 +22,7 @@ import { PolicyManagement } from './pages/PolicyManagement';
 import { Profile } from './pages/Profile';
 import { DeviceTrust } from './pages/DeviceTrust';
 import { MCPCenter } from './pages/MCPCenter';
+import { UniversalSearch } from './pages/UniversalSearch';
 import { IntelligenceLattice } from './pages/IntelligenceLattice';
 import { Governance } from './pages/Governance';
 import { PatternCompiler } from './pages/PatternCompiler';
@@ -63,6 +64,7 @@ function App() {
                 <Route path="/security" element={<SecurityCenter />} />
                 <Route path="/mcp" element={<MCPCenter />} />
                 <Route path="/trust" element={<DeviceTrust />} />
+                <Route path="/universal-search" element={<UniversalSearch />} />
                 <Route path="/intelligence-lattice" element={<IntelligenceLattice />} />
                 <Route path="/governance" element={<Governance />} />
                 <Route path="/compiler" element={<PatternCompiler />} />

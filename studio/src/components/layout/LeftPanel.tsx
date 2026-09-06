@@ -62,6 +62,13 @@ const LeftPanel: React.FC = () => {
 
       <nav style={{ flex: 1, padding: '10px', overflowY: 'auto' }}>
         <NavItem 
+          to="/universal-search"
+          icon={<Search size={20} />} 
+          label="Universal Search" 
+          collapsed={collapsed} 
+          active={activePath === '/universal-search'} 
+        />
+        <NavItem 
           to="/"
           icon={<LayoutDashboard size={20} />} 
           label="Dashboard" 
