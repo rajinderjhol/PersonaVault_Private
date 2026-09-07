@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from enum import Enum
 from datetime import datetime
@@ -12,13 +12,13 @@ class EnvironmentStatus(str, Enum):
 
 class Environment(BaseModel):
     id: str
-    type: str
+    type: str = "standard"
     name: str
     description: Optional[str] = None
-    owner_principal_id: str
+    owner_principal_id: str = "1"
     parent_environment_id: Optional[str] = None
-    status: EnvironmentStatus
-    mode: str = "standard"  # standard, restricted, simulation, audit
+    status: EnvironmentStatus = EnvironmentStatus.ACTIVE
+    mode: str = "standard"
     
     # Governance & Sensitivity
     max_sensitivity: SensitivityClassification = SensitivityClassification.INTERNAL
@@ -28,5 +28,5 @@ class Environment(BaseModel):
         AbstractionLevel.PRINCIPLE
     ]
     
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

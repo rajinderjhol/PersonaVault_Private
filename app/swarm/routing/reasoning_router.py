@@ -4,6 +4,7 @@ import logging
 import httpx
 from typing import Optional, Tuple, List, Dict
 from app.swarm.routing.complexity_detector import ComplexityDetector
+from app.services.intelligence_gateway import gateway
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class ReasoningRouter:
     
     # Provider ranking (fast → deep reasoning)
     PROVIDER_HIERARCHY = {
-        "fast": ["groq/mixtral-8x7b-32768", "ollama/tinydolphin"],
+        "fast": ["groq/mixtral-8x7b-32768", "ollama/tinydolphin:latest"],
         "reasoning": ["groq/qwen-qwq-32b", "ollama/qwen-reasoning"],
     }
     
@@ -22,6 +23,11 @@ class ReasoningRouter:
         self.ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.detector = ComplexityDetector()
     
+    def _get_configured_model(self, provider: str, default_model: str) -> str:
+        """Helper to get configured model from gateway or fallback."""
+        provider_config = gateway.ai_tool.providers.get(provider.lower(), {})
+        return provider_config.get("model", default_model)
+
     async def route(self, query: str, context: Optional[List[Dict]] = None) -> Tuple[str, Dict]:
         """
         Returns: (provider, route_metadata)
@@ -45,13 +51,13 @@ class ReasoningRouter:
         if self.airgapped or self.local_only:
             if "ollama/qwen-reasoning" in available:
                 return "ollama", {
-                    "model": "qwen-reasoning",
+                    "model": self._get_configured_model("ollama", "qwen-reasoning"),
                     "mode": "reasoning",
                     "reason": "Air-gapped: using local reasoning model",
                     "complexity": complexity
                 }
             return "ollama", {
-                "model": os.getenv("OLLAMA_LLM_MODEL", "tinydolphin"),
+                "model": self._get_configured_model("ollama", os.getenv("OLLAMA_LLM_MODEL", "tinydolphin:latest")),
                 "mode": "fallback",
                 "reason": "Air-gapped: no local reasoning model found, falling back",
                 "complexity": complexity
@@ -60,14 +66,14 @@ class ReasoningRouter:
         # Cloud available
         if "groq/qwen-qwq-32b" in available:
             return "groq", {
-                "model": "qwen/qwen3.6-27b", # Current working model in PersonaVault
+                "model": self._get_configured_model("groq", "qwen/qwen3.6-27b"),
                 "mode": "reasoning",
                 "reason": f"High complexity ({complexity['score']:.2f}): using Groq reasoning",
                 "complexity": complexity
             }
         
         return "groq", {
-            "model": "qwen/qwen3.6-27b",
+            "model": self._get_configured_model("groq", "qwen/qwen3.6-27b"),
             "mode": "default",
             "reason": "Groq available, using default model",
             "complexity": complexity
@@ -78,14 +84,14 @@ class ReasoningRouter:
         
         if self.airgapped or self.local_only:
             return "ollama", {
-                "model": os.getenv("OLLAMA_LLM_MODEL", "tinydolphin"),
+                "model": self._get_configured_model("ollama", os.getenv("OLLAMA_LLM_MODEL", "tinydolphin:latest")),
                 "mode": "fast",
                 "reason": "Air-gapped: using fast local model",
                 "complexity": complexity
             }
         
         return "groq", {
-            "model": "qwen/qwen3.6-27b", # Even for fast, we prefer the reliable Groq model if online
+            "model": self._get_configured_model("groq", "qwen/qwen3.6-27b"),
             "mode": "fast",
             "reason": f"Low complexity ({complexity['score']:.2f}): using Groq",
             "complexity": complexity

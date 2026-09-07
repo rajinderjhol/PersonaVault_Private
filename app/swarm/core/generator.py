@@ -15,6 +15,7 @@ from app.services.memory.ice_repository import IceMemoryRepository
 from app.services.lineage.lineage_service import LineageService
 from app.models.lineage import SourceType
 from app.services.trace_service import TraceStep
+from app.services.intelligence_gateway import gateway
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,12 @@ class GeneratorAgent(BaseAgent):
         self.pattern_id = None
         logger.info(f"GeneratorAgent initialized (airgapped: {self.router.airgapped})")
         logger.info(f"Available domains: {list(self.domain_router.detector.pack_keywords.keys())}")
+
+    async def _get_configured_model(self, provider: str, default_model: str) -> str:
+        """Helper to get configured model from gateway or fallback."""
+        await gateway.ensure_initialized()
+        provider_config = gateway.ai_tool.providers.get(provider.lower(), {})
+        return provider_config.get("model", default_model)
 
     async def generate_stream(
         self, 
@@ -125,7 +132,13 @@ class GeneratorAgent(BaseAgent):
             target_model = None
 
         self._last_provider_used = chosen_provider
-        self._last_model_used = target_model or (self.ollama_model if chosen_provider == "ollama" else "qwen/qwen3.6-27b")
+        
+        # Resolve target model (manual or auto)
+        if target_model is None:
+            default_model = self.ollama_model if chosen_provider == "ollama" else "qwen/qwen3.6-27b"
+            target_model = await self._get_configured_model(chosen_provider, default_model)
+
+        self._last_model_used = target_model
 
         # 2. Build DOMAIN-AWARE prompt
         full_prompt = self._build_domain_prompt(
@@ -427,7 +440,7 @@ Always consider:
             
             "ai_recommendation": {
                 "provider": routing_info.get("provider", "unknown"),
-                "model": routing_info.get("model", "default"),
+                "model": self._last_model_used,
                 "confidence": routing_info.get("confidence", 0.5),
                 "mode": routing_info.get("mode", "fast"),
                 "reason": routing_info.get("reason", "Default routing")
@@ -485,7 +498,13 @@ Always consider:
             target_model = None
 
         self._last_provider_used = chosen_provider
-        self._last_model_used = target_model or (self.ollama_model if chosen_provider == "ollama" else "qwen/qwen3.6-27b")
+        
+        # Resolve target model (manual or auto)
+        if target_model is None:
+            default_model = self.ollama_model if chosen_provider == "ollama" else "qwen/qwen3.6-27b"
+            target_model = await self._get_configured_model(chosen_provider, default_model)
+
+        self._last_model_used = target_model
 
         # Ensure context items are strings
         safe_context = []

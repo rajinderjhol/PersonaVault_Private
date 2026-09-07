@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from typing import List, Dict, Any, Union, Optional
 from app.repositories.interfaces import IMemoryRepository, IVectorRepository, IGraphRepository
@@ -65,7 +66,14 @@ class MemoryService:
             return None
         
         # Mock Environment object as required by CrystallizationService
-        env = Environment(id=env_id, name="default", status="active", created_at=datetime.utcnow())
+        from app.api.v2.models.environment import EnvironmentStatus
+        env = Environment(
+            id=env_id, 
+            name="default", 
+            status=EnvironmentStatus.ACTIVE, 
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
         
         # Corrected method call
         patterns = await crystallization_service.retrieve_crystallized_patterns(env, prompt, limit=5)

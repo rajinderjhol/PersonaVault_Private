@@ -15,8 +15,17 @@ class CrystallizationService:
         """
         Compatibility wrapper to get all crystallized patterns for an environment.
         """
-        from app.api.v2.models.environment import Environment
-        env = Environment(id=env_id, name="default", status="active", created_at=datetime.utcnow())
+        from app.api.v2.models.environment import Environment, EnvironmentStatus
+        env = Environment(
+            id=env_id, 
+            type="standard", 
+            name="default", 
+            owner_principal_id="admin", 
+            status=EnvironmentStatus.ACTIVE, 
+            mode="standard", 
+            created_at=datetime.utcnow(), 
+            updated_at=datetime.utcnow()
+        )
         return await self.retrieve_crystallized_patterns(env, query="")
 
     async def crystallize_pattern(
