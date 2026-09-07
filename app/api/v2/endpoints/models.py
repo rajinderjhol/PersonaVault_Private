@@ -1,12 +1,24 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from typing import List, Dict, Any
 from app.api.v2.models.environment import Environment
-from app.api.v2.dependencies import require_membership
+from app.api.v2.dependencies import require_membership, get_current_user
 from app.db.session import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.model_service import ModelService
 
 router = APIRouter(prefix="/{env_id}/models", tags=["v2-models"])
+
+@router.get("/providers")
+async def get_providers(
+    env_id: str,
+    env: Environment = Depends(require_membership)
+):
+    """Get available AI providers."""
+    return [
+        {"id": "ollama", "name": "Ollama", "enabled": True},
+        {"id": "groq", "name": "Groq", "enabled": True},
+        {"id": "gemini", "name": "Gemini", "enabled": True},
+    ]
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_models(

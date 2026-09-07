@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Depends, Request
 from typing import Dict, Any, List
 from app.api.v2.models.environment import Environment
-from app.api.v2.dependencies import require_authority
+from app.api.v2.dependencies import require_authority, get_memory_service
 from app.services.memory_service import MemoryService
 
-router = APIRouter(prefix="/v2/environments/{env_id}/search", tags=["v2-search"])
-
-def get_memory_service(request: Request):
-    return request.app.state.memory_service
+router = APIRouter(prefix="/{env_id}/search", tags=["v2-search"])
 
 @router.post("")
 async def search(

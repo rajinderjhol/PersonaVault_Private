@@ -6,7 +6,7 @@ from app.api.v2.dependencies import require_authority
 from app.api.v2.services.environment_service import environment_service
 from app.services.memory_service import MemoryService # Corrected import
 
-router = APIRouter(prefix="/v2/environments/{env_id}/crystallize", tags=["v2-crystallization"])
+router = APIRouter(prefix="/{env_id}/crystallize", tags=["v2-crystallization"])
 
 # Placeholder factory for CrystallizationService
 def get_crystallization_service():

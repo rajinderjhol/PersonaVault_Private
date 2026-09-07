@@ -6,6 +6,7 @@ class V2ApiClient {
 
   constructor() {
     this.baseUrl = API_BASE_URL;
+    console.log('📡 V2ApiClient initialized with baseUrl:', this.baseUrl);
   }
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {

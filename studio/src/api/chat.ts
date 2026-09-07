@@ -93,7 +93,7 @@ export const chatAPI = {
   // ... rest of the file remains unchanged
 
   sendMessage: async (query: string, sessionId?: number, provider?: string): Promise<ChatResponse> => {
-    return await apiClient.post('/chat/', {
+    return await apiClient.post('/chat', {
       query,
       session_id: sessionId,
       provider: provider || 'groq',

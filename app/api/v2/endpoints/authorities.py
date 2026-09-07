@@ -11,7 +11,7 @@ from datetime import datetime
 from app.core.dependencies import get_current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/v2/environments/{env_id}/authorities", tags=["v2-authority"])
+router = APIRouter(prefix="/{env_id}/authorities", tags=["v2-authority"])
 
 class AuthorityCreate(BaseModel):
     principal_id: str

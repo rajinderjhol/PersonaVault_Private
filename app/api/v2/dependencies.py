@@ -1,10 +1,14 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from typing import Optional
 from app.api.v2.models.environment import Environment
 from app.api.v2.models.principal import Principal
 from app.api.v2.services.authority_service import AuthorityService, authority_service
 from app.api.v2.services.environment_service import environment_service, EnvironmentService
 from app.api.v2.services.membership_service import MembershipService, membership_service
+from app.api.v2.services.crystallization_service import crystallization_service
+from app.api.v2.services.prediction_service import PredictionService
+from app.api.v2.services.simulation_service import SimulationService
+from app.services.memory_service import MemoryService
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from datetime import datetime
@@ -18,6 +22,21 @@ def get_authority_service() -> 'AuthorityService':
 
 def get_membership_service() -> 'MembershipService':
     return membership_service
+
+def get_memory_service(request: Request) -> 'MemoryService':
+    return request.app.state.memory_service
+
+def get_crystallization_service():
+    return crystallization_service
+
+def get_prediction_service(request: Request) -> 'PredictionService':
+    return PredictionService(
+        memory_service=get_memory_service(request),
+        crystallization_service=get_crystallization_service()
+    )
+
+def get_simulation_service(request: Request) -> 'SimulationService':
+    return SimulationService(prediction_service=get_prediction_service(request))
 
 async def require_authority(
     env_id: str,

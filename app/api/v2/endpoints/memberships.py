@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from app.core.dependencies import get_current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/v2/environments/{env_id}/members", tags=["v2-membership"])
+router = APIRouter(prefix="/{env_id}/members", tags=["v2-membership"])
 
 class MembershipCreate(BaseModel):
     principal_id: str

@@ -5,7 +5,7 @@ from app.api.v2.adapters.pack_adapter import PackAdapter
 from app.services.packs.pack_loader import PackLoader
 from app.db.session import SessionLocal
 
-router = APIRouter(prefix="/v2/environments/{env_id}/packs", tags=["v2-intelligence-packs"])
+router = APIRouter(prefix="/packs", tags=["v2-intelligence-packs"])
 
 # In a real app, this would be injected via FastAPI dependency
 def get_pack_loader():

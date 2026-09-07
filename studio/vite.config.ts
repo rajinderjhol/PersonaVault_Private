@@ -11,12 +11,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
         ws: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/health': {
         target: 'http://localhost:8000',

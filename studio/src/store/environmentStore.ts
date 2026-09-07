@@ -35,7 +35,7 @@ export const useEnvironmentStore = create<EnvironmentState>((set, get) => ({
     console.log('📡 EnvironmentStore: Fetching environments...');
     set({ isLoading: true });
     try {
-      const environments = await v2ApiClient.get<Environment[]>('/environments/');
+      const environments = await v2ApiClient.get<Environment[]>('/environments');
       console.log('✅ EnvironmentStore: Received environments:', environments);
       
       if (!environments || environments.length === 0) {
@@ -77,7 +77,7 @@ export const useEnvironmentStore = create<EnvironmentState>((set, get) => ({
   createEnvironment: async (name: string) => {
     set({ isLoading: true });
     try {
-      const newEnv = await v2ApiClient.post<Environment>('/environments/', {
+      const newEnv = await v2ApiClient.post<Environment>('/environments', {
         name,
         ownerPrincipalId: 'user-1', // Placeholder owner
         type: 'standard'

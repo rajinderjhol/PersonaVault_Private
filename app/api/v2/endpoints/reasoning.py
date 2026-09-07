@@ -1,19 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional, Dict, Any
-from app.api.v2.dependencies import require_membership, require_authority
+from app.api.v2.dependencies import (
+    require_membership, 
+    require_authority,
+    get_memory_service, 
+    get_authority_service, 
+    get_crystallization_service, 
+    get_prediction_service, 
+    get_simulation_service
+)
+from app.core.dependencies import get_current_user
+
 from app.api.v2.models.environment import Environment
+from app.models.user import User
 from app.swarm.orchestrators.reasoning_orchestrator import ReasoningOrchestrator
 from app.swarm.context import AgentEnvironmentContext
-from app.core.deps import get_current_user, get_memory_service, get_authority_service, get_crystallization_service, get_prediction_service, get_simulation_service
-from app.models.user import User
-
-# This is a placeholder for the actual dependency injection of the orchestrator
 # In a real application, this would be a proper FastAPI dependency
 def get_reasoning_orchestrator():
     # Implementation dependent on existing service/factory
     raise NotImplementedError("Dependency provider for ReasoningOrchestrator not yet defined")
 
-router = APIRouter(prefix="/v2/environments/{env_id}/reasoning", tags=["v2-reasoning"])
+router = APIRouter(prefix="/{env_id}/reasoning", tags=["v2-reasoning"])
 
 @router.post("/goals")
 async def reason_about_goal(
@@ -102,7 +109,7 @@ async def get_reasoning_chain(
 @router.delete("/chains/{chain_id}")
 async def cancel_reasoning(
     env_id: str,
-    env: Environment = Depends(require_authority("cancel_reasoning", capability="cancel_reasoning")),
+    env: Environment = Depends(lambda env_id: require_authority(env_id, "cancel_reasoning")),
     chain_id: str = None,
     orchestrator: ReasoningOrchestrator = Depends(get_reasoning_orchestrator)
 ):
