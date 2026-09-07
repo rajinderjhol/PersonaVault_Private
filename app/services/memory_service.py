@@ -52,6 +52,36 @@ class MemoryService:
             logger.error(f"MemoryService: Search error: {e}")
             return []
 
+    async def find_crystallized_pattern(self, prompt: str, context: dict) -> Optional[Any]:
+        """
+        Find a matching crystallized pattern for the prompt.
+        Uses the CrystallizationService to search.
+        """
+        from app.api.v2.services.crystallization_service import crystallization_service
+        
+        env_id = context.get("env_id")
+        if not env_id:
+            return None
+        
+        patterns = await crystallization_service.get_patterns(env_id)
+        
+        # Simple similarity check for this prototype
+        for p in patterns:
+            pattern_data = p.get("pattern", {})
+            query_pattern = pattern_data.get("query", "")
+            
+            # Simple keyword overlap as a placeholder for vector similarity
+            if query_pattern and any(word in prompt.lower() for word in query_pattern.lower().split()):
+                # Construct a mock pattern object that matches what generator expects
+                class MockPattern:
+                    id = p["pattern_id"]
+                    name = p["source"]
+                    confidence = 0.95 # Mock confidence
+                
+                return MockPattern()
+        
+        return None
+
     async def save_memory(self, user_id: int, memory_type: str, content: str, tags: Union[str, List[str]], title: Optional[str] = None, environment_id: Optional[str] = None) -> Any:
         """Save a memory, optionally scoped to an environment, and trigger multi-modal indexing."""
         tags_str = ",".join(tags) if isinstance(tags, list) else tags

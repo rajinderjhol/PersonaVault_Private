@@ -5,6 +5,7 @@ import { IntelligenceResolutionFeed } from '../../../chat/IntelligenceResolution
 import { DecisionGate } from '../../../decision/DecisionGate';
 import { ActionHub } from '../../../chat/ActionHub';
 import { AttributionGroup } from '../../../chat/AttributionGroup';
+import { MemoryAttribution } from '../../../chat/MemoryAttribution';
 import { ChatMessage } from '../../../../api/chat';
 
 interface ChatInterfaceProps {
@@ -195,6 +196,15 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
         }}>
           {message.content}
         </div>
+        
+        {/* Memory Attribution */}
+        {!isUser && message.memoryAttribution && (
+          <MemoryAttribution 
+            layer={message.memoryAttribution.layer}
+            confidence={message.memoryAttribution.confidence}
+            source={message.memoryAttribution.source}
+          />
+        )}
         
         {/* Decision Gate */}
         {!isUser && message.decision && (

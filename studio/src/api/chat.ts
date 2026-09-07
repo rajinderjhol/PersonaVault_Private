@@ -44,6 +44,16 @@ export interface SuggestedAction {
   primary?: boolean;
 }
 
+export type MemoryLayer = 'gas' | 'liquid' | 'ice' | 'realtime';
+
+export interface MemoryAttribution {
+  layer: MemoryLayer;
+  confidence: number;
+  source: string;           
+  patternId?: string;       
+  timestamp: string;
+}
+
 export interface ChatMessage {
   id?: string;
   role: 'user' | 'assistant' | 'system';
@@ -63,6 +73,7 @@ export interface ChatMessage {
     packId: string;
     packName: string;
   }[];
+  memoryAttribution?: MemoryAttribution; // NEW
 }
 
 export interface ChatSession {

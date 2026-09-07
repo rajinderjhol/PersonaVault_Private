@@ -87,6 +87,7 @@ const CognitiveLab: React.FC = () => {
       role: 'assistant',
       content: '',
       isStreaming: true,
+      timestamp: new Date().toISOString(),
     };
     setCurrentMessage(assistantMessage);
 
@@ -113,11 +114,29 @@ const CognitiveLab: React.FC = () => {
             case 'agent':
               updated.agentAttribution = [...(updated.agentAttribution || []), chunk.data];
               break;
+            case 'memory':
+              updated.memoryAttribution = chunk.data;
+              break;
           }
           return updated;
         });
       },
-      () => {
+      (finalData) => {
+        // Construct the final message from the completed data
+        const finalContent = finalData.finalResponse || finalData.response || 'No response';
+        const finalMessage: ChatMessage = {
+          role: 'assistant',
+          content: finalContent,
+          isStreaming: false,
+          timestamp: new Date().toISOString(),
+          memoryAttribution: finalData.memoryAttribution,
+          resolutions: finalData.attribution,
+          decision: finalData.decision,
+          actions: finalData.actions,
+          trace_ids: finalData.trace_ids
+        };
+
+        setMessages(prev => [...prev, finalMessage]);
         setCurrentMessage(null);
       }
     );

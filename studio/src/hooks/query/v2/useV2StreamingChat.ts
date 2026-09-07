@@ -3,7 +3,7 @@ import { v2ApiClient } from '../../../api/v2Client';
 import { useEnvironmentStore } from '../../../store/environmentStore';
 
 interface StreamingChunk {
-  type: 'text' | 'intelligence' | 'decision' | 'action' | 'agent' | 'done';
+  type: 'text' | 'intelligence' | 'decision' | 'action' | 'agent' | 'memory' | 'done';
   data: any;
 }
 
@@ -17,7 +17,7 @@ export const useV2StreamingChat = () => {
       message: string,
       packIds: string[],
       onChunk: (chunk: StreamingChunk) => void,
-      onComplete: () => void
+      onComplete: (finalData: any) => void
     ) => {
       if (!currentEnvId) {
         setError('No environment selected');
@@ -28,7 +28,6 @@ export const useV2StreamingChat = () => {
       setError(null);
 
       try {
-        const token = localStorage.getItem('token') || '';
         const url = `/api/v1/chat/`;
         console.log('📡 Chat Requesting (Non-streaming):', url);
         const response = await fetch(
@@ -52,12 +51,20 @@ export const useV2StreamingChat = () => {
         }
 
         const data = await response.json();
+        console.log('📡 Chat Response Data:', data);
+        
+        // Handle memory attribution (if provided in metadata)
+        if (data.memoryAttribution) {
+          onChunk({ type: 'memory', data: data.memoryAttribution });
+        }
         
         // Simulate streaming by returning the whole response as one chunk
         const responseText = data.finalResponse || data.response || 'No response';
+        console.log('📡 Response Text:', responseText);
         onChunk({ type: 'text', data: responseText });
         
-        onComplete();
+        // Pass the full data back to onComplete
+        onComplete(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Chat failed');
       } finally {

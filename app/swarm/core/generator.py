@@ -32,8 +32,64 @@ class GeneratorAgent(BaseAgent):
         self.lineage_service = LineageService(self.session_factory)
         self._last_provider_used = "unknown"
         self._last_model_used = "unknown"
+        self.memory_layer = None
+        self.confidence = 0
+        self.pattern_id = None
         logger.info(f"GeneratorAgent initialized (airgapped: {self.router.airgapped})")
         logger.info(f"Available domains: {list(self.domain_router.detector.pack_keywords.keys())}")
+
+    async def generate_stream(
+        self, 
+        prompt: str, 
+        context: dict,
+        memory_service: Any,
+        yield_chunk: callable
+    ):
+        """Generate response with memory layer attribution"""
+        
+        # 1. Check for crystallized patterns first (ICE layer)
+        pattern = await memory_service.find_crystallized_pattern(prompt, context)
+        
+        if pattern and pattern.confidence > 0.85:
+            # Using ICE layer (10,000:1 compression)
+            self.memory_layer = "ice"
+            self.confidence = pattern.confidence
+            self.pattern_id = pattern.id
+            
+            # Send memory attribution first
+            await yield_chunk({
+                "type": "memory",
+                "data": {
+                    "layer": self.memory_layer,
+                    "confidence": int(self.confidence * 100),
+                    "source": f"Pattern: {pattern.name}",
+                    "patternId": self.pattern_id
+                }
+            })
+            
+            # Then stream the response (placeholder for pattern streaming)
+            await yield_chunk({"type": "text", "data": "Pattern applied: " + pattern.name})
+                
+        else:
+            # 2. Check liquid memory (recent context)
+            self.memory_layer = "gas"
+            self.confidence = 0.6
+            await yield_chunk({
+                "type": "memory",
+                "data": {
+                    "layer": self.memory_layer,
+                    "confidence": int(self.confidence * 100),
+                    "source": "Working memory (current session)"
+                }
+            })
+                
+            # Stream direct inference
+            async for chunk in self.generate_stream_with_trace(query=prompt, context=context.get("context")):
+                if chunk.get("type") == "content":
+                    await yield_chunk({"type": "text", "data": chunk.get("content")})
+        
+        # Send completion
+        await yield_chunk({"type": "complete", "data": None})
     
     async def generate_stream_with_trace(
         self, 

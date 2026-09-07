@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // Specific proxy for the Agent WebSocket to avoid conflicting with HTTP routes
+      '^/v2/environments/.*/ws/.*': {
+        target: 'ws://localhost:8000',
+        ws: true,
+        changeOrigin: true,
+      },
       '/v2': {
         target: 'http://localhost:8000',
         changeOrigin: true,
