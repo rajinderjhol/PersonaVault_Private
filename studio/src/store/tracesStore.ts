@@ -12,7 +12,7 @@ interface TracesState {
 
   // Actions
   fetchRecent: () => Promise<void>;
-  fetchSessionTraces: (sessionId: number) => Promise<void>;
+  fetchSessionTraces: (sessionId: string) => Promise<void>;
   fetchTrace: (traceId: string) => Promise<void>;
   crystallize: (traceId: string) => Promise<void>;
   clearCurrentTrace: () => void;
@@ -40,7 +40,7 @@ export const useTracesStore = create<TracesState>((set, get) => ({
   },
 
   // Fetch session traces
-  fetchSessionTraces: async (sessionId: number) => {
+  fetchSessionTraces: async (sessionId: string) => {
     set({ isLoading: true, error: null });
     try {
       const data = await tracesAPI.getSessionTraces(sessionId);

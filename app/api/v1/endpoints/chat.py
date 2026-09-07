@@ -55,14 +55,13 @@ async def chat_endpoint(
             return {"error": "Query is required"}
         
         # Get response
-        logger.info(f"🔍 DEBUG: Calling gateway.chat with provider: '{provider}' and temporal_context: {temporal_context}")
+        logger.info(f"🔍 DEBUG: Calling gateway.chat with provider: '{provider}'")
         result = await gateway.chat(
             user_id=current_user.id,
             query=query,
             state=request.app.state,
             patient_id=patient_id,
-            provider=provider,
-            temporal_context=temporal_context
+            provider=provider
         )
         
         # Capture trace

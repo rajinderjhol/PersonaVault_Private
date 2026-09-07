@@ -12,12 +12,35 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/config", tags=["admin"])
 
+from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
+import logging
+
+from app.api.v1.endpoints.auth import get_current_user_logic as get_current_user
+from app.core.dependencies import require_admin
+from app.db.session import get_db
+from app.models import SystemConfig
+from app.services.intelligence_gateway import gateway
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/config", tags=["admin"])
+
 @router.get("/primary-ai-provider")
 async def get_primary_ai_provider_dashboard(
-    user_id: int = Depends(require_admin),
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """Get the current primary AI provider for the dashboard."""
+    try:
+        await get_current_user(request, db=db)
+    except HTTPException as e:
+        if e.status_code == 401:
+            return RedirectResponse(url="/api/v1/auth/login", status_code=303)
+        raise e
+        
     try:
         await gateway.ensure_initialized()
         stmt = select(SystemConfig).where(SystemConfig.key == "primary_ai_provider")

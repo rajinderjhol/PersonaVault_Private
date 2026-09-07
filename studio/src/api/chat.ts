@@ -66,7 +66,7 @@ export interface ChatMessage {
 }
 
 export interface ChatSession {
-  id: number;
+  id: string;
   title: string;
   pinned: boolean;
   message_count: number;
@@ -77,7 +77,7 @@ export interface ChatSession {
 export interface ChatResponse {
   response: string;
   finalResponse?: string;
-  session_id?: number;
+  session_id?: string;
   trace_ids?: Record<string, string>;
   attribution?: IntelligenceResolution[];
   decision?: DecisionGate;
@@ -92,7 +92,7 @@ export interface ChatResponse {
 export const chatAPI = {
   // ... rest of the file remains unchanged
 
-  sendMessage: async (query: string, sessionId?: number, provider?: string): Promise<ChatResponse> => {
+  sendMessage: async (query: string, sessionId?: string, provider?: string): Promise<ChatResponse> => {
     return await apiClient.post('/chat', {
       query,
       session_id: sessionId,
@@ -101,7 +101,7 @@ export const chatAPI = {
   },
 
   // Stream a message
-  streamMessage: async (query: string, sessionId?: number, provider?: string): Promise<ReadableStream> => {
+  streamMessage: async (query: string, sessionId?: string, provider?: string): Promise<ReadableStream> => {
     return await apiClient.post('/chat/stream', {
       query,
       session_id: sessionId,
@@ -123,27 +123,27 @@ export const chatAPI = {
   },
 
   // Get messages for a session
-  getSessionMessages: async (sessionId: number): Promise<ChatMessage[]> => {
+  getSessionMessages: async (sessionId: string): Promise<ChatMessage[]> => {
     const data = await apiClient.get<any>(`/chat/sessions/${sessionId}/messages`);
     return data.messages || [];
   },
 
   // Pin/unpin session
-  pinSession: async (sessionId: number): Promise<void> => {
+  pinSession: async (sessionId: string): Promise<void> => {
     await apiClient.patch(`/chat/sessions/${sessionId}/pin`);
   },
 
-  unpinSession: async (sessionId: number): Promise<void> => {
+  unpinSession: async (sessionId: string): Promise<void> => {
     await apiClient.patch(`/chat/sessions/${sessionId}/unpin`);
   },
 
   // Delete session
-  deleteSession: async (sessionId: number): Promise<void> => {
+  deleteSession: async (sessionId: string): Promise<void> => {
     await apiClient.delete(`/chat/sessions/${sessionId}`);
   },
 
   // Update session title
-  updateSession: async (sessionId: number, title: string): Promise<void> => {
+  updateSession: async (sessionId: string, title: string): Promise<void> => {
     await apiClient.patch(`/chat/sessions/${sessionId}`, { title });
   },
 };

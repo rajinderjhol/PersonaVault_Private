@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "free-search": {
+      "name": "Free Web Search",
+      "description": "Multi-engine web search with no API key required",
+      "command": "python",
+      "args": [
+        "-m",
+        "search_mcp"
+      ],
+      "cwd": "/home/rajinderj8888/personavault/backend/free-search-mcp",
+      "env": {
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "PYTHONPATH": "/home/rajinderj8888/personavault/backend/free-search-mcp/src"
+      },
+      "enabled": true,
+      "tools": [
+        "search",
+        "fetch",
+        "fetch_batch",
+        "research",
+        "read_doc",
+        "compare",
+        "download"
+      ],
+      "status": "connected"
+    }
+  }
+}

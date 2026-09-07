@@ -18,6 +18,7 @@ import random
 import asyncio
 
 from app.core.dependencies import require_admin
+from app.api.v1.endpoints.auth import get_current_user_logic as get_current_user
 from app.db.session import get_db, SessionLocal
 from app.models import (
     User, Memory, AuditLog, UserSession, SystemConfig,
@@ -72,10 +73,15 @@ def _safe_metric_get(metric, default=0, labels=None):
 
 
 @router.get("/", response_class=HTMLResponse)
-async def dashboard_ui(request: Request):
+async def dashboard_ui(request: Request, db: AsyncSession = Depends(get_db)):
     """Serve the main dashboard UI with modular tabs (Legacy)."""
-    if not request.cookies.get("session_id"):
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    try:
+        # Check authentication manually
+        await get_current_user(request, db)
+    except HTTPException as e:
+        if e.status_code == 401:
+            return RedirectResponse(url="/api/v1/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+        raise e
     
     base_path = TEMPLATE_DIR / "base.html"
         
@@ -93,10 +99,14 @@ async def dashboard_ui(request: Request):
 
 
 @router.get("/v2", response_class=HTMLResponse)
-async def dashboard_v2_ui(request: Request):
+async def dashboard_v2_ui(request: Request, db: AsyncSession = Depends(get_db)):
     """Serve v2 (three-panel) dashboard UI."""
-    if not request.cookies.get("session_id"):
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    try:
+        await get_current_user(request, db)
+    except HTTPException as e:
+        if e.status_code == 401:
+            return RedirectResponse(url="/api/v1/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+        raise e
     
     base_path = TEMPLATE_DIR / "v2" / "base.html"
         

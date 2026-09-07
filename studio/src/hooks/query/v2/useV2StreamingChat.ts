@@ -29,18 +29,21 @@ export const useV2StreamingChat = () => {
 
       try {
         const token = localStorage.getItem('token') || '';
+        const url = `/api/v1/chat/`;
+        console.log('📡 Chat Requesting (Non-streaming):', url);
         const response = await fetch(
-          `/v2/environments/${currentEnvId}/chat/stream`,
+          url,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              message,
-              pack_ids: packIds,
+              query: message,
+              provider: 'auto',
+              user_id: 1,
             }),
+            credentials: 'include',
           }
         );
 
@@ -48,35 +51,12 @@ export const useV2StreamingChat = () => {
           throw new Error(`Chat failed: ${response.statusText}`);
         }
 
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) {
-          throw new Error('No response stream available');
-        }
-
-        let buffer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                onChunk(data);
-              } catch (e) {
-                console.warn('Failed to parse chunk:', line);
-              }
-            }
-          }
-        }
-
+        const data = await response.json();
+        
+        // Simulate streaming by returning the whole response as one chunk
+        const responseText = data.finalResponse || data.response || 'No response';
+        onChunk({ type: 'text', data: responseText });
+        
         onComplete();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Chat failed');

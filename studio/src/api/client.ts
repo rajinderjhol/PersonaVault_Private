@@ -17,23 +17,15 @@ export interface ApiClient {
 export const apiClient: ApiClient = {
   get: async <T = any>(endpoint: string, options?: { params?: Record<string, any>; responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
-      // Ensure endpoint starts with / and doesn't duplicate v1
+      // Ensure endpoint starts with /
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-      const baseUrl = API_BASE_URL.startsWith('http') 
-        ? API_BASE_URL 
-        : `${window.location.origin}${API_BASE_URL}`;
       
-      const url = new URL(`${baseUrl}${path}`);
+      // Construct URL: API_BASE_URL (if absolute) + path, or just path if relative
+      const url = API_BASE_URL.startsWith('http') 
+        ? `${API_BASE_URL}${path}`
+        : `${API_BASE_URL}${path}`;
       
-      if (options?.params) {
-        Object.entries(options.params).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            url.searchParams.append(key, value.toString());
-          }
-        });
-      }
-      
-      const response = await fetch(url.toString(), {
+      const response = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -57,11 +49,10 @@ export const apiClient: ApiClient = {
   post: async <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-      const baseUrl = API_BASE_URL.startsWith('http') 
-        ? API_BASE_URL 
-        : `${window.location.origin}${API_BASE_URL}`;
-        
-      const response = await fetch(`${baseUrl}${path}`, {
+      const url = API_BASE_URL.startsWith('http') 
+        ? `${API_BASE_URL}${path}`
+        : `${API_BASE_URL}${path}`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -78,11 +69,10 @@ export const apiClient: ApiClient = {
   put: async <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-      const baseUrl = API_BASE_URL.startsWith('http') 
-        ? API_BASE_URL 
-        : `${window.location.origin}${API_BASE_URL}`;
-        
-      const response = await fetch(`${baseUrl}${path}`, {
+      const url = API_BASE_URL.startsWith('http') 
+        ? `${API_BASE_URL}${path}`
+        : `${API_BASE_URL}${path}`;
+      const response = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -99,11 +89,10 @@ export const apiClient: ApiClient = {
   patch: async <T = any>(endpoint: string, data?: any, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-      const baseUrl = API_BASE_URL.startsWith('http') 
-        ? API_BASE_URL 
-        : `${window.location.origin}${API_BASE_URL}`;
-        
-      const response = await fetch(`${baseUrl}${path}`, {
+      const url = API_BASE_URL.startsWith('http') 
+        ? `${API_BASE_URL}${path}`
+        : `${API_BASE_URL}${path}`;
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -120,11 +109,10 @@ export const apiClient: ApiClient = {
   delete: async <T = any>(endpoint: string, options?: { responseType?: 'stream' | 'json' }): Promise<T> => {
     try {
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-      const baseUrl = API_BASE_URL.startsWith('http') 
-        ? API_BASE_URL 
-        : `${window.location.origin}${API_BASE_URL}`;
-        
-      const response = await fetch(`${baseUrl}${path}`, {
+      const url = API_BASE_URL.startsWith('http') 
+        ? `${API_BASE_URL}${path}`
+        : `${API_BASE_URL}${path}`;
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

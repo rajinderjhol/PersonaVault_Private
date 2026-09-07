@@ -128,11 +128,11 @@ const LeftPanel: React.FC = () => {
           active={activePath === '/security'} 
         />
         <NavItem 
-          to="/mcp"
+          to="/mcp-center"
           icon={<Layers size={20} />} 
           label="MCP Center" 
           collapsed={collapsed} 
-          active={activePath === '/mcp'} 
+          active={activePath === '/mcp-center'} 
         />
         <NavItem 
           to="/trust"

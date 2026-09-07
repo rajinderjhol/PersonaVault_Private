@@ -1,4 +1,5 @@
 // V2 API Client for PersonaVault Studio
+// If VITE_API_URL is NOT set, default to empty string so requests are relative
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 class V2ApiClient {
@@ -10,6 +11,7 @@ class V2ApiClient {
   }
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    // If baseUrl is empty, it uses relative paths, e.g., '/v2/environments/...'
     const url = `${this.baseUrl}/v2${path}`;
     
     console.log(`📡 V2 ${options.method || 'GET'}: ${url}`);

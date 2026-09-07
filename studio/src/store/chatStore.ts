@@ -5,7 +5,7 @@ import type { ChatMessage, ChatSession, ChatResponse } from '../api/chat';
 interface ChatState {
   // State
   sessions: ChatSession[];
-  currentSessionId: number | null;
+  currentSessionId: string | null;
   messages: ChatMessage[];
   isStreaming: boolean;
   isLoading: boolean;
@@ -14,15 +14,15 @@ interface ChatState {
   // Actions
   loadSessions: () => Promise<void>;
   createSession: (title?: string) => Promise<ChatSession>;
-  loadSession: (sessionId: number) => Promise<void>;
+  loadSession: (sessionId: string) => Promise<void>;
   sendMessage: (query: string, provider?: string) => Promise<ChatResponse>;
   addMessage: (message: ChatMessage) => void;
-  pinSession: (sessionId: number) => Promise<void>;
-  unpinSession: (sessionId: number) => Promise<void>;
-  deleteSession: (sessionId: number) => Promise<void>;
-  updateSessionTitle: (sessionId: number, title: string) => Promise<void>;
+  pinSession: (sessionId: string) => Promise<void>;
+  unpinSession: (sessionId: string) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
+  updateSessionTitle: (sessionId: string, title: string) => Promise<void>;
   clearMessages: () => void;
-  setCurrentSession: (sessionId: number) => void;
+  setCurrentSession: (sessionId: string) => void;
 }
 
 // Helper to clean up AI thinking tags
@@ -74,7 +74,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Load a session's messages
-  loadSession: async (sessionId: number) => {
+  loadSession: async (sessionId: string) => {
     set({ isLoading: true, error: null });
     try {
       const messages = await chatAPI.getSessionMessages(sessionId);
@@ -160,7 +160,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Pin/unpin session
-  pinSession: async (sessionId: number) => {
+  pinSession: async (sessionId: string) => {
     try {
       await chatAPI.pinSession(sessionId);
       await get().loadSessions();
@@ -169,7 +169,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  unpinSession: async (sessionId: number) => {
+  unpinSession: async (sessionId: string) => {
     try {
       await chatAPI.unpinSession(sessionId);
       await get().loadSessions();
@@ -179,7 +179,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Delete session
-  deleteSession: async (sessionId: number) => {
+  deleteSession: async (sessionId: string) => {
     try {
       await chatAPI.deleteSession(sessionId);
       await get().loadSessions();
@@ -197,7 +197,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Update session title
-  updateSessionTitle: async (sessionId: number, title: string) => {
+  updateSessionTitle: async (sessionId: string, title: string) => {
     try {
       await chatAPI.updateSession(sessionId, title);
       await get().loadSessions();
@@ -212,7 +212,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Set current session
-  setCurrentSession: (sessionId: number) => {
+  setCurrentSession: (sessionId: string) => {
     set({ currentSessionId: sessionId });
     get().loadSession(sessionId);
   },

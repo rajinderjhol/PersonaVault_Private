@@ -18,10 +18,9 @@ export const useAgentWebSocket = () => {
   useEffect(() => {
     if (!currentEnvId) return;
 
-    // Use environment variable for WS URL or default to localhost
-    const wsUrl = import.meta.env.VITE_WS_URL 
+    const wsUrl = import.meta.env.VITE_WS_URL
       ? `${import.meta.env.VITE_WS_URL.replace('http', 'ws')}/v2/environments/${currentEnvId}/ws/agents`
-      : `ws://localhost:8000/v2/environments/${currentEnvId}/ws/agents`;
+      : `/v2/environments/${currentEnvId}/ws/agents`;
 
     let ws: WebSocket;
     let reconnectTimer: any;

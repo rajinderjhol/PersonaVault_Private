@@ -29,20 +29,19 @@ from app.api.v1.endpoints import (
     auth, memory, ollama, iot, context, enterprise, legal, 
     robotics, widgets, files, admin, system_admin, mcp, user_profile, settings, organization, trends_mock, ingestion, swarm, integrations, user_preferences, thermodynamics, simulation, graph
 )
+
 from app.api.v1.endpoints.user_preferences import router as user_preferences_router
 
 from app.routes import decisions
 from app.api.v1.endpoints.ingestion import router as ingestion_router
 from app.api.v1.endpoints.health import router as health_router
-from app.api.v1.endpoints.predictive_enhanced import router as predictive_router
+from app.api.v1.endpoints.predictive_enhanced import router as predictive_enhanced_router
 from app.api.v1.endpoints.onboarding import router as onboarding_router
 from app.api.v1.endpoints.nlq import router as nlq_router
 from app.api.v1.endpoints.proactive import router as proactive_router
 from app.api.v1.endpoints.pattern_verification import router as pattern_router
 
 from app.api.v1.endpoints.identity import router as identity_router
-
-from app.api.v1.endpoints.pattern_verification import router as pattern_router
 
 from app.api.v1.endpoints import persona as personalization
 from app.api.v1.endpoints import workflow as automation
@@ -368,7 +367,9 @@ app = FastAPI(
 
 @app.websocket("/v2/environments/{env_id}/ws/agents")
 async def agent_websocket_endpoint(websocket: WebSocket, env_id: str):
+    logger.info(f"🔌 Agent WebSocket connection attempt for env: {env_id}")
     await websocket.accept()
+    logger.info(f"🔌 Agent WebSocket connection accepted for env: {env_id}")
     # Simple broadcast loop for development
     try:
         while True:
@@ -379,7 +380,9 @@ async def agent_websocket_endpoint(websocket: WebSocket, env_id: str):
                 "payload": {"status": "active", "lastActivity": datetime.now().isoformat()}
             })
     except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected for env {env_id}")
+        logger.info(f"🔌 Agent WebSocket disconnected for env {env_id}")
+    except Exception as e:
+        logger.error(f"🔌 Agent WebSocket error for env {env_id}: {e}")
 
 # Set up Prometheus metrics
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -397,7 +400,7 @@ instrumentator.instrument(app)
 static_dir = "app/static"
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    
+
 # Also mount for dashboard static
 app.mount("/api/v1/admin/dashboard/static", StaticFiles(directory=static_dir), name="dashboard_static")
 
@@ -525,7 +528,6 @@ app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
 # Modular Router Registration
 from app.api.v1.endpoints.chat_router import router as chat_router
 from app.api.v1.endpoints.chat_stream import router as chat_stream_router
-from app.api.v1.endpoints.chat_stream import router as chat_stream_router
 from app.api.v1.endpoints.chat_sessions import router as chat_sessions_router
 from app.api.v1.endpoints.intelligence import router as intelligence_router
 from app.api.v1.endpoints.mcp_connectors import router as mcp_connectors_router
@@ -533,7 +535,6 @@ from app.api.v1.endpoints.mcp_tools import router as mcp_tools_router
 
 
 app.include_router(chat_router)
-app.include_router(chat_stream_router)
 app.include_router(chat_stream_router)
 app.include_router(chat_sessions_router)
 app.include_router(intelligence_router)
@@ -561,7 +562,7 @@ app.include_router(thermodynamics.router)
 # New endpoints
 app.include_router(pattern_router, prefix="/api/v1", tags=["admin"])
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
-app.include_router(predictive_router)
+app.include_router(predictive_enhanced_router)
 app.include_router(onboarding_router)
 app.include_router(nlq_router)
 app.include_router(proactive_router)
@@ -575,7 +576,6 @@ app.include_router(connections_router)
 app.include_router(timeline_router, prefix="/api/v1", tags=["timeline"])
 app.include_router(behaviour_router, prefix="/api/v1", tags=["behaviour"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
-from app.api.v1.endpoints.ingestion import router as ingestion_router
 app.include_router(ingestion_router)
 app.include_router(patterns_router, prefix="/api/v1")
 app.include_router(policies_router)
@@ -591,7 +591,7 @@ from app.api.v2.endpoints import (
     intelligence_packs, environments, memberships, authorities, crystallization, 
     simulation, agents, health as v2_health_router, models as v2_models_router, 
     ingestion as v2_ingestion_router, search as v2_search_router, 
-    chat as v2_chat_router, reasoning as v2_reasoning_router
+    chat as v2_chat_router, reasoning as v2_reasoning_router, mcp as v2_mcp_router
 )
 app.include_router(intelligence_packs.router, prefix="/v2/environments")
 app.include_router(environments.router, prefix="/v2/environments")
@@ -606,17 +606,22 @@ app.include_router(v2_ingestion_router.router, prefix="/v2/environments")
 app.include_router(v2_search_router.router, prefix="/v2/environments")
 app.include_router(v2_chat_router.router, prefix="/v2/environments")
 app.include_router(v2_reasoning_router.router, prefix="/v2/environments")
+app.include_router(v2_mcp_router.router, prefix="/v2")
 
 
 
 # Global Health Endpoints
 @app.get("/admin/dashboard", response_class=RedirectResponse)
 async def redirect_to_dashboard():
-    return RedirectResponse(url="/api/v1/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/login", response_class=RedirectResponse)
+async def redirect_to_login():
+    return RedirectResponse(url="/api/v1/auth/login", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/", response_class=RedirectResponse)
 async def redirect_to_root():
-    return RedirectResponse(url="/api/v1/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/health/liveness")
 async def liveness_check():

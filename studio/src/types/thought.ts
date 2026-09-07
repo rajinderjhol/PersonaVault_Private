@@ -13,7 +13,7 @@ export interface ThoughtStep {
 
 export interface ThoughtStream {
   id: string;
-  session_id: number;
+  session_id: string;
   steps: ThoughtStep[];
   started_at: string;
   completed_at?: string;

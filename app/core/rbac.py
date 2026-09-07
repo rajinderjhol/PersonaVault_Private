@@ -25,7 +25,6 @@ PUBLIC_PATHS = {
     "/api/v1/auth/register",
     "/api/v1/mode/current",
     "/api/v1/registry/services",
-    "/login", 
     "/favicon.ico"
 }
 
@@ -41,9 +40,10 @@ async def rbac_middleware(request: Request, call_next):
         return await call_next(request)
 
     path = request.url.path
-    
+    logger.warning(f"RBAC DEBUG: Path: {path}, Headers: {dict(request.headers)}")
+
     # 1. Skip RBAC for public paths and static assets
-    if path in PUBLIC_PATHS or path.startswith("/static"):
+    if path in PUBLIC_PATHS or path.startswith("/static") or path.startswith("/api/v1/admin/dashboard/static"):
         return await call_next(request)
 
     # 2. Retrieve DB session from request state
@@ -55,6 +55,7 @@ async def rbac_middleware(request: Request, call_next):
     # IF user is not set (e.g. not a test override), check session cookie
     if not user:
         session_id = request.cookies.get("session_id")
+        logger.info(f"RBAC DEBUG: Session ID from cookie: {session_id}")
         if db and session_id:
             try:
                 # Log the session lookup
@@ -79,20 +80,23 @@ async def rbac_middleware(request: Request, call_next):
     
     # 3. Enforce Administrative Access
     is_admin_path = any(path.startswith(prefix) for prefix in ADMIN_PREFIXES)
+    is_dashboard_ui = path.startswith("/api/v1/admin/dashboard")
+    is_studio_ui = path.startswith("/studio")
     
     # DEBUG: Log user state
     if user:
         logger.info(f"RBAC DEBUG: Path: {path}, User: {user.username}, Role: {user.role}, IsAdminPath: {is_admin_path}")
     else:
-        logger.warning(f"RBAC DEBUG: Path: {path}, No user found, IsAdminPath: {is_admin_path}")
+        logger.warning(f"RBAC DEBUG: Path: {path}, No user found, IsAdminPath: {is_admin_path}, IsStudioUI: {is_studio_ui}")
 
     if is_admin_path:
         if not user or user.role != "admin":
             username = user.username if user else 'Anonymous'
             logger.warning(f"RBAC DENIED: Unauthorized admin access attempt to {path} by {username} with role: {user.role if user else 'N/A'}")
             
-            if path.startswith("/admin") and not path.startswith("/api"):
-                return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+            # Redirect to login for UI paths
+            if path.startswith("/admin") or is_dashboard_ui:
+                return RedirectResponse(url="/api/v1/auth/login", status_code=status.HTTP_303_SEE_OTHER)
 
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -113,13 +117,23 @@ async def rbac_middleware(request: Request, call_next):
             }
         )
 
-    # 5. Global API Authentication Check
-    if path.startswith("/api/v1") and not path.startswith("/api/v1/auth") and not user:
+    # 5. Global API/UI Authentication Check
+    # Force login for Studio UI
+    if is_studio_ui and not user:
+        logger.warning(f"RBAC: Redirecting unauthenticated Studio access to login: {path}")
+        return RedirectResponse(url="/api/v1/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Block unauthenticated API requests
+    if (path.startswith("/api/v1") or path.startswith("/v2")) and \
+       not path.startswith("/api/v1/auth") and \
+       not is_dashboard_ui and \
+       not user:
         logger.warning(f"RBAC: Blocked unauthenticated API request to {path}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "Authentication required", "code": "AUTH_001"}
         )
+
 
     # Ensure user is set in state for downstream usage
     request.state.user = user

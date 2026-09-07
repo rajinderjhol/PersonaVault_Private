@@ -2,7 +2,7 @@ import { apiClient } from './client';
 
 export interface Trace {
   id: string;
-  session_id: number;
+  session_id: string;
   step: string;
   timestamp: string;
   data: Record<string, any>;
@@ -30,7 +30,7 @@ export const tracesAPI = {
   },
 
   // Get traces for a specific session
-  getSessionTraces: async (sessionId: number): Promise<Trace[]> => {
+  getSessionTraces: async (sessionId: string): Promise<Trace[]> => {
     return await apiClient.get(`/traces/session/${sessionId}`);
   },
 

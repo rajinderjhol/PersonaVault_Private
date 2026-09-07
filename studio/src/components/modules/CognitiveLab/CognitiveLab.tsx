@@ -118,13 +118,7 @@ const CognitiveLab: React.FC = () => {
         });
       },
       () => {
-        setCurrentMessage((prev) => {
-          if (prev) {
-            const completed = { ...prev, isStreaming: false };
-            setMessages((msgs) => [...msgs, completed]);
-          }
-          return null;
-        });
+        setCurrentMessage(null);
       }
     );
   };

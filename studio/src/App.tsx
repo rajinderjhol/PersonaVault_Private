@@ -44,7 +44,7 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <Router>
+    <Router basename="/studio">
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/*" element={
@@ -62,7 +62,7 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/security" element={<SecurityCenter />} />
-                <Route path="/mcp" element={<MCPCenter />} />
+                <Route path="/mcp-center" element={<MCPCenter />} />
                 <Route path="/trust" element={<DeviceTrust />} />
                 <Route path="/universal-search" element={<UniversalSearch />} />
                 <Route path="/admin-tools" element={<AdminTools />} />

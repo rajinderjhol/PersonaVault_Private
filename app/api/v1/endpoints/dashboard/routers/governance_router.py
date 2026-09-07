@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone
 import logging
 
+from app.api.v1.endpoints.auth import get_current_user_logic as get_current_user
 from app.core.dependencies import require_admin
 from app.db.session import get_db
 from app.models import PendingAction, EpisodicEntry, SystemConfig
@@ -15,7 +17,14 @@ router = APIRouter(prefix="", tags=["admin"])
 # ============ HITL (Human-In-The-Loop) ============
 
 @router.get("/hitl/pending")
-async def list_pending_hitl(user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def list_pending_hitl(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        await get_current_user(request, db=db)
+    except HTTPException as e:
+        if e.status_code == 401:
+            return RedirectResponse(url="/api/v1/auth/login", status_code=303)
+        raise e
+        
     stmt = select(PendingAction).where(PendingAction.status == "pending").order_by(PendingAction.created_at.desc())
     results = (await db.execute(stmt)).scalars().all()
     return [{"id": p.id, "agent_type": p.agent_type, "query": p.query, "timestamp": p.created_at.isoformat()} for p in results]
@@ -52,7 +61,14 @@ async def deny_all_hitl(
 # ============ GOVERNANCE ============
 
 @router.get("/governance/logs")
-async def get_governance_logs(user_id: int = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def get_governance_logs(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        await get_current_user(request, db=db)
+    except HTTPException as e:
+        if e.status_code == 401:
+            return RedirectResponse(url="/api/v1/auth/login", status_code=303)
+        raise e
+        
     stmt = select(EpisodicEntry).order_by(EpisodicEntry.timestamp.desc()).limit(20)
     results = (await db.execute(stmt)).scalars().all()
     return {"logs": [{"id": e.id, "query": e.query or "No query", "receipt": e.governance_receipt_id or "local", "timestamp": e.timestamp.isoformat(), "hitl": e.hitl_approved} for e in results]}
