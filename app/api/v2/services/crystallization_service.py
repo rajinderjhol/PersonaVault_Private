@@ -1,6 +1,8 @@
 import time
+from datetime import datetime
 import json
 from typing import Dict, Any, List, Optional
+from datetime import datetime 
 from app.api.v2.models.environment import Environment
 from app.services.memory_service import MemoryService
 from app.api.v2.services.metrics import track_crystallization
@@ -8,6 +10,14 @@ from app.api.v2.services.metrics import track_crystallization
 class CrystallizationService:
     def __init__(self, memory_service: MemoryService):
         self.memory_service = memory_service
+
+    async def get_patterns(self, env_id: str) -> List[Dict[str, Any]]:
+        """
+        Compatibility wrapper to get all crystallized patterns for an environment.
+        """
+        from app.api.v2.models.environment import Environment
+        env = Environment(id=env_id, name="default", status="active", created_at=datetime.utcnow())
+        return await self.retrieve_crystallized_patterns(env, query="")
 
     async def crystallize_pattern(
         self,

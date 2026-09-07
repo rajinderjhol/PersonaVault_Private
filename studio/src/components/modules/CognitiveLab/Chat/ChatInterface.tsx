@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Mic, User, Bot, Sparkles } from 'lucide-react';
+import { Send, Paperclip, Mic, User, Bot, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IntelligenceResolutionFeed } from '../../../chat/IntelligenceResolutionFeed';
 import { DecisionGate } from '../../../decision/DecisionGate';
 import { ActionHub } from '../../../chat/ActionHub';
 import { AttributionGroup } from '../../../chat/AttributionGroup';
 import { MemoryAttribution } from '../../../chat/MemoryAttribution';
+import { DecisionTraceStoryboard } from '../../../decision/DecisionTraceStoryboard';
 import { ChatMessage } from '../../../../api/chat';
 
 interface ChatInterfaceProps {
@@ -132,8 +133,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   );
 };
 
-const MessageItem: React.FC<{ message: any }> = ({ message }) => {
+const MessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
   const isUser = message.role === 'user';
+  const [showStoryboard, setShowStoryboard] = useState(false);
   
   const handleActionClick = async (action: any) => {
     console.log('Action clicked:', action);
@@ -147,7 +149,8 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
         display: 'flex',
         flexDirection: isUser ? 'row-reverse' : 'row',
         gap: '16px',
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        width: '100%'
       }}
     >
       <div style={{
@@ -168,7 +171,8 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-        maxWidth: '80%',
+        maxWidth: isUser ? '80%' : '100%',
+        flex: 1,
         alignItems: isUser ? 'flex-end' : 'flex-start'
       }}>
         {/* Agent Attribution */}
@@ -192,7 +196,8 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
           color: 'var(--color-text-primary)',
           fontSize: '0.95rem',
           lineHeight: 1.5,
-          backdropFilter: 'var(--glass-blur)'
+          backdropFilter: 'var(--glass-blur)',
+          width: isUser ? 'auto' : '100%'
         }}>
           {message.content}
         </div>
@@ -204,6 +209,51 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
             confidence={message.memoryAttribution.confidence}
             source={message.memoryAttribution.source}
           />
+        )}
+        
+        {/* Decision Trace Toggle (The Praesidium inspired storyboard) */}
+        {!isUser && (message.trace_ids || message.decision) && (
+          <div style={{ width: '100%' }}>
+            <button 
+              onClick={() => setShowStoryboard(!showStoryboard)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.75rem',
+                color: 'var(--color-gas)',
+                backgroundColor: 'rgba(0, 242, 255, 0.05)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(0, 242, 255, 0.1)',
+                cursor: 'pointer',
+                marginTop: '4px',
+                transition: 'all 0.2s',
+                fontWeight: 600
+              }}
+            >
+              <Sparkles size={12} /> 
+              {showStoryboard ? 'Hide Decision Storyboard' : 'View Decision Storyboard'}
+              {showStoryboard ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            
+            <AnimatePresence>
+              {showStoryboard && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <DecisionTraceStoryboard 
+                    trace={message.decision?.timeline || message.trace_ids} 
+                    onClose={() => setShowStoryboard(false)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
         
         {/* Decision Gate */}
@@ -225,23 +275,6 @@ const MessageItem: React.FC<{ message: any }> = ({ message }) => {
             onActionClick={handleActionClick}
             isLoading={message.isStreaming}
           />
-        )}
-        
-        {!isUser && message.trace_ids && !message.decision && !message.actions && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            color: 'var(--color-gas)',
-            backgroundColor: 'rgba(0, 242, 255, 0.05)',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            border: '1px solid rgba(0, 242, 255, 0.1)',
-            cursor: 'pointer'
-          }}>
-            <Sparkles size={12} /> View Decision Trace
-          </div>
         )}
       </div>
     </motion.div>

@@ -58,27 +58,27 @@ class MemoryService:
         Uses the CrystallizationService to search.
         """
         from app.api.v2.services.crystallization_service import crystallization_service
+        from app.api.v2.models.environment import Environment
         
         env_id = context.get("env_id")
         if not env_id:
             return None
         
-        patterns = await crystallization_service.get_patterns(env_id)
+        # Mock Environment object as required by CrystallizationService
+        env = Environment(id=env_id, name="default", status="active", created_at=datetime.utcnow())
         
-        # Simple similarity check for this prototype
+        # Corrected method call
+        patterns = await crystallization_service.retrieve_crystallized_patterns(env, prompt, limit=5)
+        
+        # Simple similarity check
         for p in patterns:
-            pattern_data = p.get("pattern", {})
-            query_pattern = pattern_data.get("query", "")
+            # Construct a mock pattern object
+            class MockPattern:
+                id = p.get("id")
+                name = p.get("metadata", {}).get("title", "Unknown Pattern")
+                confidence = 0.95 
             
-            # Simple keyword overlap as a placeholder for vector similarity
-            if query_pattern and any(word in prompt.lower() for word in query_pattern.lower().split()):
-                # Construct a mock pattern object that matches what generator expects
-                class MockPattern:
-                    id = p["pattern_id"]
-                    name = p["source"]
-                    confidence = 0.95 # Mock confidence
-                
-                return MockPattern()
+            return MockPattern()
         
         return None
 

@@ -368,8 +368,43 @@ app = FastAPI(
 @app.websocket("/v2/environments/{env_id}/ws/agents")
 async def agent_websocket_endpoint(websocket: WebSocket, env_id: str):
     logger.info(f"🔌 Agent WebSocket connection attempt for env: {env_id}")
+    
+    # 1. Try session_id cookie first
+    session_id = websocket.cookies.get("session_id")
+    
+    # 2. Fallback to query parameter 'token' if cookie missing (for cross-domain issues)
+    if not session_id:
+        session_id = websocket.query_params.get("token")
+        logger.info(f"WebSocket auth fallback to query param: {session_id is not None}")
+    
+    if not session_id:
+        logger.warning(f"WebSocket auth failed for {env_id}: No session_id cookie or token.")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # Verify session (mimicking RBAC middleware logic)
+    from app.models import UserSession
+    from app.db.session import SessionLocal
+    from sqlalchemy import select
+    from datetime import datetime
+    
+    async with SessionLocal() as db:
+        stmt = select(UserSession).where(
+            UserSession.session_token == session_id,
+            UserSession.is_active == True,
+            UserSession.expires_at > datetime.now()
+        )
+        result = await db.execute(stmt)
+        session_record = result.scalars().first()
+        
+    if not session_record:
+        logger.warning(f"WebSocket auth failed for {env_id}: Session '{session_id}' not found, expired, or inactive.")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
     await websocket.accept()
     logger.info(f"🔌 Agent WebSocket connection accepted for env: {env_id}")
+    
     # Simple broadcast loop for development
     try:
         while True:

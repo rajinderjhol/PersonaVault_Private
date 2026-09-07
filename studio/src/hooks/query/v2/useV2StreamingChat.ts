@@ -28,45 +28,84 @@ export const useV2StreamingChat = () => {
       setError(null);
 
       try {
-        const url = `/api/v1/chat/`;
-        console.log('📡 Chat Requesting (Non-streaming):', url);
-        const response = await fetch(
-          url,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              query: message,
-              provider: 'auto',
-              user_id: 1,
-            }),
-            credentials: 'include',
-          }
-        );
+        const url = `/v2/environments/${currentEnvId}/chat/stream?t=${Date.now()}`;
+        console.log('📡 V2 Super Power Stream URL (Cache-busted):', url);
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            pack_ids: packIds,
+            show_reasoning: true
+          }),
+          credentials: 'include',
+        });
 
         if (!response.ok) {
-          throw new Error(`Chat failed: ${response.statusText}`);
+          throw new Error(`V2 Chat failed: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        console.log('📡 Chat Response Data:', data);
-        
-        // Handle memory attribution (if provided in metadata)
-        if (data.memoryAttribution) {
-          onChunk({ type: 'memory', data: data.memoryAttribution });
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedData: any = {
+          content: '',
+          memoryAttribution: null,
+          trace_ids: null,
+          decision: null,
+          actions: null,
+          attribution: null
+        };
+
+        if (!reader) throw new Error('Response body is null');
+
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep the last partial line in buffer
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('data: ')) {
+              try {
+                const event = JSON.parse(trimmedLine.slice(6));
+                console.log('📡 V2 Stream Event:', event);
+
+                switch (event.type) {
+                  case 'content':
+                    accumulatedData.content += event.content;
+                    onChunk({ type: 'text', data: event.content });
+                    break;
+                  case 'memory':
+                    accumulatedData.memoryAttribution = event.data;
+                    onChunk({ type: 'memory', data: event.data });
+                    break;
+                  case 'trace':
+                    accumulatedData.trace_ids = event.trace;
+                    onChunk({ type: 'decision', data: event.trace });
+                    break;
+                  case 'status':
+                    console.log('📡 System Status:', event.message);
+                    break;
+                  case 'done':
+                    onComplete(accumulatedData);
+                    break;
+                }
+              } catch (e) {
+                console.warn('Failed to parse SSE event:', trimmedLine, e);
+              }
+            }
+          }
         }
-        
-        // Simulate streaming by returning the whole response as one chunk
-        const responseText = data.finalResponse || data.response || 'No response';
-        console.log('📡 Response Text:', responseText);
-        onChunk({ type: 'text', data: responseText });
-        
-        // Pass the full data back to onComplete
-        onComplete(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Chat failed');
+        console.error('V2 Chat Error:', err);
+        setError(err instanceof Error ? err.message : 'V2 Chat failed');
       } finally {
         setIsStreaming(false);
       }

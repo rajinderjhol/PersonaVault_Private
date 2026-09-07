@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import re
-from datetime import datetime  
+from datetime import datetime
 from typing import Dict, Any, Optional, List, AsyncGenerator
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -189,12 +189,42 @@ class ChatPipeline:
     # In app/api/v2/endpoints/chat.py
 
     async def generate_stream(self, query: str, pack_ids: List[str], show_reasoning: bool = False) -> AsyncGenerator:
-        yield {"type": "status", "message": "🔍 Analyzing..."}
+        logger.info(f"🔍 Starting generate_stream for query: {query}")
+        yield {"type": "status", "message": "🔍 Initiating Cognitive Perception..."}
         
-        # ✅ Build context as a list, not a string
+        # 1. Memory Attribution Analysis (The "Super Power")
+        from app.services.memory_service import MemoryService
+        from app.repositories.sqlalchemy.memory import SQLMemoryRepository
+        from app.repositories.faiss.vector import FAISSSemanticRepository
+        
+        mem_repo = SQLMemoryRepository(db=None) # Will use internal SessionLocal
+        vec_repo = FAISSSemanticRepository()
+        memory_service = MemoryService(memory_repo=mem_repo, vector_repo=vec_repo)
+        
+        # Detect memory layer usage
+        memory_attribution = None
+        pattern = await memory_service.find_crystallized_pattern(query, {"env_id": self.env_id})
+        
+        if pattern:
+            memory_attribution = {
+                "layer": "ice",
+                "confidence": 95,
+                "source": f"Pattern: {pattern.name}",
+                "patternId": pattern.id,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            memory_attribution = {
+                "layer": "gas",
+                "confidence": 60,
+                "source": "Working memory (current session)",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+        yield {"type": "memory", "data": memory_attribution}
+        
+        # 2. Build Context
         context_list = []
-        
-        # Add memory context if available
         if self.retrieved_memories:
             for mem in self.retrieved_memories[:5]:
                 content = mem.get('content', '') or mem.get('text', '')
@@ -204,31 +234,29 @@ class ChatPipeline:
                         "content": f"Relevant memory: {content}"
                     })
         
-        # Directly stream from generator with correct parameters
+        # 3. Stream from Generator
+        yield {"type": "status", "message": "🧠 Swarm Synthesis in progress..."}
+        
         raw_stream = self.generator.generate_stream_with_trace(
             query=query,
             provider="ollama",
-            context=context_list,  # ✅ Pass as list
-            user_id=1
+            context=context_list,
+            user_id=1,
+            session_id=1 # Simplified for prototype compatibility
         )
         
         has_content = False
-        
         async for chunk in raw_stream:
             if chunk.get("type") == "content":
-                content = chunk.get("content", "")
-                # ✅ Yield content directly
-                yield {"type": "content", "content": content}
+                yield {"type": "content", "content": chunk.get("content", "")}
                 has_content = True
             elif chunk.get("type") == "trace":
                 self.reasoning_trace = chunk.get("trace")
-                if show_reasoning:
-                    yield {"type": "trace", "trace": self.reasoning_trace}
-            else:
-                yield chunk
+                # Always yield trace for the storyboard in V2
+                yield {"type": "trace", "trace": self.reasoning_trace}
         
         if not has_content:
-            yield {"type": "content", "content": "I processed your request but couldn't generate a specific response. Please try rephrasing."}
+            yield {"type": "content", "content": "The system analyzed the request but requires more context to reach a definitive conclusion."}
         
         yield {"type": "done"}
 

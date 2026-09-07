@@ -20,23 +20,36 @@ export const useAgentWebSocket = () => {
 
     const currentHost = window.location.host;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    
     // In Cloud Shell, the frontend and backend are on different ports (and subdomains)
-    // Port 5173 (Studio) and Port 8000 (Backend)
-    // If we are on the 5173 subdomain, we MUST connect to the 8000 subdomain for WebSockets
+    // We attempt to get the session token from document.cookie.
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+      return null;
+    };
+    const sessionToken = getCookie('session_id');
+    console.log('🔑 Retrieved session token:', sessionToken ? 'Found' : 'Not Found');
+
     let wsUrl: string;
-    
+
     if (import.meta.env.VITE_WS_URL) {
       wsUrl = `${import.meta.env.VITE_WS_URL.replace('http', 'ws')}/v2/environments/${currentEnvId}/ws/agents`;
     } else if (currentHost.includes('5173-cs-')) {
-      // Automatic Cloud Shell port swapping logic
       const backendHost = currentHost.replace('5173-cs-', '8000-cs-');
       wsUrl = `${protocol}//${backendHost}/v2/environments/${currentEnvId}/ws/agents`;
     } else {
       wsUrl = `${protocol}//${currentHost}/v2/environments/${currentEnvId}/ws/agents`;
     }
 
-    console.log('🔌 Attempting WebSocket connection to:', wsUrl);
+    // Append token as query parameter
+    if (sessionToken) {
+      wsUrl += `?token=${sessionToken}`;
+    } else {
+      console.warn('⚠️ No session token found for WebSocket connection');
+    }
+
+    console.log('🔌 Attempting WebSocket connection to:', wsUrl.replace(sessionToken || '', '***'));
 
     let ws: WebSocket;
     let reconnectTimer: any;

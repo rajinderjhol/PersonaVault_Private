@@ -7,50 +7,26 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Specific proxy for the Agent WebSocket to avoid conflicting with HTTP routes
-      '^/v2/environments/.*/ws/.*': {
-        target: 'ws://localhost:8000',
-        ws: true,
+      '/api': {
+        target: 'http://localhost:8000',
         changeOrigin: true,
+        secure: false,
+        ws: true,
       },
       '/v2': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
         ws: true,
-        cookieDomainRewrite: '',
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('🔀 Proxying /v2:', req.url, '→', proxyReq.path);
-          });
-          proxy.on('error', (err, req, res) => {
-            console.log('❌ Proxy error /v2:', err);
-          });
-        },
-      },
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-        cookieDomainRewrite: '',
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('🔀 Proxying /api:', req.url, '→', proxyReq.path);
-          });
-          proxy.on('error', (err, req, res) => {
-            console.log('❌ Proxy error /api:', err);
-          });
-        },
-      },
-      '/health': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
       },
       '/ws': {
         target: 'ws://localhost:8000',
         ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+      '/health': {
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
@@ -64,12 +40,5 @@ export default defineConfig({
     alias: {
       '@': '/src',
     },
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom'],
-    entries: ['src/main.tsx', 'src/pages/Search.tsx'],
-  },
-  build: {
-    sourcemap: true,
   },
 });

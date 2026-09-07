@@ -15,6 +15,7 @@ import { IntelligenceHealth } from '../../dashboard/IntelligenceHealth';
 import { IntelligenceInsights } from './Insights/IntelligenceInsights';
 import { IntelligenceGrowth } from '../../dashboard/IntelligenceGrowth';
 import { AgentSwarmUI } from '../../chat/AgentSwarmUI';
+import { AuthButton } from '@/components/Auth/AuthButton';
 import { ChatMessage } from '../../../api/chat';
 import styles from './CognitiveLab.module.css';
 
@@ -204,6 +205,7 @@ const CognitiveLab: React.FC = () => {
           </div>
           
           <div className={styles.headerRight}>
+            <AuthButton />
             <span className={styles.statItem}>
               <span className={styles.statLabel}>Agents:</span>
               <span className={styles.statValue}>

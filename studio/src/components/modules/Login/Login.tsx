@@ -1,91 +1,172 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/authStore';
-import { Lock, User } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const navigate = useNavigate();
-  const { login, isAuthenticating, error } = useAuthStore();
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('admin123');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(username, password);
-    // After login, check auth status from the store
-    // Since login is async, we can check the state if we had a way to wait for it or just check it here.
-    // For now, let's rely on authStore's state.
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Use form-urlencoded format (same as backend Form dependencies)
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+
+      console.log('🔑 Sending login request...');
+      
+      const response = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+        credentials: 'include',
+      });
+
+      console.log('📡 Login response status:', response.status);
+
+      // Backend returns 303 on success
+      if (response.status === 303 || response.status === 302 || response.ok) {
+        console.log('✅ Login successful!');
+        // Reload to refresh auth state
+        window.location.href = '/studio';
+        return;
+      } else {
+        const text = await response.text();
+        setError(`Login failed (${response.status})`);
+        console.error('Login error:', text);
+      }
+    } catch (err) {
+      setError('Network error. Make sure the backend is running.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Effect to redirect once authenticated
-  const { isAuthenticated } = useAuthStore();
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
-
   return (
-    <div style={{ 
+    <div style={{
       display: 'flex',
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh', 
-      backgroundColor: 'var(--color-bg-primary)' 
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      background: '#0a0e1a',
     }}>
-      <form onSubmit={handleSubmit} style={{ 
-        backgroundColor: 'var(--color-bg-secondary)', 
-        padding: '40px', 
-        borderRadius: '16px', 
-        border: '1px solid var(--glass-border)',
-        width: '100%',
-        maxWidth: '400px'
+      <div style={{
+        background: '#141a2e',
+        padding: '2rem',
+        borderRadius: '16px',
+        border: '1px solid rgba(77,150,255,0.15)',
+        width: '380px',
+        maxWidth: '90%',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
       }}>
-        <h2 style={{ marginBottom: '24px', color: 'var(--color-text-primary)', textAlign: 'center' }}>PersonaVault Login</h2>
-        
-        {error && <div style={{ color: 'var(--color-error)', marginBottom: '16px', fontSize: '0.9rem' }}>{error}</div>}
+        <h1 style={{ color: '#e8edf5', fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+          🧠 PersonaVault Studio
+        </h1>
+        <p style={{ color: '#6a7fa0', marginBottom: '2rem', fontSize: '0.9rem' }}>
+          Login to access the Sovereign AI Studio
+        </p>
 
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-text-secondary)' }}>
-            <User size={16} /> Username
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#a0b4d0', fontSize: '0.85rem', display: 'block', marginBottom: '0.25rem' }}>
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                background: '#0a0e1a',
+                border: '1px solid rgba(77,150,255,0.15)',
+                borderRadius: '8px',
+                color: '#e8edf5',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+              placeholder="admin"
+              required
+            />
           </div>
-          <input 
-            type="text" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--color-bg-primary)', color: 'white' }}
-          />
-        </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-text-secondary)' }}>
-            <Lock size={16} /> Password
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ color: '#a0b4d0', fontSize: '0.85rem', display: 'block', marginBottom: '0.25rem' }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                background: '#0a0e1a',
+                border: '1px solid rgba(77,150,255,0.15)',
+                borderRadius: '8px',
+                color: '#e8edf5',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+              placeholder="••••••••"
+              required
+            />
           </div>
-          <input 
-            type="password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--color-bg-primary)', color: 'white' }}
-          />
-        </div>
 
-        <button 
-          type="submit" 
-          disabled={isAuthenticating}
-          style={{ 
-            width: '100%', 
-            padding: '12px', 
-            borderRadius: '8px', 
-            border: 'none', 
-            backgroundColor: 'var(--color-gas)', 
-            color: 'black', 
-            fontWeight: 600,
-            cursor: 'pointer' 
-          }}
-        >
-          {isAuthenticating ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+          {error && (
+            <div style={{
+              padding: '10px 14px',
+              marginBottom: '1rem',
+              background: 'rgba(255, 107, 107, 0.1)',
+              borderRadius: '8px',
+              color: '#ff6b6b',
+              fontSize: '0.9rem',
+              border: '1px solid rgba(255, 107, 107, 0.2)',
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: '#00f2ff',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#0a0e1a',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: loading ? 'default' : 'pointer',
+              fontFamily: 'inherit',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+
+          <div style={{ 
+            marginTop: '1rem', 
+            textAlign: 'center',
+            fontSize: '0.8rem',
+            color: '#6a7fa0',
+          }}>
+            Default: admin / admin123
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
