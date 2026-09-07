@@ -1,0 +1,627 @@
+"""Local admin backend for configuring API-key search providers.
+
+A tiny, single-page web app (Starlette + uvicorn, both pulled in by the ``mcp``
+dependency — no extra deps, no template engine) that lets you paste provider API
+keys and persist them via :mod:`search_mcp.keystore`.
+
+Security posture (this tool writes secrets, so it stays deliberately small):
+  * Binds ``127.0.0.1`` ONLY — never ``0.0.0.0``. It is a local config tool.
+  * NEVER renders or echoes a stored secret value back to the page; the UI shows
+    only a "Configured ✓ / Not configured" badge per provider.
+  * NEVER logs secret values.
+  * A blank input is dropped before saving, so submitting an empty field leaves
+    an existing key untouched (it can't accidentally wipe a key).
+
+Run with ``main()`` (the ``search-mcp-admin`` console script) or
+``python -m search_mcp.admin``.
+"""
+
+from __future__ import annotations
+
+import html
+import os
+
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, JSONResponse
+from starlette.routing import Route
+
+from . import keystore
+
+# --- HTML rendering (no template engine; build the page as a string) --------
+
+
+def _esc(text: str) -> str:
+    """HTML-escape a value for safe inclusion in markup/attributes."""
+    return html.escape(str(text), quote=True)
+
+
+_PROVIDER_ZH: dict[str, dict[str, object]] = {
+    "brave_api": {
+        "label": "Brave 搜索 API",
+        "free_tier": "每月 2,000 次免费查询",
+        "how_to": [
+            "打开 Brave Search API 页面并点击 Get started。",
+            "注册或登录账号，并完成邮箱验证。",
+            "订阅免费的 Data for Search 计划。可能需要绑定卡片，但免费额度不会收费。",
+            "进入 dashboard -> API Keys，复制 subscription token。",
+        ],
+    },
+    "serper": {
+        "label": "Serper（Google 搜索）",
+        "free_tier": "一次性 2,500 次免费查询",
+        "how_to": [
+            "打开 serper.dev 并注册，Google 登录也可以。",
+            "进入 dashboard 后会看到 2,500 次免费额度。",
+            "复制 API Key 栏里的密钥。",
+        ],
+    },
+    "tavily": {
+        "label": "Tavily（AI 搜索）",
+        "free_tier": "每月 1,000 credits 免费",
+        "how_to": [
+            "打开 app.tavily.com 并注册。",
+            "在 dashboard 中找到 API Keys 区域。",
+            "复制以 tvly- 开头的密钥。",
+        ],
+    },
+    "google_cse": {
+        "label": "Google 自定义搜索",
+        "free_tier": "每天 100 次免费查询",
+        "how_to": [
+            "在 Google Cloud Console 创建 API key。",
+            "为项目启用 Custom Search API。",
+            "在 Programmable Search Engine 创建搜索引擎，并设置为搜索整个 web。",
+            "从控制台复制 Search engine ID，也就是 cx；这里需要同时填写 API key 和 cx。",
+        ],
+    },
+    "anysearch": {
+        "label": "AnySearch（可选密钥）",
+        "free_tier": "无需密钥也可使用；填写密钥可提高限额",
+        "how_to": [
+            "AnySearch 可以匿名使用，不填密钥也能工作，只是限额较低。",
+            "如需更高限额，注册 anysearch.com 并进入 Console -> API Keys。",
+            "创建密钥并粘贴到这里。",
+        ],
+    },
+    "semanticscholar": {
+        "label": "Semantic Scholar（可选密钥）",
+        "free_tier": "匿名共享额度实测长期 429；申请免费密钥后为每秒 1 次",
+        "how_to": [
+            "Semantic Scholar 是几个免密钥学术源里元数据最全的：摘要、被引数、开放获取 PDF 直链。",
+            "但它的匿名额度是一个共享池，实测基本一直处于限流状态，不填密钥通常拿不到结果。",
+            "在 semanticscholar.org/product/api 申请免费密钥，审核通过会发到邮箱（需要几天）。",
+            "把密钥粘贴到这里，category=\"paper\" 就会把它一起用上。",
+        ],
+    },
+    "github": {
+        "label": "GitHub（可选令牌）",
+        "free_tier": "仓库/议题搜索免令牌可用（10 次/分）；令牌提升到 30 次/分并解锁代码搜索",
+        "how_to": [
+            "github 引擎不带令牌也能搜索仓库和议题。",
+            "令牌会提高限额，并启用 github_code —— GitHub 的代码搜索接口直接拒绝匿名请求。",
+            "在 github.com/settings/tokens 创建，搜索公开仓库不需要任何 scope。",
+        ],
+    },
+    "stackexchange": {
+        "label": "Stack Exchange（可选密钥）",
+        "free_tier": "匿名每天 300 次；填写密钥后每天 10,000 次",
+        "how_to": [
+            "不填密钥也能用，只是每天 300 次配额按 IP 共享。",
+            "在 stackapps.com/apps/oauth/register 注册应用即可拿到 key。",
+            "把 key 粘贴到这里。",
+        ],
+    },
+}
+
+_FIELD_ZH: dict[str, str] = {
+    "brave_api_key": "API 密钥",
+    "serper_api_key": "API 密钥",
+    "tavily_api_key": "API 密钥",
+    "google_cse_api_key": "API 密钥",
+    "google_cse_cx": "搜索引擎 ID (cx)",
+    "anysearch_api_key": "API 密钥（可选）",
+    "semanticscholar_api_key": "API 密钥（可选，强烈建议填写）",
+    "github_token": "个人访问令牌（可选）",
+    "stackexchange_key": "API 密钥（可选）",
+    "proxy": "代理 URL",
+    "proxy_engines": "仅代理这些引擎（可选，逗号分隔）",
+}
+
+
+def _bilingual(primary: str, zh: str | None) -> str:
+    if not zh or zh == primary:
+        return _esc(primary)
+    return f"{_esc(primary)} <span class=\"zh\">/ {_esc(zh)}</span>"
+
+
+def _badge_text(configured: bool) -> str:
+    return "Configured ✓ / 已配置 ✓" if configured else "Not configured / 未配置"
+
+
+def _render_provider_card(provider: keystore.Provider) -> str:
+    configured = keystore.is_configured(provider.id)
+    badge_cls = "ok" if configured else "no"
+    badge_txt = _badge_text(configured)
+
+    zh = _PROVIDER_ZH.get(provider.id, {})
+    steps = "".join(f"<li>{_esc(step)}</li>" for step in provider.how_to)
+    zh_steps = zh.get("how_to", [])
+    zh_steps_html = ""
+    if isinstance(zh_steps, list) and zh_steps:
+        zh_steps_html = (
+            '<p class="steps-title">中文</p>'
+            + "<ol>"
+            + "".join(f"<li>{_esc(str(step))}</li>" for step in zh_steps)
+            + "</ol>"
+        )
+
+    links = [
+        f'<a href="{_esc(provider.signup_url)}" target="_blank" rel="noopener">Sign up / 注册</a>'
+    ]
+    if provider.docs_url:
+        links.append(
+            f'<a href="{_esc(provider.docs_url)}" target="_blank" rel="noopener">Docs / 文档</a>'
+        )
+    links_html = " · ".join(links)
+
+    inputs = []
+    for field in provider.fields:
+        ftype = "password" if field.secret else "text"
+        label_html = _bilingual(field.label, _FIELD_ZH.get(field.key))
+        # NEVER pre-fill the value — only ever render an empty input.
+        inputs.append(
+            f'<label class="field">'
+            f'<span class="field-label">{label_html}</span>'
+            f'<input type="{ftype}" data-key="{_esc(field.key)}" '
+            f'placeholder="{_esc(field.placeholder)}" autocomplete="off" '
+            f'spellcheck="false" />'
+            f"</label>"
+        )
+    inputs_html = "".join(inputs)
+
+    # zhihu authenticates via an interactive browser login, not an API key.
+    login_btn = ""
+    if provider.id == "zhihu":
+        login_btn = '<button class="login" onclick="loginProvider(this)">Login / 登录</button>'
+
+    title_html = _bilingual(provider.label, str(zh.get("label", "")))
+    free_tier_html = (
+        f'<span class="label">Free tier / 免费额度:</span> {_esc(provider.free_tier)}'
+    )
+    if zh.get("free_tier"):
+        free_tier_html += f'<br><span class="zh">{_esc(str(zh["free_tier"]))}</span>'
+
+    return f"""
+    <section class="card" data-provider="{_esc(provider.id)}">
+      <div class="card-head">
+        <h2>{title_html}</h2>
+        <span class="badge {badge_cls}" data-badge>{badge_txt}</span>
+      </div>
+      <p class="free-tier">{free_tier_html}</p>
+      <details class="howto">
+        <summary>How to get a key / 如何获取密钥</summary>
+        <p class="steps-title">English</p>
+        <ol>{steps}</ol>
+        {zh_steps_html}
+        <p class="links">{links_html}</p>
+      </details>
+      <div class="fields">{inputs_html}</div>
+      <div class="actions">
+        <button class="save" onclick="saveProvider(this)">Save / 保存</button>
+        <button class="test" onclick="testProvider(this)">Test / 测试</button>
+        {login_btn}
+        <button class="clear" onclick="clearProvider(this)">Clear / 清除</button>
+        <span class="result" data-result></span>
+      </div>
+    </section>
+    """
+
+
+def _render_network_card() -> str:
+    """The Network / Proxy card, built from ``keystore.NETWORK_FIELDS``.
+
+    Uses the same masked-input + Save pattern as the provider cards: the proxy
+    field is a secret -> password input, and the stored value is NEVER echoed
+    (inputs are always rendered empty). ``data-key`` wires each input into the
+    existing /api/save flow, so the two fields persist like any other secret."""
+    inputs = []
+    for field in keystore.NETWORK_FIELDS:
+        ftype = "password" if field.secret else "text"
+        label_html = _bilingual(field.label, _FIELD_ZH.get(field.key))
+        # NEVER pre-fill the value — only ever render an empty input.
+        inputs.append(
+            f'<label class="field">'
+            f'<span class="field-label">{label_html}</span>'
+            f'<input type="{ftype}" data-key="{_esc(field.key)}" '
+            f'placeholder="{_esc(field.placeholder)}" autocomplete="off" '
+            f'spellcheck="false" />'
+            f"</label>"
+        )
+    inputs_html = "".join(inputs)
+    configured = keystore.get_secret("proxy") is not None
+    badge_cls = "ok" if configured else "no"
+    badge_txt = _badge_text(configured)
+
+    return f"""
+    <section class="card" data-provider="__network__">
+      <div class="card-head">
+        <h2>Network / Proxy <span class="zh">/ 网络 / 代理</span></h2>
+        <span class="badge {badge_cls}" data-badge>{badge_txt}</span>
+      </div>
+      <p class="free-tier">
+        A proxy fixes datacenter-IP CAPTCHA gating.<br>
+        <span class="zh">代理用于解决数据中心 IP 触发 CAPTCHA 或访问限制的问题。</span>
+      </p>
+      <div class="fields">{inputs_html}</div>
+      <div class="actions">
+        <button class="save" onclick="saveProvider(this)">Save / 保存</button>
+        <button class="clear" onclick="clearProvider(this)">Clear / 清除</button>
+        <span class="result" data-result></span>
+      </div>
+    </section>
+    """
+
+
+_STYLE = """
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body {
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0; padding: 2rem 1rem; background: #f5f6f8; color: #1a1d21;
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+header h1 { margin: 0 0 .25rem; font-size: 1.4rem; }
+.zh { color: #4b5563; }
+.label { font-weight: 600; color: #374151; }
+.note {
+  margin: 0 0 1.5rem; padding: .6rem .8rem; background: #fff6e0;
+  border: 1px solid #ecd9a0; border-radius: 8px; font-size: .85rem; color: #6a5300;
+}
+.card {
+  background: #fff; border: 1px solid #e2e5ea; border-radius: 12px;
+  padding: 1rem 1.1rem; margin-bottom: 1rem;
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.card-head h2 { margin: 0; font-size: 1.05rem; }
+.badge { font-size: .75rem; padding: .15rem .55rem; border-radius: 999px; white-space: nowrap; }
+.badge.ok { background: #e3f6e8; color: #15803d; border: 1px solid #aee0bd; }
+.badge.no { background: #f0f1f3; color: #6b7280; border: 1px solid #d7dae0; }
+.free-tier { margin: .35rem 0 .6rem; font-size: .85rem; color: #5a6270; }
+.howto { margin-bottom: .7rem; font-size: .85rem; }
+.howto summary { cursor: pointer; color: #2563eb; }
+.steps-title { margin: .55rem 0 .2rem; font-weight: 600; color: #374151; }
+.howto ol { margin: .5rem 0; padding-left: 1.2rem; }
+.howto li { margin: .25rem 0; }
+.howto .links a { color: #2563eb; text-decoration: none; }
+.fields { display: flex; flex-direction: column; gap: .5rem; }
+.field { display: flex; flex-direction: column; gap: .2rem; }
+.field-label { font-size: .8rem; color: #5a6270; }
+.field input {
+  padding: .5rem .6rem; border: 1px solid #cfd4dc; border-radius: 8px;
+  font: inherit; background: #fcfcfd;
+}
+.field input:focus { outline: 2px solid #2563eb55; border-color: #2563eb; }
+.actions { display: flex; align-items: center; gap: .5rem; margin-top: .8rem; }
+button {
+  font: inherit; padding: .45rem .9rem; border-radius: 8px; cursor: pointer; border: 1px solid transparent;
+}
+button.save { background: #2563eb; color: #fff; }
+button.save:hover { background: #1d4ed8; }
+button.test { background: #fff; color: #1a1d21; border-color: #cfd4dc; }
+button.test:hover { background: #f3f4f6; }
+button.login { background: #fff; color: #1a1d21; border-color: #cfd4dc; }
+button.login:hover { background: #f3f4f6; }
+button.clear { background: #fff; color: #b91c1c; border-color: #e3b4b4; }
+button.clear:hover { background: #fdecec; }
+.result { font-size: .8rem; color: #5a6270; }
+.result.ok { color: #15803d; }
+.result.err { color: #b91c1c; }
+#toast {
+  position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+  padding: .6rem 1.1rem; border-radius: 8px; color: #fff; font-size: .9rem;
+  opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50;
+}
+#toast.show { opacity: 1; }
+#toast.ok { background: #15803d; }
+#toast.err { background: #b91c1c; }
+"""
+
+
+_SCRIPT = """
+function badgeText(ok) {
+  return ok ? 'Configured \\u2713 / 已配置 \\u2713' : 'Not configured / 未配置';
+}
+
+function showToast(msg, ok) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = (ok ? 'ok' : 'err') + ' show';
+  setTimeout(function () { t.className = t.className.replace(' show', ''); }, 2600);
+}
+
+function applyStatus(status) {
+  if (!status) return;
+  document.querySelectorAll('.card').forEach(function (card) {
+    var id = card.getAttribute('data-provider');
+    if (!(id in status)) return;
+    var badge = card.querySelector('[data-badge]');
+    var ok = !!status[id];
+    badge.textContent = badgeText(ok);
+    badge.className = 'badge ' + (ok ? 'ok' : 'no');
+  });
+}
+
+async function saveProvider(btn) {
+  var card = btn.closest('.card');
+  var payload = {};
+  card.querySelectorAll('input[data-key]').forEach(function (inp) {
+    payload[inp.getAttribute('data-key')] = inp.value;
+  });
+  try {
+    var res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    var data = await res.json();
+    if (res.ok && data.ok) {
+      applyStatus(data.status);
+      // Clear inputs so secrets never linger in the DOM.
+      card.querySelectorAll('input[data-key]').forEach(function (inp) { inp.value = ''; });
+      showToast('Saved / 已保存', true);
+    } else {
+      showToast('Save failed / 保存失败: ' + (data.error || res.status), false);
+    }
+  } catch (e) {
+    showToast('Save failed / 保存失败: ' + e, false);
+  }
+}
+
+async function clearProvider(btn) {
+  var card = btn.closest('.card');
+  if (!confirm('Remove the stored key(s) for this provider?\\n确认删除该提供商已保存的密钥或配置吗？')) return;
+  var keys = [];
+  card.querySelectorAll('input[data-key]').forEach(function (inp) {
+    keys.push(inp.getAttribute('data-key'));
+  });
+  try {
+    var status = null;
+    for (var i = 0; i < keys.length; i++) {
+      var res = await fetch('/api/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field: keys[i] }),
+      });
+      var data = await res.json();
+      if (!(res.ok && data.ok)) {
+        showToast('Clear failed / 清除失败: ' + (data.error || res.status), false);
+        return;
+      }
+      status = data.status;
+    }
+    if (status) applyStatus(status);
+    card.querySelectorAll('input[data-key]').forEach(function (inp) { inp.value = ''; });
+    showToast('Cleared / 已清除', true);
+  } catch (e) {
+    showToast('Clear failed / 清除失败: ' + e, false);
+  }
+}
+
+async function loginProvider(btn) {
+  var card = btn.closest('.card');
+  var id = card.getAttribute('data-provider');
+  var out = card.querySelector('[data-result]');
+  out.textContent = 'A browser window will open; log in, it auto-closes… / 浏览器窗口会打开，请登录，完成后会自动关闭…';
+  out.className = 'result';
+  btn.disabled = true;
+  try {
+    var res = await fetch('/api/login/' + encodeURIComponent(id), { method: 'POST' });
+    var data = await res.json();
+    if (res.ok && data.ok) {
+      out.textContent = 'Logged in / 已登录';
+      out.className = 'result ok';
+    } else {
+      out.textContent = data.error || 'login failed / 登录失败';
+      out.className = 'result err';
+    }
+  } catch (e) {
+    out.textContent = String(e);
+    out.className = 'result err';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function testProvider(btn) {
+  var card = btn.closest('.card');
+  var id = card.getAttribute('data-provider');
+  var out = card.querySelector('[data-result]');
+  out.textContent = 'Testing… / 正在测试…';
+  out.className = 'result';
+  try {
+    var res = await fetch('/api/test/' + encodeURIComponent(id));
+    var data = await res.json();
+    if (data.ok) {
+      out.textContent = data.count + ' result(s) / 条结果';
+      out.className = 'result ok';
+    } else {
+      out.textContent = data.error || 'failed / 测试失败';
+      out.className = 'result err';
+    }
+  } catch (e) {
+    out.textContent = String(e);
+    out.className = 'result err';
+  }
+}
+"""
+
+
+def _render_page() -> str:
+    cards = "".join(_render_provider_card(p) for p in keystore.PROVIDERS)
+    cards += _render_network_card()
+    note = (
+        "Local config tool — bound to 127.0.0.1. Keys are stored at "
+        "~/.config/search-mcp/config.json (0600). "
+        "本地配置工具，仅绑定 127.0.0.1；密钥保存在上述本地文件中。"
+    )
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>search-mcp admin</title>
+  <style>{_STYLE}</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>search-mcp · provider keys <span class="zh">/ 提供商密钥配置</span></h1>
+      <p class="note">{_esc(note)}</p>
+    </header>
+    {cards}
+  </div>
+  <div id="toast"></div>
+  <script>{_SCRIPT}</script>
+</body>
+</html>"""
+
+
+# --- routes -----------------------------------------------------------------
+
+
+def _ui_status() -> dict[str, bool]:
+    status = keystore.provider_status()
+    status["__network__"] = keystore.get_secret("proxy") is not None
+    return status
+
+
+async def index(request: Request) -> HTMLResponse:
+    return HTMLResponse(_render_page())
+
+
+async def api_status(request: Request) -> JSONResponse:
+    return JSONResponse({"providers": keystore.provider_status()})
+
+
+async def api_save(request: Request) -> JSONResponse:
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "invalid JSON"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"ok": False, "error": "expected an object"}, status_code=400)
+    # Drop empty-string values: a blank field means "leave unchanged", so it
+    # must never reach set_secrets (which would delete the key).
+    non_empty = {
+        str(k): str(v)
+        for k, v in body.items()
+        if isinstance(v, (str, int, float)) and str(v).strip() != ""
+    }
+    if non_empty:
+        keystore.set_secrets(non_empty)
+    return JSONResponse({"ok": True, "status": _ui_status()})
+
+
+async def api_clear(request: Request) -> JSONResponse:
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "invalid JSON"}, status_code=400)
+    field = body.get("field") if isinstance(body, dict) else None
+    if not field or not isinstance(field, str):
+        return JSONResponse({"ok": False, "error": "missing 'field'"}, status_code=400)
+    keystore.delete_secret(field)
+    return JSONResponse({"ok": True, "status": _ui_status()})
+
+
+async def api_test(request: Request) -> JSONResponse:
+    from .engines import get_engine
+
+    provider_id = request.path_params["provider_id"]
+    provider = keystore.provider_by_id(provider_id)
+    if provider is None:
+        return JSONResponse(
+            {"ok": False, "count": 0, "error": f"unknown provider: {provider_id}"},
+            status_code=404,
+        )
+    try:
+        engine = get_engine(provider.engine)
+        results = await engine.search("openai", 2)
+        return JSONResponse({"ok": True, "count": len(results), "error": None})
+    except Exception as exc:  # missing key -> ValueError, network -> others
+        return JSONResponse({"ok": False, "count": 0, "error": str(exc)})
+
+
+# Providers that authenticate via an interactive browser login (no API key).
+# Maps the provider id to the site the login flow opens.
+_LOGIN_URLS: dict[str, str] = {"zhihu": "https://www.zhihu.com"}
+
+
+async def api_login(request: Request) -> JSONResponse:
+    provider_id = request.path_params["provider_id"]
+    url = _LOGIN_URLS.get(provider_id)
+    if url is None:
+        return JSONResponse(
+            {"ok": False, "error": f"no browser login for provider: {provider_id}"},
+            status_code=404,
+        )
+    try:
+        # Import lazily: the browser pool pulls in Playwright and is only
+        # available once the browser part is installed.
+        from .browser import pool
+
+        await pool.login(url)
+        return JSONResponse({"ok": True, "error": None})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)})
+
+
+app = Starlette(
+    routes=[
+        Route("/", index, methods=["GET"]),
+        Route("/api/status", api_status, methods=["GET"]),
+        Route("/api/save", api_save, methods=["POST"]),
+        Route("/api/clear", api_clear, methods=["POST"]),
+        Route("/api/test/{provider_id}", api_test, methods=["GET"]),
+        Route("/api/login/{provider_id}", api_login, methods=["POST"]),
+    ]
+)
+
+
+def _schedule_browser_open(url: str) -> None:
+    """Best-effort: open the admin page in the default browser shortly after
+    startup (giving uvicorn a moment to bind). Disable with
+    SEARCH_MCP_ADMIN_NO_BROWSER=1 (headless boxes, scripts); explicit falsy
+    values ("0", "false", "no", "off", "") keep the auto-open."""
+    flag = (os.environ.get("SEARCH_MCP_ADMIN_NO_BROWSER") or "").strip().lower()
+    if flag and flag not in ("0", "false", "no", "off"):
+        return
+    import threading
+    import webbrowser
+
+    def _open() -> None:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    threading.Timer(1.0, _open).start()
+
+
+def main() -> None:
+    import uvicorn
+
+    # Load SEARCH_MCP_* keys from ./.env and <config_dir>/.env so the Test
+    # button (and the provider 'configured' badges) reflect them too.
+    keystore.load_all_env_files()
+    port = int(os.environ.get("SEARCH_MCP_ADMIN_PORT", "8765"))
+    url = f"http://127.0.0.1:{port}"
+    print(f"search-mcp admin → {url}")
+    _schedule_browser_open(url)
+    # Bind to loopback ONLY — this tool reads/writes secrets.
+    uvicorn.run(app, host="127.0.0.1", port=port)
+
+
+if __name__ == "__main__":
+    main()

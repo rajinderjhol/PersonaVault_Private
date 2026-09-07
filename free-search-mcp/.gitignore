@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+# Remotion promo-video project (its own node_modules etc.); lives beside the
+# package but must never enter the git tree or the sdist.
+freesearch-promo/
+*.db
+*.sqlite
+.env
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Ranking-eval capture: a snapshot of a moving web, not a fixture.
+evals/ranking/buckets.json
