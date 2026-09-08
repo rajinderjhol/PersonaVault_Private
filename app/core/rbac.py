@@ -48,14 +48,16 @@ async def rbac_middleware(request: Request, call_next):
 
     # 2. Retrieve DB session from request state
     db: AsyncSession = getattr(request.state, "db", None)
+    logger.info(f"RBAC DEBUG: DB session found in request state: {db is not None}")
     
     # Check for user in request.state (either from auth or test override)
     user = getattr(request.state, "user", None)
+    logger.info(f"RBAC DEBUG: User found in request state: {user is not None}")
     
-    # IF user is not set (e.g. not a test override), check session cookie
+    # IF user is not set (e.g. not a test override), check session cookie or query param
     if not user:
-        session_id = request.cookies.get("session_id")
-        logger.info(f"RBAC DEBUG: Session ID from cookie: {session_id}")
+        session_id = request.cookies.get("session_id") or request.query_params.get("token")
+        logger.info(f"RBAC DEBUG: Session ID from cookie/query: {session_id}")
         if db and session_id:
             try:
                 # Log the session lookup

@@ -18,10 +18,7 @@ export const useAgentWebSocket = () => {
   useEffect(() => {
     if (!currentEnvId) return;
 
-    const currentHost = window.location.host;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // In Cloud Shell, the frontend and backend are on different ports (and subdomains)
-    // We attempt to get the session token from document.cookie.
+    // Get the session token
     const getCookie = (name: string) => {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
@@ -29,87 +26,95 @@ export const useAgentWebSocket = () => {
       return null;
     };
     const sessionToken = getCookie('session_id');
-    console.log('🔑 Retrieved session token:', sessionToken ? 'Found' : 'Not Found');
 
-    let wsUrl: string;
+    // Build the WebSocket URL
+    const buildWsUrl = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      
+      // Use the standard /v2 prefix which now has ws: true in vite.config.ts
+      let url = `${protocol}//${host}/v2/environments/${currentEnvId}/agents/ws`;
+      
+      if (sessionToken) {
+        url += `?token=${sessionToken}`;
+      }
+      return url;
+    };
 
-    if (import.meta.env.VITE_WS_URL) {
-      wsUrl = `${import.meta.env.VITE_WS_URL.replace('http', 'ws')}/v2/environments/${currentEnvId}/ws/agents`;
-    } else if (currentHost.includes('5173-cs-')) {
-      const backendHost = currentHost.replace('5173-cs-', '8000-cs-');
-      wsUrl = `${protocol}//${backendHost}/v2/environments/${currentEnvId}/ws/agents`;
-    } else {
-      wsUrl = `${protocol}//${currentHost}/v2/environments/${currentEnvId}/ws/agents`;
-    }
-
-    // Append token as query parameter
-    if (sessionToken) {
-      wsUrl += `?token=${sessionToken}`;
-    } else {
-      console.warn('⚠️ No session token found for WebSocket connection');
-    }
-
-    console.log('🔌 Attempting WebSocket connection to:', wsUrl.replace(sessionToken || '', '***'));
-
-    let ws: WebSocket;
-    let reconnectTimer: any;
+    let ws: WebSocket | null = null;
+    let reconnectTimer: any = null;
+    let retryCount = 0;
 
     const connect = () => {
+      const wsUrl = buildWsUrl();
+      console.log(`🔌 Attempting WebSocket connection (attempt ${retryCount + 1}) to:`, wsUrl.split('?')[0]);
+
       try {
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
           setIsConnected(true);
-          console.log('🔌 Agent WebSocket connected to:', wsUrl);
+          retryCount = 0;
+          console.log('✅ Agent WebSocket connected successfully');
         };
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             
-            switch (data.type) {
-              case 'agent_status':
-                setAgents(prev => {
-                  const existingIndex = prev.findIndex(a => a.agentId === data.agentId);
-                  if (existingIndex >= 0) {
-                    const updated = [...prev];
-                    updated[existingIndex] = { ...updated[existingIndex], ...data.payload };
-                    return updated;
-                  }
-                  return [...prev, { ...data.payload, agentId: data.agentId }];
-                });
-                break;
-              case 'phase_transition':
-                console.log('🔥 Phase transition detected:', data.payload);
-                break;
-              case 'decision_created':
-                console.log('🎯 Decision created:', data.payload);
-                break;
+            // Handle both array of agents (new backend) and specific events (old/complex backend)
+            if (Array.isArray(data)) {
+              setAgents(data);
+              return;
+            }
+
+            if (data.type === 'agent_status') {
+              setAgents(prev => {
+                const existingIndex = prev.findIndex(a => a.agentId === data.agentId);
+                if (existingIndex >= 0) {
+                  const updated = [...prev];
+                  updated[existingIndex] = { ...updated[existingIndex], ...data.payload };
+                  return updated;
+                }
+                return [...prev, { ...data.payload, agentId: data.agentId }];
+              });
             }
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
+            console.error('❌ Failed to parse WebSocket message:', error);
           }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
           setIsConnected(false);
-          console.log('🔌 Agent WebSocket disconnected, retrying in 3s...');
-          reconnectTimer = setTimeout(connect, 3000);
+          console.warn(`⚠️ WebSocket closed (code: ${event.code}, reason: ${event.reason || 'none'})`);
+          
+          // Exponential backoff for reconnection
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          retryCount++;
+          
+          reconnectTimer = setTimeout(() => {
+            console.log('🔄 Reconnecting WebSocket...');
+            connect();
+          }, delay);
         };
 
         ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          ws.close();
+          console.error('❌ WebSocket error details:', error);
+          // Don't close manually, onclose will handle it
         };
       } catch (err) {
-        console.error('WebSocket setup failed:', err);
+        console.error('❌ WebSocket setup critical failure:', err);
       }
     };
 
     connect();
 
     return () => {
-      if (ws) ws.close();
+      console.log('🔌 Cleaning up WebSocket connection');
+      if (ws) {
+        ws.onclose = null; // Prevent reconnection loop during unmount
+        ws.close();
+      }
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
   }, [currentEnvId]);

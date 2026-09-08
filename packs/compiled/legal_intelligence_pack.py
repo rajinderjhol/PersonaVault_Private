@@ -3,7 +3,7 @@ Auto-generated Runtime Class for Legal Intelligence
 Pack: Legal Intelligence
 Domain: legal
 Version: 1.0.0
-Generated: 2026-08-29T17:29:12.086700
+Generated: 2026-09-08T13:59:06.683968
 Signature: 
 """
 import logging
@@ -13,7 +13,7 @@ from datetime import datetime
 # Generated Components Inline
 """
 Auto-generated Signal Normalizer for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
+Generated on: 2026-09-08T13:59:06.683968
 Source checksum: cf50e56a31b2d3fc
 """
 import re
@@ -143,7 +143,7 @@ class LegalIntelligenceSignalNormalizer:
 
 """
 Auto-generated Policy Engine for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
+Generated on: 2026-09-08T13:59:06.683968
 Source checksum: cf50e56a31b2d3fc
 """
 from typing import Dict, Any, List, Optional
@@ -272,7 +272,7 @@ class LegalIntelligencePolicyEngine:
 
 """
 Auto-generated Action Mapper for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
+Generated on: 2026-09-08T13:59:06.683968
 """
 from typing import Dict, Any, List
 
@@ -289,7 +289,7 @@ class LegalIntelligenceActionMapper:
 
 """
 Auto-generated Provenance Tracker for Legal Intelligence
-Generated on: 2026-08-29T17:29:12.086700
+Generated on: 2026-09-08T13:59:06.683968
 """
 from typing import Dict, Any, List
 from datetime import datetime
@@ -361,7 +361,7 @@ class LegalIntelligencePack:
             "domain": "legal",
             "version": "1.0.0",
             "signature": "",
-            "timestamp": "2026-08-29T17:29:12.086700"
+            "timestamp": "2026-09-08T13:59:06.683968"
         }
         
         logger.info(f"✅ Loaded Legal Intelligence pack v1.0.0")

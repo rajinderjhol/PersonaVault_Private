@@ -30,6 +30,10 @@ async def rate_limiter(request: Request, call_next):
     Configuration is driven by RATE_LIMIT_WINDOW and MAX_REQUESTS_PER_WINDOW env vars.
     NOTE: For distributed (K8s) deployments, migrate to Redis-backed rate limiting.
     """
+    # Skip for WebSockets
+    if request.scope.get("type") == "websocket":
+        return await call_next(request)
+
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
 

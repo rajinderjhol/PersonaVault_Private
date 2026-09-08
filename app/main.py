@@ -362,7 +362,8 @@ app = FastAPI(
     title="PersonaVault API",
     description="AI-powered personal memory vault",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
 
 @app.websocket("/v2/environments/{env_id}/ws/agents")
@@ -491,20 +492,23 @@ app.mount("/metrics", _protected_metrics_app)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS middleware — origins are driven by ALLOWED_ORIGINS env var
-# In development (CORS_ALLOW_ALL=true + APP_ENV=development): wildcard is permitted via regex
+# In development (CORS_ALLOW_ALL=true + APP_ENV=development): wildcard is permitted
 # In all other cases: only listed origins are allowed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=Config.ALLOWED_ORIGINS,
+    allow_origins=["*"] if Config.CORS_ALLOW_ALL else Config.ALLOWED_ORIGINS,
     allow_origin_regex=r"https://.*\.cloudshell\.dev" if Config.CORS_ALLOW_ALL else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Security headers middleware
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
+    if request.scope.get("type") == "websocket":
+        return await call_next(request)
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -513,6 +517,8 @@ async def add_security_headers(request, call_next):
 # Prometheus Middleware to capture metrics for all requests
 @app.middleware("http")
 async def prometheus_middleware(request: Request, call_next):
+    if request.scope.get("type") == "websocket":
+        return await call_next(request)
     method = request.method
     endpoint = request.url.path
     
@@ -533,6 +539,8 @@ app.middleware("http")(rate_limiter)
 # It will be the first to open a session and the absolute last to close it.
 @app.middleware("http")
 async def db_session_middleware(request: Request, call_next):
+    if request.scope.get("type") == "websocket":
+        return await call_next(request)
     async with SessionLocal() as db:
         request.state.db = db
         return await call_next(request)
@@ -624,24 +632,32 @@ app.include_router(clinical_router, tags=["clinical"])
 # V2 API Registration
 from app.api.v2.endpoints import (
     intelligence_packs, environments, memberships, authorities, crystallization, 
-    simulation, agents, health as v2_health_router, models as v2_models_router, 
+    simulation, health as v2_health_router, 
     ingestion as v2_ingestion_router, search as v2_search_router, 
-    chat as v2_chat_router, reasoning as v2_reasoning_router, mcp as v2_mcp_router
+    chat as v2_chat_router, reasoning as v2_reasoning_router, mcp as v2_mcp_router,
+    intelligence_sources as v2_intelligence_sources_router,
+    trust_policies as v2_trust_policies_router,
+    admin as v2_admin_router
 )
+
+# V2 Routers that belong under /v2/environments/{env_id}/
 app.include_router(intelligence_packs.router, prefix="/v2/environments")
 app.include_router(environments.router, prefix="/v2/environments")
 app.include_router(memberships.router, prefix="/v2/environments")
 app.include_router(authorities.router, prefix="/v2/environments")
 app.include_router(crystallization.router, prefix="/v2/environments")
 app.include_router(simulation.router, prefix="/v2/environments")
-app.include_router(agents.router, prefix="/v2/environments")
-app.include_router(v2_models_router.router, prefix="/v2/environments")
-app.include_router(v2_health_router.router, prefix="/v2/health")
 app.include_router(v2_ingestion_router.router, prefix="/v2/environments")
 app.include_router(v2_search_router.router, prefix="/v2/environments")
 app.include_router(v2_chat_router.router, prefix="/v2/environments")
 app.include_router(v2_reasoning_router.router, prefix="/v2/environments")
-app.include_router(v2_mcp_router.router, prefix="/v2")
+app.include_router(v2_admin_router.router, prefix="/v2/environments")
+
+# V2 Routers that have their own root or different prefixes
+app.include_router(v2_health_router.router, prefix="/v2/health")
+app.include_router(v2_mcp_router.router, prefix="/v2/mcp")
+app.include_router(v2_intelligence_sources_router.router, prefix="/v2")
+app.include_router(v2_trust_policies_router.router, prefix="/v2")
 
 
 

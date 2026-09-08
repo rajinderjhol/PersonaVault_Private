@@ -89,5 +89,31 @@
       "updated_at": "2026-08-28 17:42:01.104304",
       "metadata": {}
     }
+  },
+  "trust_8f76a014e6d9": {
+    "14": {
+      "id": "trust_8f76a014e6d9",
+      "user_id": 14,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-08 13:41:06.736640",
+      "updated_at": "2026-09-08 13:41:06.736646",
+      "metadata": {}
+    }
+  },
+  "trust_9a5edaf5f5db": {
+    "20": {
+      "id": "trust_9a5edaf5f5db",
+      "user_id": 20,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-08 14:00:51.947881",
+      "updated_at": "2026-09-08 14:00:51.947957",
+      "metadata": {}
+    }
   }
 }

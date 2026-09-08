@@ -67,40 +67,47 @@ class TestGeneratorAgent:
         mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_response)
         
         with patch("httpx.AsyncClient.stream", return_value=mock_stream_ctx):
-            chunks = []
-            async for chunk in agent.generate_stream(query="Hi", provider="groq"):
-                chunks.append(chunk)
+            collected_text = []
+            async def yield_chunk(chunk):
+                if chunk.get("type") == "text":
+                    collected_text.append(chunk.get("data"))
             
-            assert "".join(chunks) == "Hello world"
+            mock_memory_service = MagicMock()
+            mock_memory_service.find_crystallized_pattern = AsyncMock(return_value=None)
+            
+            await agent.generate_stream(prompt="Hi", context={"context": []}, memory_service=mock_memory_service, yield_chunk=yield_chunk)
+            
+            assert "".join(collected_text) == "Hello world"
 
     @pytest.mark.asyncio
     async def test_generate_stream_ollama_success(self):
         agent = GeneratorAgent()
         
-        # Mock Ollama streaming response
-        mock_response_lines = [
-            '{"response": "Ollama", "done": false}',
-            '{"response": " says", "done": false}',
-            '{"response": " hi", "done": true}'
-        ]
-        
-        async def mock_aiter_lines():
-            for line in mock_response_lines:
-                yield line
+        async def mock_stream_ollama(prompt, model=None):
+            yield "Ollama"
+            yield " says"
+            yield " hi"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.aiter_lines = mock_aiter_lines
+        agent._stream_ollama = mock_stream_ollama
         
-        mock_stream_ctx = MagicMock()
-        mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_response)
+        collected_text = []
+        async def yield_chunk(chunk):
+            if chunk.get("type") == "text":
+                collected_text.append(chunk.get("data"))
         
-        with patch("httpx.AsyncClient.stream", return_value=mock_stream_ctx):
-            chunks = []
-            async for chunk in agent.generate_stream(query="Hi", provider="ollama"):
-                chunks.append(chunk)
-            
-            assert "".join(chunks) == "Ollama says hi"
+        mock_memory_service = MagicMock()
+        mock_memory_service.find_crystallized_pattern = AsyncMock(return_value=None)
+        
+        # Patch the routing to force ollama
+        with patch.object(agent.router, 'route', return_value=('ollama', {'mode': 'fast', 'provider': 'ollama'})):
+            await agent.generate_stream(
+                prompt="Hi", 
+                context={"context": []}, 
+                memory_service=mock_memory_service, 
+                yield_chunk=yield_chunk
+            )
+        
+        assert "".join(collected_text) == "Ollama says hi"
 
 if __name__ == "__main__":
     pytest.main(["-v", __file__])

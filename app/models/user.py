@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, J
 from datetime import datetime
 from app.db.session import Base
 from sqlalchemy.orm import relationship
+from app.models.intelligence_source import IntelligenceSource
 
 class User(Base):
     __tablename__ = "users"
@@ -31,3 +32,4 @@ class User(Base):
     organization = relationship("Organization", back_populates="users")
     sessions = relationship("UserSession", back_populates="user")
     profile = relationship("UserProfile", back_populates="user", uselist=False)
+    intelligence_sources = relationship("IntelligenceSource", back_populates="user", cascade="all, delete-orphan")

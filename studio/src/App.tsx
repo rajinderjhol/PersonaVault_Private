@@ -19,7 +19,8 @@ import { CrystallizationDashboard } from './pages/CrystallizationDashboard';
 import { ConstitutionEditor } from './pages/ConstitutionEditor';
 import { PolicyManagement } from './pages/PolicyManagement';
 import { Profile } from './pages/Profile';
-import { DeviceTrust } from './pages/DeviceTrust';
+import IntelligenceSourceControl from './pages/IntelligenceSourceControl';
+import TrustPolicyConfig from './pages/TrustPolicyConfig';
 import { MCPCenter } from './pages/MCPCenter';
 import { UniversalSearch } from './pages/UniversalSearch';
 import { AdminTools } from './pages/AdminTools';
@@ -44,7 +45,7 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <Router basename="/studio">
+    <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/*" element={
@@ -63,7 +64,8 @@ function App() {
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/security" element={<SecurityCenter />} />
                 <Route path="/mcp-center" element={<MCPCenter />} />
-                <Route path="/trust" element={<DeviceTrust />} />
+                <Route path="/intelligence-sources" element={<IntelligenceSourceControl />} />
+<Route path="/trust-policies" element={<TrustPolicyConfig />} />
                 <Route path="/universal-search" element={<UniversalSearch />} />
                 <Route path="/admin-tools" element={<AdminTools />} />
                 <Route path="/intelligence-lattice" element={<IntelligenceLattice />} />

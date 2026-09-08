@@ -62,10 +62,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       >
         <AnimatePresence>
           {messages.map((msg, index) => (
-            <MessageItem key={index} message={msg} />
+            <MessageItem key={msg.id || index} message={msg} />
           ))}
           {currentMessage && (
-            <MessageItem key="current" message={currentMessage} />
+            <MessageItem key="current-message" message={currentMessage} />
           )}
         </AnimatePresence>
         {error && <div style={{ color: 'var(--color-danger)' }}>⚠️ {error}</div>}
@@ -136,6 +136,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 const MessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
   const isUser = message.role === 'user';
   const [showStoryboard, setShowStoryboard] = useState(false);
+  const isStreaming = message.isStreaming || false;
   
   const handleActionClick = async (action: any) => {
     console.log('Action clicked:', action);
@@ -145,6 +146,7 @@ const MessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
       style={{
         display: 'flex',
         flexDirection: isUser ? 'row-reverse' : 'row',
@@ -197,9 +199,19 @@ const MessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
           fontSize: '0.95rem',
           lineHeight: 1.5,
           backdropFilter: 'var(--glass-blur)',
-          width: isUser ? 'auto' : '100%'
+          width: isUser ? 'auto' : '100%',
+          borderBottom: isStreaming ? '2px solid var(--color-gas)' : 'none',
+          transition: 'border-color 0.3s ease',
         }}>
           {message.content}
+          {isStreaming && (
+            <span style={{
+              display: 'inline-block',
+              color: 'var(--color-gas)',
+              marginLeft: '2px',
+              animation: 'blink 0.8s step-end infinite'
+            }}>▊</span>
+          )}
         </div>
         
         {/* Memory Attribution */}
@@ -257,13 +269,28 @@ const MessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
         )}
         
         {/* Decision Gate */}
-        {!isUser && message.decision && (
+        {!isUser && message.decision && !isStreaming && (
           <DecisionGate 
             decision={message.decision}
             onReplay={(id) => console.log('Replay:', id)}
             onDownloadEvidence={(id) => console.log('Download:', id)}
             onCopyId={(id) => console.log('Copy:', id)}
           />
+        )}
+        
+        {/* Streaming Decision Gate Placeholder */}
+        {!isUser && message.decision && isStreaming && (
+          <div style={{ 
+            padding: '8px 16px', 
+            background: 'rgba(0, 242, 255, 0.05)',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            color: 'var(--color-text-muted)',
+            border: '1px dashed rgba(0, 242, 255, 0.2)',
+            animation: 'pulse 1.5s ease-in-out infinite'
+          }}>
+            ⏳ Decision trace being generated...
+          </div>
         )}
         
         {/* Action Hub */}
@@ -273,7 +300,7 @@ const MessageItem: React.FC<{ message: ChatMessage }> = ({ message }) => {
             decisionId={message.decision?.decisionId}
             verdict={message.decision?.verdict}
             onActionClick={handleActionClick}
-            isLoading={message.isStreaming}
+            isLoading={isStreaming}
           />
         )}
       </div>

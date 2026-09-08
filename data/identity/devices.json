@@ -168,5 +168,39 @@
       "is_active": true,
       "is_verified": false
     }
+  },
+  "dev_639b97b8f043": {
+    "11": {
+      "id": "dev_639b97b8f043",
+      "user_id": 11,
+      "name": "API Test Device",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-09-08 13:41:06.449329",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
+  },
+  "dev_281d4033f6ba": {
+    "17": {
+      "id": "dev_281d4033f6ba",
+      "user_id": 17,
+      "name": "API Test Device",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-09-08 14:00:51.717597",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
   }
 }

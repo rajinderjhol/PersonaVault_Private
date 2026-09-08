@@ -20,6 +20,7 @@ async def get_providers(
         {"id": "gemini", "name": "Gemini", "enabled": True},
     ]
 
+@router.get("", response_model=Dict[str, Any])
 @router.get("/", response_model=Dict[str, Any])
 async def get_models(
     env_id: str,

@@ -25,3 +25,13 @@ async def run_simulation(
 ):
     """Run a sandbox simulation with no side effects."""
     return await simulation_service.create_simulation(env, scenario)
+
+@router.get("/history")
+async def get_simulation_history(
+    env_id: str,
+    env: Environment = Depends(lambda env_id: require_authority(env_id, "view")),
+    simulation_service: SimulationService = Depends(get_simulation_service)
+):
+    """Get simulation history for the environment."""
+    return await simulation_service.get_history(env)
+

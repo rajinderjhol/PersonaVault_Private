@@ -196,14 +196,16 @@ class ChatPipeline:
         from app.services.memory_service import MemoryService
         from app.repositories.sqlalchemy.memory import SQLMemoryRepository
         from app.repositories.faiss.vector import FAISSSemanticRepository
+        from app.db.session import SessionLocal
         
-        mem_repo = SQLMemoryRepository(db=None) # Will use internal SessionLocal
-        vec_repo = FAISSSemanticRepository()
-        memory_service = MemoryService(memory_repo=mem_repo, vector_repo=vec_repo)
-        
-        # Detect memory layer usage
-        memory_attribution = None
-        pattern = await memory_service.find_crystallized_pattern(query, {"env_id": self.env_id})
+        async with SessionLocal() as db:
+            mem_repo = SQLMemoryRepository(db=db)
+            vec_repo = FAISSSemanticRepository()
+            memory_service = MemoryService(memory_repo=mem_repo, vector_repo=vec_repo)
+            
+            # Detect memory layer usage
+            memory_attribution = None
+            pattern = await memory_service.find_crystallized_pattern(query, {"env_id": self.env_id})
         
         if pattern:
             memory_attribution = {

@@ -6,6 +6,7 @@ from datetime import datetime
 
 router = APIRouter(tags=["v2-health"])
 
+@router.get("")
 @router.get("/")
 async def health_check(db: AsyncSession = Depends(get_db)):
     """
@@ -35,3 +36,4 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         },
         "metrics": decision_health
     }
+

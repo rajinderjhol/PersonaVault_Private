@@ -7,6 +7,7 @@ import {
   ChevronRight,
   MessageSquare,
   ShieldCheck,
+  Shield,
   Cpu,
   Terminal,
   Layers,
@@ -134,12 +135,19 @@ const LeftPanel: React.FC = () => {
           collapsed={collapsed} 
           active={activePath === '/mcp-center'} 
         />
-        <NavItem 
-          to="/trust"
-          icon={<ShieldCheck size={20} />} 
-          label="Device Trust" 
-          collapsed={collapsed} 
-          active={activePath === '/trust'} 
+        <NavItem
+          to="/intelligence-sources"
+          icon={<ShieldCheck size={20} />}
+          label="Intelligence Source Control"
+          collapsed={collapsed}
+          active={activePath === '/intelligence-sources'}
+        />
+        <NavItem
+          to="/trust-policies"
+          icon={<Shield size={20} />}
+          label="Trust Policies"
+          collapsed={collapsed}
+          active={activePath === '/trust-policies'}
         />
         <NavItem 
           to="/pattern-compiler"

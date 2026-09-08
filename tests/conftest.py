@@ -7,6 +7,9 @@ import pytest
 import asyncio
 import uuid
 from datetime import datetime, timezone, timedelta
+import tempfile
+import yaml
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -16,8 +19,31 @@ from app.db.session import Base, get_db
 from app.models import User, UserSession, Organization
 from app.core.dependencies import get_current_user
 
+from app.db import session as db_session_module
+
 # Use an in-memory SQLite database
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+    
+    # Patch SessionLocal
+    old_session_local = db_session_module.SessionLocal
+    test_session_local = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
+    db_session_module.SessionLocal = test_session_local
+    
+    async def init_db():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            
+    asyncio.run(init_db())
+    
+    yield test_session_local
+    
+    # Restore original SessionLocal
+    db_session_module.SessionLocal = old_session_local
+    asyncio.run(engine.dispose())
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -26,20 +52,9 @@ def event_loop():
     yield loop
     loop.close()
 
-@pytest.fixture(scope="session")
-async def test_engine():
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
-
 @pytest.fixture
-async def db_session(test_engine):
-    async_session_factory = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
-    async with async_session_factory() as session:
+async def db_session(setup_test_db):
+    async with setup_test_db() as session:
         yield session
         await session.rollback()
 
@@ -157,10 +172,6 @@ def auth_client(db_session):
 # ============================================================
 # BEHAVIOR PACK FIXTURES
 # ============================================================
-
-import tempfile
-import yaml
-from pathlib import Path
 
 @pytest.fixture
 def valid_pack_data():

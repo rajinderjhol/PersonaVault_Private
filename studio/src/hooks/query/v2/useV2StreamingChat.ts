@@ -94,7 +94,8 @@ export const useV2StreamingChat = () => {
                     console.log('📡 System Status:', event.message);
                     break;
                   case 'done':
-                    onComplete(accumulatedData);
+                    // ✅ Ensure content is passed as response in finalData
+                    onComplete({ ...accumulatedData, response: accumulatedData.content });
                     break;
                 }
               } catch (e) {

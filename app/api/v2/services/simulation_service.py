@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from app.api.v2.models.environment import Environment
 from app.api.v2.models.outcome import OutcomeSourceType
 from app.api.v2.services.prediction_service import PredictionService
@@ -8,6 +8,11 @@ import uuid
 class SimulationService:
     def __init__(self, prediction_service: PredictionService):
         self.prediction_service = prediction_service
+
+    async def get_history(self, environment: Environment) -> List[Dict[str, Any]]:
+        """Get simulation history."""
+        # For now, return empty list
+        return []
 
     async def create_simulation(
         self,

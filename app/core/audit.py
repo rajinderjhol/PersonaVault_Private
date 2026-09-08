@@ -10,6 +10,10 @@ async def audit_middleware(request: Request, call_next):
     """
     Middleware to log state-changing requests for compliance and security.
     """
+    # Skip for WebSockets
+    if request.scope.get("type") == "websocket":
+        return await call_next(request)
+        
     # Process the request first
     response: Response = await call_next(request)
     

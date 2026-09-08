@@ -123,6 +123,24 @@ async def dashboard_v2_ui(request: Request, db: AsyncSession = Depends(get_db)):
         return HTMLResponse("<h1>Error loading v2 dashboard</h1>", status_code=500)
 
 
+@router.get("/intelligence-sources", response_class=HTMLResponse)
+async def intelligence_sources_ui(request: Request, db: AsyncSession = Depends(get_db)):
+    """Serve Intelligence Source Control dashboard UI."""
+    try:
+        await get_current_user(request, db)
+    except HTTPException as e:
+        if e.status_code == 401:
+            return RedirectResponse(url="/api/v1/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+        raise e
+    
+    template_path = TAB_TEMPLATE_DIR / "v2" / "intelligence_source_control.html"
+    if not template_path.exists():
+        return HTMLResponse("<h1>Template not found</h1>", status_code=404)
+    
+    with open(template_path, "r") as f:
+        return HTMLResponse(f.read())
+
+
 
 
 

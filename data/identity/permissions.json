@@ -43,5 +43,41 @@
     "expires_at": null,
     "granted_by": null,
     "metadata": {}
+  },
+  "12:read_documents": {
+    "user_id": 12,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-09-08 13:41:06.518964",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "13:read_documents": {
+    "user_id": 13,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-09-08 13:41:06.596683",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "18:read_documents": {
+    "user_id": 18,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-09-08 14:00:51.781539",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "19:read_documents": {
+    "user_id": 19,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-09-08 14:00:51.840828",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
   }
 }

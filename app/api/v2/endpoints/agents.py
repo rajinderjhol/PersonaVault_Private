@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from typing import Dict, Any, List
+import json
+import asyncio
 from app.api.v2.models.environment import Environment
 from app.api.v2.dependencies import require_membership
 from app.swarm.orchestrator import get_orchestrator
@@ -19,8 +21,9 @@ def get_full_orchestrator():
     vec_repo = FAISSSemanticRepository()
     memory_service = MemoryService(memory_repo=mem_repo, vector_repo=vec_repo)
     authority_service = AuthorityService(membership_service=None) # Mock membership
-    crystallization_service = crystallization_service
-    prediction_service = PredictionService(memory_service, crystallization_service)
+    # Fixed shadowed name issue
+    from app.api.v2.services.crystallization_service import crystallization_service as crystallization_svc
+    prediction_service = PredictionService(memory_service, crystallization_svc)
     simulation_service = SimulationService(prediction_service)
     
     return get_orchestrator(
@@ -28,11 +31,12 @@ def get_full_orchestrator():
         blackboard=None,
         memory_service=memory_service,
         authority_service=authority_service,
-        crystallization_service=crystallization_service,
+        crystallization_service=crystallization_svc,
         prediction_service=prediction_service,
         simulation_service=simulation_service
     )
 
+@router.get("", response_model=List[Dict[str, Any]])
 @router.get("/", response_model=List[Dict[str, Any]])
 async def list_agents(
     env_id: str,
@@ -59,3 +63,28 @@ async def chat_with_agent(
     """Chat with an agent within the context of a specific environment."""
     context = {"environment_id": env_id, "user_id": 1}
     return await orchestrator.process_query(query, user_id=1, provider="ollama")
+
+@router.websocket("/ws")
+async def agent_websocket(
+    websocket: WebSocket,
+    env_id: str,
+):
+    """WebSocket for real-time agent status updates."""
+    await websocket.accept()
+    try:
+        while True:
+            # Simulate real-time updates
+            agents = [
+                {"agentId": "agent-orch-001", "status": "active", "currentTask": "Monitoring Lattices"},
+                {"agentId": "agent-reas-001", "status": "thinking", "currentTask": "Analyzing Pattern #402"},
+                {"agentId": "agent-sec-001", "status": "idle"},
+                {"agentId": "agent-mem-001", "status": "busy", "currentTask": "Crystallizing memories"},
+                {"agentId": "agent-act-001", "status": "idle"}
+            ]
+            await websocket.send_text(json.dumps(agents))
+            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        print(f"WebSocket error in {env_id}: {e}")
+        await websocket.close()

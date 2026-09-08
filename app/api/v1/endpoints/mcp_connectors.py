@@ -191,7 +191,7 @@ async def execute_device_action(
 @router.patch("/devices/{device_id}/trust")
 async def update_device_trust(
     device_id: str,
-    trust_level: str = Query(..., regex="^(full|high|medium|low|untrusted)$"),
+    trust_level: str = Query(..., pattern="^(full|high|medium|low|untrusted)$"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -203,7 +203,7 @@ async def update_device_trust(
 @router.get("/devices/{device_id}/telemetry")
 async def get_device_telemetry(
     device_id: str,
-    time_range: str = Query("1h", regex="^(1h|6h|24h|7d)$"),
+    time_range: str = Query("1h", pattern="^(1h|6h|24h|7d)$"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):

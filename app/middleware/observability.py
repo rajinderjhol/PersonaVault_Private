@@ -14,6 +14,10 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
     """
     
     async def dispatch(self, request: Request, call_next):
+        # Skip for WebSockets
+        if request.scope.get("type") == "websocket":
+            return await call_next(request)
+
         # Start timing
         start_time = time.time()
         

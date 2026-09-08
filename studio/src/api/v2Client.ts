@@ -11,8 +11,11 @@ class V2ApiClient {
   }
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    // Strip trailing slash to match FastAPI redirect_slashes=False configuration
+    const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+    
     // If baseUrl is empty, it uses relative paths, e.g., '/v2/environments/...'
-    const url = `${this.baseUrl}/v2${path}`;
+    const url = `${this.baseUrl}/v2${cleanPath}`;
     
     console.log(`📡 V2 ${options.method || 'GET'}: ${url}`);
     
@@ -22,7 +25,7 @@ class V2ApiClient {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      credentials: 'include', // ✅ Use cookies instead of Bearer token
+      // Removed credentials: 'include' to prevent proxy interference
     });
 
     if (!response.ok) {

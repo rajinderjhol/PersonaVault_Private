@@ -138,7 +138,11 @@ const CognitiveLab: React.FC = () => {
         };
 
         setMessages(prev => [...prev, finalMessage]);
-        setCurrentMessage(null);
+        
+        // ✅ FIX: Delay clearing currentMessage to prevent flickering
+        setTimeout(() => {
+          setCurrentMessage(null);
+        }, 10);
       }
     );
   };
