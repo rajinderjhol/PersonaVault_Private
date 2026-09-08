@@ -2,10 +2,12 @@ import React from 'react';
 import { Search, Bell, LogOut, User } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useLocation } from 'react-router-dom';
+import { useV2DashboardMetrics } from '../../hooks/query/v2/useV2DashboardMetrics';
 
 const CorePanel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuthStore();
   const location = useLocation();
+  const { data: metrics } = useV2DashboardMetrics();
   
   const getBreadcrumb = () => {
     const path = location.pathname;
@@ -108,12 +110,12 @@ const CorePanel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         backgroundColor: 'var(--color-bg-secondary)'
       }}>
         <div style={{ display: 'flex', gap: '20px' }}>
-          <span>Provider: <span style={{ color: 'var(--color-gas)' }}>Groq / Llama 3</span></span>
-          <span>Mode: <span style={{ color: 'var(--color-liquid)' }}>Sovereign</span></span>
+          <span>Provider: <span style={{ color: 'var(--color-gas)' }}>{metrics?.provider || 'N/A'}</span></span>
+          <span>Mode: <span style={{ color: 'var(--color-liquid)' }}>{metrics?.mode || 'N/A'}</span></span>
         </div>
         <div style={{ display: 'flex', gap: '20px' }}>
-          <span>Latency: 42ms</span>
-          <span>Confidence: 98%</span>
+          <span>Latency: {metrics?.latency ?? 0}ms</span>
+          <span>Confidence: {metrics?.confidence ?? 0}%</span>
         </div>
       </footer>
     </main>
