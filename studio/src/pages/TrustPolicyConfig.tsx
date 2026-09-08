@@ -185,10 +185,10 @@ export default function TrustPolicyConfig() {
                 {/* Action Select */}
                 <div className={styles.toggleRow}>
                   <span className={styles.toggleLabel}>On Violation</span>
-                  <select className={styles.selectSm}>
-                    <option value="block" selected={action === 'block'}>🚫 Block</option>
-                    <option value="warn" selected={action === 'warn'}>⚠️ Warn</option>
-                    <option value="quarantine" selected={action === 'quarantine'}>📦 Quarantine</option>
+                  <select className={styles.selectSm} defaultValue={action}>
+                    <option value="block">🚫 Block</option>
+                    <option value="warn">⚠️ Warn</option>
+                    <option value="quarantine">📦 Quarantine</option>
                   </select>
                 </div>
               </div>

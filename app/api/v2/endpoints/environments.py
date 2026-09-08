@@ -52,7 +52,16 @@ def get_full_orchestrator():
         simulation_service=simulation_service
     )
 
+from app.api.v2.endpoints.governance import router as governance_router
+from app.api.v2.endpoints.lattice import router as lattice_router
+
+# ...
+
 # --- Core Environment Endpoints ---
+
+router.include_router(governance_router, prefix="/{env_id}/governance")
+router.include_router(lattice_router, prefix="/{env_id}/lattice")
+
 
 @router.post("", response_model=Environment)
 @router.post("/", response_model=Environment)
