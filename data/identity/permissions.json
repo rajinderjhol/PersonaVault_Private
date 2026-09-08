@@ -79,5 +79,23 @@
     "expires_at": null,
     "granted_by": null,
     "metadata": {}
+  },
+  "24:read_documents": {
+    "user_id": 24,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-09-08 14:26:27.961477",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
+  },
+  "25:read_documents": {
+    "user_id": 25,
+    "action": "read_documents",
+    "level": "execute",
+    "granted_at": "2026-09-08 14:26:28.022347",
+    "expires_at": null,
+    "granted_by": null,
+    "metadata": {}
   }
 }

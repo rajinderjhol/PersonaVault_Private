@@ -1,9 +1,11 @@
 .container {
   padding: 16px;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 12px;
-  border: 1px solid var(--border-color, #e9ecef);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   margin-top: 16px;
 }
 
@@ -21,7 +23,7 @@
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .list {
@@ -32,22 +34,22 @@
 
 .card {
   padding: 12px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-primary);
   border-radius: 8px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-left-width: 4px;
 }
 
 .card.high {
-  border-left-color: #ef4444;
+  border-left-color: var(--color-error);
 }
 
 .card.medium {
-  border-left-color: #f59e0b;
+  border-left-color: var(--color-warning);
 }
 
 .card.low {
-  border-left-color: #3b82f6;
+  border-left-color: var(--color-accent);
 }
 
 .cardHeader {
@@ -65,13 +67,13 @@
   font-size: 9px;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--color-text-secondary);
   letter-spacing: 0.05em;
 }
 
 .message {
   font-size: 13px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
   margin: 0 0 12px 0;
   line-height: 1.4;
 }
@@ -81,21 +83,21 @@
   padding: 6px;
   font-size: 12px;
   font-weight: 600;
-  background: white;
-  border: 1px solid var(--border-color, #e9ecef);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--primary-color, #4a90d9);
+  color: var(--color-accent);
 }
 
 .actionBtn:hover {
-  background: var(--bg-light, #f8f9fa);
-  border-color: var(--primary-color, #4a90d9);
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-accent);
 }
 
 .loading {
   padding: 40px;
   text-align: center;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }

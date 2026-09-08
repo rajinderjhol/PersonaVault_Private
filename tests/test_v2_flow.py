@@ -1,18 +1,8 @@
 import pytest
-from fastapi.testclient import TestClient
 from app.main import app
-from app.core.dependencies import get_current_user
-from unittest.mock import MagicMock
 
-client = TestClient(app)
-
-# Mock current user for all tests in this file
-mock_user = MagicMock()
-mock_user.id = "test-user-1"
-mock_user.username = "testuser"
-app.dependency_overrides[get_current_user] = lambda: mock_user
-
-def test_v2_environment_lifecycle():
+# Use the 'client' fixture from conftest.py which provides admin authentication and DB session
+def test_v2_environment_lifecycle(client):
     # 1. Create Environment
     response = client.post("/v2/environments/", json={
         "name": "Integration Test Env",

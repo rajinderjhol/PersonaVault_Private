@@ -10,28 +10,27 @@
 
 .header h1 {
   font-size: 28px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
 .header p {
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
 .configSection {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .configSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .configGrid {
@@ -50,21 +49,22 @@
 .configField label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .input {
   padding: 10px 14px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   font-size: 14px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
   transition: border-color 0.2s;
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--primary-color, #4A90D9);
+  border-color: var(--color-accent);
 }
 
 .parameterGrid {
@@ -72,7 +72,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   padding: 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
   margin-bottom: 16px;
 }
@@ -85,26 +85,27 @@
 
 .parameterField label {
   font-size: 14px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   min-width: 120px;
 }
 
 .parameterField input[type="range"] {
   flex: 1;
-  accent-color: var(--primary-color, #4A90D9);
+  accent-color: var(--color-accent);
 }
 
 .parameterField select {
   padding: 6px 12px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
-  background: white;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
 .runButton {
   padding: 12px 32px;
-  background: var(--primary-color, #4A90D9);
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -114,7 +115,7 @@
 }
 
 .runButton:hover:not(:disabled) {
-  background: var(--primary-dark, #3a7bc8);
+  filter: brightness(1.1);
 }
 
 .runButton:disabled {
@@ -123,23 +124,22 @@
 }
 
 .resultsSection {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .resultsSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .resultsSummary {
   padding: 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
   margin-bottom: 16px;
 }
@@ -156,23 +156,23 @@
 }
 
 .statusBadge.running {
-  background: #fff3cd;
-  color: #856404;
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--color-warning);
 }
 
 .statusBadge.completed {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-success);
 }
 
 .statusBadge.failed {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
 }
 
 .resultSummary {
   font-size: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .comparisonGrid {
@@ -185,26 +185,26 @@
 .comparisonCard {
   padding: 20px;
   border-radius: 8px;
-  border: 1px solid var(--border-color, #e9ecef);
-  background: var(--bg-white, #ffffff);
+  border: 1px solid var(--glass-border);
+  background: var(--color-bg-secondary);
 }
 
 .comparisonCard h3 {
   font-size: 16px;
   margin-bottom: 12px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .comparisonCard.afterCard {
-  border-color: var(--primary-color, #4A90D9);
-  background: #f0f7ff;
+  border-color: var(--color-accent);
+  background: rgba(14, 165, 233, 0.1);
 }
 
 .metric {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--border-light, #f1f3f5);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .metric:last-child {
@@ -212,26 +212,26 @@
 }
 
 .positive {
-  color: #28a745;
+  color: var(--color-success);
   font-weight: 600;
 }
 
 .negative {
-  color: #dc3545;
+  color: var(--color-error);
   font-weight: 600;
 }
 
 .recommendations {
   padding: 16px;
-  background: #f0f7ff;
+  background: rgba(14, 165, 233, 0.1);
   border-radius: 8px;
-  border-left: 4px solid var(--primary-color, #4A90D9);
+  border-left: 4px solid var(--color-accent);
 }
 
 .recommendations h3 {
   font-size: 16px;
   margin-bottom: 8px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .recommendations ul {
@@ -241,21 +241,20 @@
 
 .recommendations li {
   padding: 4px 0;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .historySection {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .historySection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .historyTable {
@@ -271,30 +270,30 @@
 .historyTable td {
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid var(--border-light, #f1f3f5);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .historyTable th {
   font-weight: 600;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .historyTable tr:hover {
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
 }
 
 .viewButton {
   padding: 4px 12px;
-  border: 1px solid var(--primary-color, #4A90D9);
+  border: 1px solid var(--color-accent);
   border-radius: 4px;
   background: transparent;
-  color: var(--primary-color, #4A90D9);
+  color: var(--color-accent);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .viewButton:hover {
-  background: var(--primary-color, #4A90D9);
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
 }

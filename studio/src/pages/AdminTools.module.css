@@ -10,12 +10,12 @@
 
 .header h1 {
   font-size: 28px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
 .header p {
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
@@ -23,10 +23,10 @@
   display: flex;
   gap: 4px;
   margin-bottom: 24px;
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 4px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .tab {
@@ -34,7 +34,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -42,25 +42,25 @@
 }
 
 .tab:hover {
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
 }
 
 .tab.active {
-  background: var(--primary-color, #4A90D9);
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
 }
 
 .tabContent {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .tabContent h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .healthGrid {
@@ -72,49 +72,49 @@
 
 .healthCard {
   padding: 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
 }
 
 .healthLabel {
   font-size: 13px;
-  color: var(--text-muted, #6c757d);
+  color: var(--color-text-muted);
   margin-bottom: 4px;
 }
 
 .healthValue {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .healthValue.healthy {
-  color: #28a745;
+  color: var(--color-success);
 }
 
 .healthValue.degraded {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 .healthValue.unhealthy {
-  color: #dc3545;
+  color: var(--color-error);
 }
 
 .refreshButton {
   padding: 8px 20px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   background: transparent;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .refreshButton:hover {
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
 }
 
 .servicesList {
@@ -128,9 +128,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 6px;
-  border-left: 3px solid var(--border-color, #e9ecef);
+  border-left: 3px solid var(--glass-border);
 }
 
 .serviceInfo {
@@ -141,13 +141,13 @@
 
 .serviceName {
   font-weight: 500;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .serviceVersion {
   font-size: 12px;
-  color: var(--text-muted, #6c757d);
-  background: var(--bg-white, #ffffff);
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
   padding: 0 8px;
   border-radius: 4px;
 }
@@ -160,22 +160,22 @@
 }
 
 .serviceStatus.running {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-success);
 }
 
 .serviceStatus.stopped {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
 }
 
 .serviceStatus.degraded {
-  background: #fff3cd;
-  color: #856404;
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--color-warning);
 }
 
 .logViewer {
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -185,8 +185,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--bg-light, #f8f9fa);
-  border-bottom: 1px solid var(--border-color, #e9ecef);
+  background: var(--color-bg-tertiary);
+  border-bottom: 1px solid var(--glass-border);
   flex-wrap: wrap;
   gap: 8px;
 }
@@ -199,25 +199,26 @@
 
 .logButton {
   padding: 4px 12px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   background: transparent;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   font-size: 13px;
 }
 
 .logButton:hover {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
 }
 
 .logFilter {
   padding: 4px 8px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   font-size: 13px;
+  color: var(--color-text-primary);
 }
 
 .logContainer {
@@ -226,8 +227,8 @@
   overflow-y: auto;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   font-size: 13px;
-  background: #1a1a2e;
-  color: #e9ecef;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   line-height: 1.6;
 }
 
@@ -239,23 +240,23 @@
 }
 
 .logEntry.info {
-  color: #e9ecef;
+  color: var(--color-text-primary);
 }
 
 .logEntry.warning {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 .logEntry.error {
-  color: #dc3545;
+  color: var(--color-error);
 }
 
 .logEntry.debug {
-  color: #17a2b8;
+  color: var(--color-accent);
 }
 
 .logTime {
-  color: #6c757d;
+  color: var(--color-text-muted);
 }
 
 .logLevel {
@@ -263,28 +264,28 @@
 }
 
 .logSource {
-  color: #6c757d;
+  color: var(--color-text-muted);
 }
 
 .logMessage {
-  color: #e9ecef;
+  color: var(--color-text-primary);
 }
 
 .logDetails {
-  color: #6c757d;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
 .logLoading, .logEmpty {
   text-align: center;
   padding: 40px;
-  color: #6c757d;
+  color: var(--color-text-muted);
 }
 
 .loading, .emptyState {
   text-align: center;
   padding: 40px 20px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .emptyState span {
@@ -299,7 +300,7 @@
 
 .emptySubtext {
   font-size: 14px;
-  color: var(--text-muted, #6c757d);
+  color: var(--color-text-muted);
 }
 
 .modeControls {
@@ -309,7 +310,7 @@
 }
 
 .modeDescription {
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   margin-bottom: 20px;
 }
 
@@ -323,10 +324,10 @@
 
 .modeButton {
   padding: 10px 24px;
-  border: 2px solid var(--border-color, #e9ecef);
+  border: 2px solid var(--glass-border);
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -334,14 +335,14 @@
 }
 
 .modeButton:hover:not(:disabled) {
-  border-color: var(--primary-color, #4A90D9);
-  color: var(--primary-color, #4A90D9);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .modeButton.active {
-  border-color: var(--primary-color, #4A90D9);
-  background: var(--primary-color, #4A90D9);
-  color: white;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
 }
 
 .modeButton:disabled {
@@ -351,7 +352,7 @@
 
 .modeInfo {
   padding: 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
   text-align: left;
 }
@@ -362,6 +363,6 @@
 
 .modeHint {
   font-size: 14px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   margin-top: 8px !important;
 }

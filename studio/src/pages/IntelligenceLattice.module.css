@@ -10,12 +10,12 @@
 
 .header h1 {
   font-size: 28px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
 .header p {
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
@@ -24,9 +24,9 @@
   gap: 24px;
   margin-top: 16px;
   padding: 16px 20px;
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .stat {
@@ -36,27 +36,27 @@
 
 .statLabel {
   font-size: 14px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .statValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .phaseSection {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .phaseSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .phaseGrid {
@@ -67,9 +67,9 @@
 
 .phaseCard {
   padding: 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .phaseHeader {
@@ -87,18 +87,18 @@
   flex: 1;
   margin-left: 8px;
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .phaseCount {
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .phaseBar {
   width: 100%;
   height: 8px;
-  background: var(--border-color, #e9ecef);
+  background: var(--glass-border);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -113,27 +113,27 @@
   margin-top: 4px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .phaseDescription {
   margin-top: 4px;
   font-size: 13px;
-  color: var(--text-muted, #6c757d);
+  color: var(--color-text-muted);
 }
 
 .transitionsSection {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .transitionsSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .transitionsList {
@@ -147,37 +147,37 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 6px;
-  border-left: 3px solid var(--primary-color, #4A90D9);
+  border-left: 3px solid var(--color-accent);
 }
 
 .transitionArrow {
   font-weight: 500;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .transitionCount {
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .transitionTime {
-  color: var(--text-muted, #6c757d);
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
 .growthSection {
-  background: var(--bg-white, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .growthSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .chartContainer {
@@ -204,7 +204,7 @@
   width: 100%;
   max-width: 40px;
   min-height: 4px;
-  background: var(--primary-color, #4A90D9);
+  background: var(--color-accent);
   border-radius: 4px 4px 0 0;
   transition: height 0.6s ease;
   cursor: pointer;
@@ -217,7 +217,7 @@
 .barLabel {
   margin-top: 6px;
   font-size: 11px;
-  color: var(--text-muted, #6c757d);
+  color: var(--color-text-muted);
   transform: rotate(-45deg);
   white-space: nowrap;
 }
@@ -234,8 +234,8 @@
 .loadingSpinner {
   width: 40px;
   height: 40px;
-  border: 4px solid var(--border-color, #e9ecef);
-  border-top-color: var(--primary-color, #4A90D9);
+  border: 4px solid var(--glass-border);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -259,11 +259,11 @@
 }
 
 .errorContainer h3 {
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .errorContainer p {
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   margin: 0;
 }

@@ -115,5 +115,18 @@
       "updated_at": "2026-09-08 14:00:51.947957",
       "metadata": {}
     }
+  },
+  "trust_13a13deffeab": {
+    "26": {
+      "id": "trust_13a13deffeab",
+      "user_id": 26,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-08 14:26:28.105202",
+      "updated_at": "2026-09-08 14:26:28.105208",
+      "metadata": {}
+    }
   }
 }

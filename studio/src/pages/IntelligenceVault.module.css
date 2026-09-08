@@ -1,5 +1,3 @@
-/* studio/src/pages/IntelligenceVault.module.css */
-
 .container {
   padding: 24px;
   max-width: 1200px;
@@ -12,28 +10,27 @@
 
 .header h1 {
   font-size: 28px;
-  color: var(--color-text-primary, #212529);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
 .header p {
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
 .ingestionSection {
-  background: var(--bg-secondary, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--glass-border, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .ingestionSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--color-text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .ingestionForm {
@@ -44,23 +41,23 @@
 .pathInput {
   flex: 1;
   padding: 12px 16px;
-  border: 1px solid var(--glass-border, #e9ecef);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   font-size: 14px;
-  background: var(--bg-primary, #f8f9fa);
-  color: var(--color-text-primary, #212529);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
   transition: border-color 0.2s;
 }
 
 .pathInput:focus {
   outline: none;
-  border-color: var(--color-gas, #4A90D9);
+  border-color: var(--color-accent);
 }
 
 .ingestButton {
   padding: 12px 24px;
-  background: var(--color-gas, #4A90D9);
-  color: var(--bg-primary, white);
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -70,7 +67,7 @@
 }
 
 .ingestButton:hover:not(:disabled) {
-  background: var(--primary-dark, #3a7bc8);
+  filter: brightness(1.1);
 }
 
 .ingestButton:disabled {
@@ -81,36 +78,36 @@
 .jobStatus {
   margin-top: 16px;
   padding: 16px;
-  background: var(--bg-primary, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
-  border: 1px solid var(--glass-border, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .jobStatus h3 {
   font-size: 14px;
   margin-bottom: 8px;
-  color: var(--color-text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .statusBar {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
 }
 
 .progressBar {
   width: 100%;
   height: 8px;
-  background: var(--glass-border, #e9ecef);
+  background: var(--glass-border);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: var(--color-gas, #4A90D9);
+  background: var(--color-accent);
   transition: width 0.5s ease;
   border-radius: 4px;
 }
@@ -118,21 +115,20 @@
 .statusMessage {
   margin-top: 8px;
   font-size: 14px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .documentsSection {
-  background: var(--bg-secondary, #ffffff);
+  background: var(--color-bg-secondary);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--glass-border, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .documentsSection h2 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: var(--color-text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .documentsGrid {
@@ -145,15 +141,14 @@
   display: flex;
   align-items: center;
   padding: 16px;
-  background: var(--bg-primary, #f8f9fa);
+  background: var(--color-bg-tertiary);
   border-radius: 8px;
-  border: 1px solid var(--glass-border, #e9ecef);
+  border: 1px solid var(--glass-border);
   transition: all 0.2s;
 }
 
 .documentCard:hover {
-  border-color: var(--color-gas, #4A90D9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-accent);
 }
 
 .docIcon {
@@ -169,18 +164,18 @@
 
 .docName {
   font-weight: 600;
-  color: var(--color-text-primary, #212529);
+  color: var(--color-text-primary);
   font-size: 14px;
 }
 
 .docType {
   font-size: 12px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .docDate {
   font-size: 12px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .docStatus {
@@ -195,30 +190,30 @@
 }
 
 .statusBadge.processing {
-  background: #fff3cd;
-  color: #856404;
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--color-warning);
 }
 
 .statusBadge.completed {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-success);
 }
 
 .statusBadge.failed {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
 }
 
 .loading {
   text-align: center;
   padding: 40px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .emptyIcon {
@@ -229,6 +224,6 @@
 
 .emptySubtext {
   font-size: 14px;
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   margin-top: 4px;
 }

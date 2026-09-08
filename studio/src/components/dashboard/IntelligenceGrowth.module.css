@@ -1,9 +1,11 @@
 .container {
   padding: 16px;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 12px;
-  border: 1px solid var(--border-color, #e9ecef);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   margin-top: 16px;
 }
 
@@ -27,14 +29,14 @@
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .badge {
   font-size: 11px;
   padding: 2px 8px;
-  background: #ebf5ff;
-  color: #4a90d9;
+  background: rgba(14, 165, 233, 0.2);
+  color: var(--color-accent);
   border-radius: 12px;
   font-weight: 600;
 }
@@ -68,11 +70,12 @@
   min-height: 4px;
   border-radius: 2px 2px 0 0;
   transition: height 0.3s ease;
+  background: var(--color-accent);
 }
 
 .barLabel {
   font-size: 9px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--color-text-muted);
   margin-top: 4px;
   transform: rotate(-45deg);
   white-space: nowrap;
@@ -83,7 +86,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid var(--border-color, #e9ecef);
+  border-top: 1px solid var(--glass-border);
 }
 
 .stat {
@@ -95,18 +98,18 @@
 
 .statLabel {
   font-size: 11px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   margin-bottom: 4px;
 }
 
 .statValue {
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .loading {
   padding: 40px;
   text-align: center;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }

@@ -1,0 +1,111 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: var(--color-text-primary);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.listItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.phaseLabelRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.progressBar {
+  height: 0.4rem;
+  background-color: var(--color-bg-primary);
+  border-radius: 0.2rem;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.description {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.transitionItem {
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  background-color: var(--color-bg-primary);
+  border-radius: 0.25rem;
+  color: var(--color-text-secondary);
+  border-left: 2px solid var(--color-accent);
+}
+
+.traceSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.traceStep {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+  color: var(--color-text-secondary);
+}
+
+.traceDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--color-text-muted);
+}
+
+.traceStep.active .traceDot {
+  background-color: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.traceStep.completed .traceDot {
+  background-color: var(--color-success);
+}

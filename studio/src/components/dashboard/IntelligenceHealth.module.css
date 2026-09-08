@@ -1,9 +1,11 @@
 .container {
   padding: 16px;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 12px;
-  border: 1px solid var(--border-color, #e9ecef);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   margin-top: 16px;
 }
 
@@ -27,7 +29,7 @@
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .statusBadge {
@@ -38,8 +40,8 @@
 }
 
 .statusBadge.healthy {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(22, 101, 52, 0.2);
+  color: #4ade80;
 }
 
 .metricsGrid {
@@ -51,9 +53,9 @@
 
 .metricCard {
   padding: 12px;
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-primary);
   border-radius: 8px;
-  border: 1px solid var(--border-color, #e9ecef);
+  border: 1px solid var(--glass-border);
 }
 
 .metricHeader {
@@ -65,7 +67,7 @@
 
 .metricLabel {
   font-size: 11px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -78,13 +80,13 @@
 .metricValue {
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
   margin-bottom: 4px;
 }
 
 .metricDesc {
   font-size: 9px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--color-text-muted);
   line-height: 1.2;
 }
 
@@ -92,13 +94,13 @@
   display: flex;
   justify-content: space-between;
   padding-top: 12px;
-  border-top: 1px solid var(--border-color, #e9ecef);
+  border-top: 1px solid var(--glass-border);
   font-size: 10px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--color-text-secondary);
 }
 
 .loading {
   padding: 40px;
   text-align: center;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }

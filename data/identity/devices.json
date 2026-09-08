@@ -202,5 +202,22 @@
       "is_active": true,
       "is_verified": false
     }
+  },
+  "dev_78dba7b3cd36": {
+    "23": {
+      "id": "dev_78dba7b3cd36",
+      "user_id": 23,
+      "name": "API Test Device",
+      "type": "web",
+      "trust_level": "basic",
+      "last_seen": null,
+      "created_at": "2026-09-08 14:26:27.900939",
+      "ip_address": null,
+      "user_agent": null,
+      "public_key": null,
+      "metadata": {},
+      "is_active": true,
+      "is_verified": false
+    }
   }
 }

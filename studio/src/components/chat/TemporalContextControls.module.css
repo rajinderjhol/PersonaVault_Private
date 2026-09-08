@@ -3,16 +3,19 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--bg-light, #f8f9fa);
-  border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   margin-bottom: 16px;
-  border: 1px solid var(--border-color, #e9ecef);
 }
 
 .label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #212529);
+  color: var(--color-text-primary);
 }
 
 .buttons {
@@ -24,22 +27,22 @@
   flex: 1;
   padding: 6px 12px;
   font-size: 12px;
-  background: white;
-  border: 1px solid var(--border-color, #e9ecef);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-secondary);
 }
 
 .button:hover {
-  background: var(--bg-light, #f8f9fa);
+  background: var(--color-bg-tertiary);
 }
 
 .button.active {
-  background: var(--primary-color, #4a90d9);
-  color: white;
-  border-color: var(--primary-color, #4a90d9);
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent);
 }
 
 .customRange {
@@ -48,27 +51,29 @@
   gap: 8px;
   flex-wrap: wrap;
   padding-top: 8px;
-  border-top: 1px dashed var(--border-color, #e9ecef);
+  border-top: 1px dashed var(--glass-border);
 }
 
 .input {
   padding: 4px 8px;
   font-size: 12px;
-  border: 1px solid var(--border-color, #e9ecef);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   outline: none;
+  color: var(--color-text-primary);
 }
 
 .separator {
   font-size: 12px;
-  color: var(--text-secondary, #6c757d);
+  color: var(--color-text-muted);
 }
 
 .applyBtn {
   padding: 4px 12px;
   font-size: 12px;
-  background: var(--primary-color, #4a90d9);
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;

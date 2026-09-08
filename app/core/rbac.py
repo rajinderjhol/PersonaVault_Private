@@ -30,16 +30,20 @@ PUBLIC_PATHS = {
 
 # Prefixes for routes requiring administrative privileges
 ADMIN_PREFIXES = ["/api/v1/admin", "/api/v1/admin/dashboard", "/admin"]
-
 async def rbac_middleware(request: Request, call_next):
     """
     Middleware to enforce Role-Based Access Control (RBAC).
     """
+    print(f"RBAC DEBUG: PYTEST_CURRENT_TEST: {os.environ.get('PYTEST_CURRENT_TEST')}")
     # Bypass RBAC if running under pytest
     if os.environ.get("PYTEST_CURRENT_TEST"):
+        print("RBAC DEBUG: Bypassing RBAC due to PYTEST_CURRENT_TEST")
         return await call_next(request)
 
+    print("RBAC DEBUG: NOT Bypassing RBAC")
     path = request.url.path
+    # ...
+
     logger.warning(f"RBAC DEBUG: Path: {path}, Headers: {dict(request.headers)}")
 
     # 1. Skip RBAC for public paths and static assets
@@ -109,15 +113,19 @@ async def rbac_middleware(request: Request, call_next):
             )
 
     # 4. New Declarative Permission Check
-    if user and not check_permission(user.role, path, org_id=getattr(user, "organization_id", None)):
-        logger.warning(f"RBAC DENIED: Unauthorized access to {path} by {user.username} with role {user.role}")
-        return JSONResponse(
-            status_code=status.HTTP_403_FORBIDDEN,
-            content={
-                "detail": "Permission denied",
-                "code": "PERM_002"
-            }
-        )
+    if user:
+        # Use print to ensure visibility in pytest -s
+        permission_allowed = check_permission(user.role, path, org_id=getattr(user, "organization_id", None))
+        print(f"RBAC DEBUG: Path: {path}, User: {user.username}, Role: {user.role}, PermissionAllowed: {permission_allowed}")
+        if not permission_allowed:
+            print(f"RBAC DENIED: Unauthorized access to {path} by {user.username} with role {user.role}")
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "detail": "Permission denied",
+                    "code": "PERM_002"
+                }
+            )
 
     # 5. Global API/UI Authentication Check
     # Force login for Studio UI
