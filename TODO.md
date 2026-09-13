@@ -55,3 +55,5 @@
 ---
 
 *Last Updated: September 13, 2026 (Launch of Sovereign Runtime V2)*
+- [x] **Schema Consistency Test**: Automated check to catch model/DB drift at test time.
+TODO: Fix vector index durability: save index immediately upon new index creation (addressed in app/repositories/faiss/vector.py but needs full verification/cleanup)
