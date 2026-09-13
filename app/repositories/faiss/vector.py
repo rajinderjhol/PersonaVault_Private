@@ -90,6 +90,7 @@ class FAISSSemanticRepository(IVectorRepository):
             "environment_id": environment_id
         }
         self._save_index()
+        logger.info(f"Added vector. Index total: {self.index.ntotal}")
         return True
 
     async def search(self, query: str, user_id: int, limit: int = 10, environment_id: Optional[str] = None) -> List[Dict[str, Any]]:
