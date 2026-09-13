@@ -20,6 +20,10 @@ class Environment(BaseModel):
     status: EnvironmentStatus = EnvironmentStatus.ACTIVE
     mode: str = "standard"
     
+    # V3 Thermodynamics Persistence
+    is_armed: bool = True
+    thermal_threshold: float = 20.0
+    
     # Governance & Sensitivity
     max_sensitivity: SensitivityClassification = SensitivityClassification.INTERNAL
     allowed_abstraction_levels: List[AbstractionLevel] = [

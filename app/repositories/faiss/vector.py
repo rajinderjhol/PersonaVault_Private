@@ -50,6 +50,8 @@ class FAISSSemanticRepository(IVectorRepository):
     def _create_new_index(self):
         self.index = faiss.IndexFlatL2(self.dimension)
         self.metadata = {}
+        # V3 Fix: Durability gap - ensure new index is persisted immediately
+        self._save_index()
 
     def _save_index(self):
         faiss.write_index(self.index, self.index_path)
