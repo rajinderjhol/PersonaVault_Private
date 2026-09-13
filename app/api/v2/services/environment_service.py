@@ -82,5 +82,19 @@ class EnvironmentService:
             return True
         return False
 
+    def reset(self):
+        """Reset environments for testing."""
+        self._environments = {
+            "env-default-001": Environment(
+                id="env-default-001",
+                type="standard",
+                name="Default Sovereign Environment",
+                owner_principal_id="1",
+                status=EnvironmentStatus.ACTIVE,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+        }
+
 # Singleton instance for simple access in this prototype phase
 environment_service = EnvironmentService()

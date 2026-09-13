@@ -17,10 +17,12 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.main import app
 from app.db.session import Base, get_db
 from app.models import User, UserSession, Organization
+from app.models.decision_trace import DecisionTrace, ProvenanceRecord
+from app.api.v2.services.environment_service import environment_service
 from app.core.dependencies import get_current_user
 
 # Use an in-memory SQLite database
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_DATABASE_URL = "sqlite+aiosqlite:////tmp/test.db"
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -31,11 +33,28 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 async def test_engine():
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Initializes the database using Alembic migrations."""
+    from alembic.config import Config
+    from alembic import command
+    from sqlalchemy import create_engine
+    
+    # Create a synchronous engine with StaticPool to keep DB alive in-memory
+    from sqlalchemy.pool import StaticPool
+    sync_engine = create_engine(TEST_DATABASE_URL.replace('sqlite+aiosqlite:///', 'sqlite:///'), poolclass=StaticPool)
+    
+    # Configure Alembic
+    alembic_cfg = Config("migrations/alembic.ini")
+    
+    # Pass the connection to Alembic
+    with sync_engine.connect() as connection:
+        alembic_cfg.attributes['connection'] = connection
+        command.upgrade(alembic_cfg, "head")
+        
+    # Yield the async engine for the tests
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
     yield engine
     await engine.dispose()
+    sync_engine.dispose()
 
 @pytest.fixture
 async def db_session(test_engine):
@@ -44,7 +63,17 @@ async def db_session(test_engine):
     )
     async with async_session_factory() as session:
         yield session
+        # Cleanup: Truncate/Clear all tables after test
         await session.rollback()
+        for table in reversed(Base.metadata.sorted_tables):
+            try:
+                await session.execute(table.delete())
+            except Exception:
+                # Table might not exist, ignore
+                pass
+        await session.commit()
+        # Reset environment service
+        environment_service.reset()
 
 # ============================================================
 # CREATE TEST ADMIN HELPER

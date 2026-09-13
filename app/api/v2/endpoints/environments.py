@@ -76,8 +76,8 @@ async def create_environment(
         type=env_in.type
     )
 
-@router.get("", response_model=List[Environment])
-@router.get("/", response_model=List[Environment])
+@router.get("")
+@router.get("/")
 async def list_environments(current_user: User = Depends(get_current_user)):
     """List all V2 Environments."""
     return await environment_service.list_environments()

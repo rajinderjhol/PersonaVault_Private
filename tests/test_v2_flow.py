@@ -6,7 +6,7 @@ def test_v2_environment_lifecycle(client):
     # 1. Create Environment
     response = client.post("/v2/environments/", json={
         "name": "Integration Test Env",
-        "owner_principal_id": "test-user-1",
+        "owner_principal_id": "1",
         "type": "standard"
     })
     assert response.status_code == 200
@@ -14,7 +14,7 @@ def test_v2_environment_lifecycle(client):
     env_id = env["id"]
 
     # 2. List Environments
-    response = client.get("/v2/environments/")
+    response = client.get("/v2/environments")
     assert response.status_code == 200
     assert len(response.json()) >= 1
 

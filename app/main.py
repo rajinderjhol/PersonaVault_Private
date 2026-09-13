@@ -662,6 +662,10 @@ app.include_router(v2_trust_policies_router.router, prefix="/v2")
 
 
 # Global Health Endpoints
+@app.get("/health")
+async def root_health_check():
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
 @app.get("/admin/dashboard", response_class=RedirectResponse)
 async def redirect_to_dashboard():
     return RedirectResponse(url="/api/v1/admin/dashboard/", status_code=status.HTTP_303_SEE_OTHER)
