@@ -12,14 +12,29 @@
 ## 🎯 Active Strategic Horizons (Stage 4+)
 
 ### Horizon: Sovereign Intelligence V3 (🔴 HIGH)
-- [ ] **Autonomous Discovery**: Research scanners for unknown environment structures.
-- [ ] **Policy Inference**: Develop logic for inferring implicit governance from observation.
-- [ ] **Cross-Environment Transfer**: Investigate knowledge transfer between isolated environments.
+- [ ] **Autonomous Discovery Engine**
+    - [ ] Implement `DiscoveryService` for autonomous environmental scanning.
+    - [ ] Create scanners for directories, database schemas, and API endpoints.
+    - [ ] Implement automatic `PackMetadata` skeleton generation from raw environment data.
+- [x] **Policy Inference & Learning**
+    - [x] Extend Judge-Generator loop to propose new `Policy` objects from observations.
+    - [x] Develop logic for inferring implicit governance rules from human corrections.
+- [x] **Cross-Environment Transfer**
+    - [x] Implement Differential Privacy for Crystallization patterns.
+    - [x] Create abstraction logic to transfer knowledge without raw data leakage.
 
 ### Horizon: Compression Evolution (🔴 HIGH)
-- [ ] **Meta-Pattern Generation**: Synthesize high-level patterns from individual domain patterns.
-- [ ] **Compression Benchmarking**: Measure 100,000:1 and 1,000,000:1 ratios.
-- [ ] **Self-Synthesis Research**: Investigate autonomous pattern compounding.
+- [x] **Meta-Pattern Generation**
+    - [x] Implement `SynthesisAgent` for cross-domain pattern review.
+    - [x] Develop logic for synthesizing "Master Rules" from individual domain patterns.
+- [x] **Compression Benchmarking**
+    - [x] Establish metrics for 100,000:1 compression verification.
+    - [x] Benchmark multi-domain synthesis against raw reasoning costs.
+
+### Horizon: Marketplace & Ecosystem (🟡 MEDIUM)
+- [x] **Pack Reputation System**
+    - [x] Automate marketplace ranking based on `Confidence` and `Success_Count`.
+    - [x] Implement reputation-weighted discovery in the UI.
 
 ---
 

@@ -121,9 +121,12 @@ class MarketplaceRegistry:
                 if p.get("statistics", {}).get("confidence_avg", 0) >= min_confidence
             ]
         
-        # Sort by download count
+        # Sort by Reputation Score (V3) or Fallback to download count
         packs.sort(
-            key=lambda x: x.get("statistics", {}).get("download_count", 0),
+            key=lambda x: (
+                x.get("statistics", {}).get("reputation_score", 0.0),
+                x.get("statistics", {}).get("download_count", 0)
+            ),
             reverse=True
         )
         

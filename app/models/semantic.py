@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, JSON
 from datetime import datetime, timezone
 from app.db.session import Base
 
@@ -13,6 +13,7 @@ class SemanticPattern(Base):
     success_count = Column(Integer, default=0)  # New
     weight = Column(Float, default=0.7)  # New
     is_active = Column(Boolean, default=True)  # New
+    derived_from = Column(JSON, nullable=True) # V3: IDs of patterns or events that formed this
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
