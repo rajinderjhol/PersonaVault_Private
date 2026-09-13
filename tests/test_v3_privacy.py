@@ -47,5 +47,36 @@ async def test_cross_env_transfer_mocked():
     
     print("\n✅ Cross-environment privacy transfer verified.")
 
+@pytest.mark.asyncio
+async def test_privacy_negative_assertion():
+    # Real agent, mocked generator
+    mock_generator = MagicMock()
+    mock_generator.generate = AsyncMock(return_value={
+        "answer": """
+        {
+            "abstract_title": "Anonymized Finance Policy",
+            "abstract_content": "Approve invoices only if they follow the standard corporate expenditure policy.",
+            "universal_anchors": ["finance", "approval"],
+            "privacy_confidence": 0.99,
+            "original_id_hash": "hash-val"
+        }
+        """
+    })
+    agent = PrivacyAbstractionAgent(generator=mock_generator)
+    
+    # Input with PII
+    raw_pattern = {"content": "Internal: John Doe approved invoice #42 for $500"}
+    abstracted = await agent.abstract_pattern(raw_pattern)
+    
+    # Negative assertions
+    content = abstracted["abstract_content"]
+    assert "John Doe" not in content
+    assert "$500" not in content
+    assert "42" not in content
+    assert "invoice" in content # Generic term should remain
+    
+    print("\n✅ Privacy negative assertions verified.")
+
 if __name__ == "__main__":
     asyncio.run(test_cross_env_transfer_mocked())
+    asyncio.run(test_privacy_negative_assertion())
