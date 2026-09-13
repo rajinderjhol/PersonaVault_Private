@@ -33,7 +33,25 @@ environment_health = Gauge(
     ['environment_id']
 )
 
+# --- Compression Metrics ---
+compression_ratio = Gauge(
+    'personavault_compression_ratio',
+    'Current intelligence compression ratio',
+    ['environment_id']
+)
+
+compression_events = Counter(
+    'personavault_compression_events_total',
+    'Total number of meta-pattern synthesis events',
+    ['environment_id', 'input_count', 'output_count']
+)
+
 # --- Helper Functions ---
+def track_compression(environment_id: str, input_count: int, output_count: int, ratio: int):
+    """Track a compression/synthesis event."""
+    compression_ratio.labels(environment_id=environment_id).set(ratio)
+    compression_events.labels(environment_id=environment_id, input_count=input_count, output_count=output_count).inc()
+
 def track_crystallization(environment_id: str, source_type: str, duration: float, status: str = "success"):
     """Track a crystallization event."""
     crystallization_events.labels(environment_id=environment_id, source_type=source_type, status=status).inc()
