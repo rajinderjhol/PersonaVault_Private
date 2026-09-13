@@ -14,6 +14,7 @@
 | **8** | Enterprise Governance & ADT | ✅ Complete |
 | **9** | Sovereign Control (DeepSeek-Inspired) | ✅ Complete |
 | **10** | Developer Ecosystem (SDK/CLI Alpha) | ✅ Complete |
+| **11** | Sovereign Intelligence Runtime (V2) | ✅ Complete |
 
 ## 🎯 Strategic Evolution (Phase II)
 
@@ -21,15 +22,15 @@
 |-------|-------|--------|
 | **S1** | Domain Awareness (Detection/Routing) | ✅ Complete |
 | **S2** | Intelligence Marketplace | ✅ Complete |
-| **S3** | Compression Evolution (1M:1) | 🚀 In Progress |
-| **S4** | Self-Synthesis & Compounding | 📅 Planned |
+| **S3** | Sovereign Runtime V2 (Hardening) | ✅ Complete |
+| **S4** | Compression Evolution (1M:1) | 🚀 In Progress |
+| **S5** | Autonomous Sovereign V3 (Discovery) | 📅 Planned |
 
 ## 📈 Key Capabilities
 - **Intelligence**: Self-improving with reinforcement learning loop.
+- **Sovereign Runtime (V2)**: Autonomous environmental loop scoped to sovereign boundaries.
 - **Verifiable**: Auditable Decision Trace (ADT) for machine-reproducible records.
+- **Co-existence**: V2 runtime operates seamlessly alongside V1 Decision OS.
 - **Declarative**: Behavior Pack Compiler transforms domain logic into optimized code.
-- **Sovereign**: 4 Execution Modes (Standard, Restricted, Simulation, Audit).
-- **Extensible**: Cordis-inspired Service Registry for runtime provider swapping.
-- **Developer-Ready**: Python SDK and `pv` CLI for programmatic integration.
-- **Domain-Aware**: Dynamic routing and specialized personas (7+ domains).
+- **Governance**: Multi-mode execution and probabilistic Trust Policies.
 - **Marketplace**: Sovereign intelligence sharing economy live.

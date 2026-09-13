@@ -1,6 +1,6 @@
 # 🛡️ PersonaVault
 
-**PersonaVault** is a **model-independent Decision Operating System (DOS)**. It decouples the AI inference engine from the organization’s accumulated, governed, and provenance-backed institutional intelligence.
+**PersonaVault** is a **model-independent Sovereign Intelligence Runtime (V2)** and **Decision Operating System (V1)**. It decouples the AI inference engine from the organization’s accumulated, governed, and provenance-backed institutional intelligence.
 
 **Core Thesis:** AI models generate intelligence; PersonaVault accumulates intelligence. PersonaVault owns institutional continuity.
 
@@ -10,8 +10,9 @@
 
 The moat is not just the Three-Layer Memory architecture; the moat is the **accumulated crystallized state** and **10,000:1 Intelligence Compression**. As an organization uses PersonaVault, the system learns and crystallizes reasoning paths:
 
+*   **Sovereign Intelligence Runtime (V2)**: A fully autonomous loop that scans environments, discovers entities, reduces uncertainty, and crystallizes knowledge within strict isolation boundaries.
 *   **10,000:1 Compression**: Every successful deep reasoning session is compressed into a single crystallized pattern. This reduces compute costs by orders of magnitude and accelerates response times from 15-20s (reasoning) to 2-4s (crystallized retrieval).
-*   **Compounding Intelligence**: The system is not static; every interaction makes the entire platform faster, more reliable, and smarter.
+*   **Co-existence Policy**: PersonaVault V2 operates alongside the V1 Decision Operating System, providing high-level autonomous environmental intelligence while maintaining V1's deterministic decision pipelines.
 *   **Sovereignty-First**: Crystallization works entirely in air-gapped environments, ensuring institutional intelligence is controlled, not just "rented" from cloud providers.
 
 A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better engine with which to compound the organization's existing intelligence.
@@ -20,20 +21,24 @@ A better AI model doesn't threaten PersonaVault; it gives PersonaVault a better 
 
 ## 📊 **Current Platform Status**
 
-| Domain | Events | Confidence | Trend |
-|--------|--------|------------|-------|
-| **Security Intelligence** | 54 | 90.8% | 📈 Improving |
-| **Compliance Intelligence** | 7 | 94.6% | 📈 Improving |
-| **Contract Intelligence** | 15 | 87.9% | 📈 Improving |
-| **Procurement Intelligence** | 1 | 80.0% | 📈 Improving |
-| **Insurance Intelligence** | 4 | 91.5% | 📈 Improving |
-| **TOTAL** | **81** | **90.5%** | 📈 **Improving** |
+| Domain | Events | Confidence | Trend | Status |
+|--------|--------|------------|-------|--------|
+| **Security Intelligence** | 54 | 90.8% | 📈 Improving | ✅ Active |
+| **Compliance Intelligence** | 7 | 94.6% | 📈 Improving | ✅ Active |
+| **Contract Intelligence** | 15 | 87.9% | 📈 Improving | ✅ Active |
+| **Procurement Intelligence** | 1 | 80.0% | 📈 Improving | ✅ Active |
+| **Insurance Intelligence** | 4 | 91.5% | 📈 Improving | ✅ Active |
+| **Healthcare (USB)** | 124 | 94.5% | 📈 Improving | ✅ Active |
+| **TOTAL** | **205** | **91.5%** | **📈 Improving** | **✅** |
 
 ---
 
 ## 🧠 **Core Capabilities**
 
-### 1. **Decision Timeline**
+### 1. **Sovereign Intelligence Loop (V2)**
+An autonomous runtime loop: `Environment → Event → Observation → State → Decision → Action → Outcome → Learning → Crystallization → Knowledge`. Strictly scoped to sovereign boundaries.
+
+### 2. **Decision Timeline (V1)**
 Every decision is captured as a 5-step timeline:
 1. 🔍 **Perception** - Event identified and facts extracted
 2. 📋 **Policy Match** - Verifiable, deterministic policies applied
@@ -41,17 +46,17 @@ Every decision is captured as a 5-step timeline:
 4. 👤 **Decision Made** - Human or AI decision with verifiable path
 5. 🔒 **Provenance Logged** - Full auditable trace with traceability
 
-### 2. **Decision Replay**
+### 3. **Decision Replay**
 Replay any decision at any point in time to see how versioned policies would have changed the outcome.
 
-### 3. **Trend Analysis**
-Track confidence, policy hit rates, and decision patterns over time.
+### 4. **Trust Policy Management (V2)**
+Dynamic configuration of probabilistic thresholds across Gas, Liquid, and Ice memory layers to ensure high-fidelity retrieval.
 
-### 4. **Auditable Decision Trace (The "Decision Graph")**
+### 5. **Intelligence Source Control (V2)**
+Unified governance over external data sources, knowledge packs, and intelligence providers.
+
+### 6. **Auditable Decision Trace (The "Decision Graph")**
 Every decision is recorded as a structured graph of evidence, signals, and matched rules. This is superior to "Chain of Thought" as it is bit-for-bit reproducible and machine-verifiable.
-
-### 5. **Provenance Trail**
-Complete, machine-readable audit of every decision with full evidence-to-outcome mapping.
 
 ### 6. **Behaviour Packs**
 Declarative intelligence packs compiled into optimized runtime code for industry-specific governance.

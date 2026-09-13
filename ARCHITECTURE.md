@@ -36,6 +36,27 @@ The Privacy Framework ensures sovereign control over data and regulatory complia
 
 ---
 
+## Stage 11: Sovereign Intelligence Runtime (V2)
+
+The Sovereign Intelligence Runtime (V2) evolves PersonaVault from a reactive Decision Operating System into an **autonomous sovereign engine**. It operates alongside V1 to provide environmental-scale intelligence.
+
+### The Sovereign Loop
+Unlike the V1 Decision Timeline, the V2 loop is fully autonomous and environment-scoped:
+`Environment → Event → Observation → State → Decision → Action → Outcome → Learning → Crystallization → Knowledge`
+
+### Key Architectural Pillars (V2)
+1.  **Environment Isolation**: Strict logical and physical boundaries ensure that intelligence and data within one Sovereign Environment never pollute another.
+2.  **Trust Policy Governance**: A probabilistic threshold management system that controls how information moves between memory layers (Gas, Liquid, and Ice) based on confidence and relevance.
+3.  **Intelligence Source Control**: A unified registry for managing the lifecycle of external knowledge sources, API providers, and data packs.
+4.  **Autonomous Learning Bridge**: A reactive pipeline that automatically triggers crystallization upon the observation of successful real-world outcomes.
+
+### V1 & V2 Co-existence
+PersonaVault maintains two distinct execution paths:
+*   **V1 Path**: Deterministic, policy-backed decision execution (Explanatory).
+*   **V2 Path**: Autonomous, environmental-scoped intelligence runtime (Authoritative).
+
+---
+
 ## The Decision Intelligence Architecture: The Crystallization Loop
 
 The architecture is designed to convert ephemeral interactions into durable organizational knowledge through a governance-backed feedback loop.

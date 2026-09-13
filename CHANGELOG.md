@@ -6,7 +6,41 @@ The format is based on Keep a Changelog.
 
 ---
 
-## [1.0.0] - 2026-07-27
+## [2.0.0] - 2026-09-01
+
+### 🛡️ Sovereign Intelligence Runtime (V2)
+This release introduces the **Sovereign Intelligence Runtime (V2)**, a major architectural evolution that operates alongside the V1 Decision Operating System. V2 focuses on autonomous environmental learning, strict isolation, and trust-based governance.
+
+#### Added (V2 Architecture)
+- **Sovereign Intelligence Loop**: Autonomous `Environment → Event → Outcome → Learning → Crystallization` cycle.
+- **Environment Isolation**: Strict logical and physical boundaries between sovereign environments.
+- **Trust Policy Configuration**: New system for managing probabilistic thresholds across memory layers (Gas/Liquid/Ice).
+- **Intelligence Source Control**: Unified management for external data sources and knowledge providers.
+- **V2 API Surface**: New `/v2/` namespace for environmental operations, chat, reasoning, and simulation.
+- **Simulation Sandbox**: Verified isolation for "what-if" scenarios without polluting authoritative state.
+
+#### Features & Components
+- **TrustPolicyConfig**: Managed via `/v2/trust_policies` and Studio UI.
+- **IntelligenceSources**: Managed via `/v2/intelligence_sources`.
+- **Environmental Agents**: Auto-discovery and registration of agents within specific environments.
+- **Thermodynamics Integration**: Monitoring system state and "temperature" in the Studio.
+
+#### API Endpoints (V2)
+- `/v2/environments`: CRUD for sovereign environments.
+- `/v2/environments/{env_id}/chat`: Environment-scoped autonomous chat.
+- `/v2/environments/{env_id}/reasoning`: Deep reasoning with environmental context.
+- `/v2/environments/{env_id}/crystallization`: Manual and auto-crystallization triggers.
+- `/v2/trust_policies`: Global and environmental trust thresholds.
+- `/v2/intelligence_sources`: Knowledge source management.
+
+---
+
+## [1.0.1] - 2026-08-28
+### Fixed
+- FAISS index synchronization during rapid event bursts.
+- Admin dashboard auto-refresh stability.
+
+---
 
 ### 🎉 Initial Production Release
 
