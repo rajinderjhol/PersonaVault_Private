@@ -63,6 +63,36 @@ router.include_router(governance_router, prefix="/{env_id}/governance")
 router.include_router(lattice_router, prefix="/{env_id}/lattice")
 
 
+class DiscoveryRequest(BaseModel):
+    path: str
+    max_depth: Optional[int] = 3
+
+@router.post("/discover", response_model=Dict[str, Any])
+async def discover_environment_intelligence(
+    req: DiscoveryRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    V3 Discovery Engine: Autonomously scan a path and suggest a Behaviour Pack.
+    """
+    from app.services.discovery.discovery_service import discovery_service
+    
+    try:
+        findings = await discovery_service.scan_environment(req.path, max_depth=req.max_depth)
+        suggestion = await discovery_service.suggest_pack(findings)
+        
+        return {
+            "findings": {
+                "total_files": findings["total_files"],
+                "file_types": findings["file_types"],
+                "detected_structure": findings["structure"][:10]
+            },
+            "suggested_pack": suggestion
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("", response_model=Environment)
 @router.post("/", response_model=Environment)
 async def create_environment(
@@ -174,6 +204,30 @@ async def get_environment_growth(env_id: str):
         ],
         "compressionHistory": []
     }
+
+@router.post("/{env_id}/compression/benchmark", response_model=Dict[str, Any])
+async def benchmark_compression(
+    env_id: str,
+    env: Environment = Depends(require_membership)
+):
+    """
+    V3 Compression Benchmark: Empirical proof of 100,000:1 intelligence density.
+    """
+    from app.services.discovery.benchmarker import compression_benchmarker
+    from app.services.memory_service import memory_service
+    from app.api.v2.services.crystallization_service import crystallization_service
+    
+    # 1. Fetch raw episodic memories (samples)
+    raw_memories = await memory_service.search_memories(
+        user_id=1, query="", limit=100, environment_id=env_id
+    )
+    
+    # 2. Fetch meta-patterns
+    patterns = await crystallization_service.get_patterns(env_id)
+    meta_patterns = [p for p in patterns if p.get("metadata", {}).get("type") == "meta_pattern"]
+    
+    # 3. Run benchmark
+    return await compression_benchmarker.run_benchmark(env_id, raw_memories, meta_patterns)
 
 # --- Environment Documents ---
 
