@@ -79,3 +79,4 @@ full_db_dump.sql
 .env.backup_*
 fix_*.py
 index_*.py
+data_test/
