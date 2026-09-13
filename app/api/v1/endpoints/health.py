@@ -14,7 +14,7 @@ from app.core.dependencies import get_current_user
 from app.services.intelligence_gateway import gateway
 import logging
 
-router = APIRouter(prefix="/api/v1/health", tags=["health"])
+router = APIRouter(prefix="/health", tags=["health"])
 logger = logging.getLogger(__name__)
 
 

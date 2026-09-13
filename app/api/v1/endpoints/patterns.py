@@ -8,7 +8,7 @@ from datetime import datetime
 
 from app.services.memory.ice_repository import IceMemoryRepository
 
-router = APIRouter(prefix="/api/v1/patterns", tags=["patterns"])
+router = APIRouter(prefix="/patterns", tags=["patterns"])
 
 @router.get("/")
 async def list_patterns(
