@@ -128,5 +128,317 @@
       "updated_at": "2026-09-08 14:26:28.105208",
       "metadata": {}
     }
+  },
+  "trust_c3db9e3c2f72": {
+    "32": {
+      "id": "trust_c3db9e3c2f72",
+      "user_id": 32,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 12:59:19.083707",
+      "updated_at": "2026-09-13 12:59:19.083712",
+      "metadata": {}
+    }
+  },
+  "trust_b47e58e4dcf5": {
+    "38": {
+      "id": "trust_b47e58e4dcf5",
+      "user_id": 38,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:17:27.445525",
+      "updated_at": "2026-09-13 13:17:27.445531",
+      "metadata": {}
+    }
+  },
+  "trust_b88dc4b00db9": {
+    "44": {
+      "id": "trust_b88dc4b00db9",
+      "user_id": 44,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:31:32.300427",
+      "updated_at": "2026-09-13 13:31:32.300432",
+      "metadata": {}
+    }
+  },
+  "trust_dbb5d59d778c": {
+    "50": {
+      "id": "trust_dbb5d59d778c",
+      "user_id": 50,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:35:25.357246",
+      "updated_at": "2026-09-13 13:35:25.357254",
+      "metadata": {}
+    }
+  },
+  "trust_1a16310cc852": {
+    "56": {
+      "id": "trust_1a16310cc852",
+      "user_id": 56,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:37:16.837358",
+      "updated_at": "2026-09-13 13:37:16.837363",
+      "metadata": {}
+    }
+  },
+  "trust_ec1186ed4222": {
+    "62": {
+      "id": "trust_ec1186ed4222",
+      "user_id": 62,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:38:50.832025",
+      "updated_at": "2026-09-13 13:38:50.832031",
+      "metadata": {}
+    }
+  },
+  "trust_bc7536f174ec": {
+    "68": {
+      "id": "trust_bc7536f174ec",
+      "user_id": 68,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:45:53.801539",
+      "updated_at": "2026-09-13 13:45:53.801544",
+      "metadata": {}
+    }
+  },
+  "trust_ec632eb60efa": {
+    "74": {
+      "id": "trust_ec632eb60efa",
+      "user_id": 74,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:49:09.387918",
+      "updated_at": "2026-09-13 13:49:09.387925",
+      "metadata": {}
+    }
+  },
+  "trust_bb6c98701ef2": {
+    "80": {
+      "id": "trust_bb6c98701ef2",
+      "user_id": 80,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:49:43.293668",
+      "updated_at": "2026-09-13 13:49:43.293675",
+      "metadata": {}
+    }
+  },
+  "trust_42ca5e4ce228": {
+    "86": {
+      "id": "trust_42ca5e4ce228",
+      "user_id": 86,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:51:15.357788",
+      "updated_at": "2026-09-13 13:51:15.357794",
+      "metadata": {}
+    }
+  },
+  "trust_46841c754e67": {
+    "92": {
+      "id": "trust_46841c754e67",
+      "user_id": 92,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:53:11.989704",
+      "updated_at": "2026-09-13 13:53:11.989710",
+      "metadata": {}
+    }
+  },
+  "trust_02e82925a11e": {
+    "98": {
+      "id": "trust_02e82925a11e",
+      "user_id": 98,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:54:54.783060",
+      "updated_at": "2026-09-13 13:54:54.783065",
+      "metadata": {}
+    }
+  },
+  "trust_5eb85d0b5ebe": {
+    "104": {
+      "id": "trust_5eb85d0b5ebe",
+      "user_id": 104,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 13:58:00.698121",
+      "updated_at": "2026-09-13 13:58:00.698127",
+      "metadata": {}
+    }
+  },
+  "trust_66a79a7b2a47": {
+    "110": {
+      "id": "trust_66a79a7b2a47",
+      "user_id": 110,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:02:57.963601",
+      "updated_at": "2026-09-13 14:02:57.963607",
+      "metadata": {}
+    }
+  },
+  "trust_16ba814dbe54": {
+    "116": {
+      "id": "trust_16ba814dbe54",
+      "user_id": 116,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:06:52.129712",
+      "updated_at": "2026-09-13 14:06:52.129717",
+      "metadata": {}
+    }
+  },
+  "trust_81b9dae7dae5": {
+    "122": {
+      "id": "trust_81b9dae7dae5",
+      "user_id": 122,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:13:50.409627",
+      "updated_at": "2026-09-13 14:13:50.409632",
+      "metadata": {}
+    }
+  },
+  "trust_1f21b56e1ae7": {
+    "128": {
+      "id": "trust_1f21b56e1ae7",
+      "user_id": 128,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:16:52.428705",
+      "updated_at": "2026-09-13 14:16:52.428711",
+      "metadata": {}
+    }
+  },
+  "trust_6a60149884c0": {
+    "134": {
+      "id": "trust_6a60149884c0",
+      "user_id": 134,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:17:53.584780",
+      "updated_at": "2026-09-13 14:17:53.584785",
+      "metadata": {}
+    }
+  },
+  "trust_f60248af21af": {
+    "140": {
+      "id": "trust_f60248af21af",
+      "user_id": 140,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:18:56.900415",
+      "updated_at": "2026-09-13 14:18:56.900421",
+      "metadata": {}
+    }
+  },
+  "trust_665ec4749d96": {
+    "146": {
+      "id": "trust_665ec4749d96",
+      "user_id": 146,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:21:45.438176",
+      "updated_at": "2026-09-13 14:21:45.438182",
+      "metadata": {}
+    }
+  },
+  "trust_c0920bf761de": {
+    "152": {
+      "id": "trust_c0920bf761de",
+      "user_id": 152,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:28:08.139270",
+      "updated_at": "2026-09-13 14:28:08.139277",
+      "metadata": {}
+    }
+  },
+  "trust_a62cbd492734": {
+    "158": {
+      "id": "trust_a62cbd492734",
+      "user_id": 158,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:52:27.166384",
+      "updated_at": "2026-09-13 14:52:27.166389",
+      "metadata": {}
+    }
+  },
+  "trust_499698ec13ae": {
+    "164": {
+      "id": "trust_499698ec13ae",
+      "user_id": 164,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 14:58:41.415529",
+      "updated_at": "2026-09-13 14:58:41.415537",
+      "metadata": {}
+    }
+  },
+  "trust_19964a999660": {
+    "170": {
+      "id": "trust_19964a999660",
+      "user_id": 170,
+      "entity_type": "device",
+      "entity_id": "trusted_device_123",
+      "trust_level": 0.9,
+      "reason": "Test trusted device",
+      "created_at": "2026-09-13 15:23:48.883997",
+      "updated_at": "2026-09-13 15:23:48.884003",
+      "metadata": {}
+    }
   }
 }
