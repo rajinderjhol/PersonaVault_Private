@@ -11,7 +11,10 @@ class SemanticPattern(Base):
     correction = Column(Text)
     occurrence_count = Column(Integer, default=1)
     derived_from = Column(JSON, nullable=True) # V3: IDs of patterns or events that formed this
-    success_count = Column(Integer, default=0)  # New
+    success_count = Column(Integer, default=0)
+    weight = Column(Float, default=0.7)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     def __repr__(self):
