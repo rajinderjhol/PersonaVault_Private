@@ -1,5 +1,6 @@
 import logging
 from logging.config import fileConfig
+import sqlalchemy
 from sqlalchemy import create_engine
 from alembic import context
 import sys
@@ -10,6 +11,7 @@ from sqlalchemy import pool
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.db.session import Base
+import app.models
 from app.config import Config
 
 # This is the Alembic Config object
@@ -41,9 +43,12 @@ def run_migrations_offline():
 def run_migrations_online():
     """Run migrations in 'online' mode."""
     # Create a synchronous engine for migrations
-    connectable = create_engine(sync_url, poolclass=pool.NullPool)
+    if context.config.attributes.get('connection'):
+        connectable = context.config.attributes.get('connection')
+    else:
+        connectable = create_engine(sync_url, poolclass=pool.NullPool)
 
-    with connectable.connect() as connection:
+    def do_run_migrations(connection):
         context.configure(
             connection=connection,
             target_metadata=target_metadata
@@ -51,6 +56,12 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
+
+    if isinstance(connectable, sqlalchemy.engine.base.Engine):
+        with connectable.connect() as connection:
+            do_run_migrations(connection)
+    else:
+        do_run_migrations(connectable)
 
 if context.is_offline_mode():
     run_migrations_offline()
