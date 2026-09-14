@@ -88,7 +88,7 @@ The derivation is not merely taxonomic; it is functional. Without Unit and Recor
 | **Attestation** | Verifiable proof of a transition under authority. | Aspirational |
 | **Trust Anchor** | The external source of cryptographic truth. | Aspirational |
 
-*Status reflects implementation state in the PersonaVault codebase as of September 2026. Papers exist for four of the eight primitives (Transition, Record, Authority, Attestation); the remaining four (Unit, Identity, Policy, Trust Anchor) are implemented but not yet documented as standalone papers.*
+*Status reflects implementation state in the PersonaVault codebase as of September 2026. Standalone whitepapers exist for all eight primitives.*
 
 ---
 

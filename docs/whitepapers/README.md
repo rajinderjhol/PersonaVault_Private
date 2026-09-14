@@ -18,7 +18,10 @@ non-guarantees. Each paper makes one narrow claim and defends it.
   stable referent for a thing the system tracks.
 - [The Identity Primitive](identity_primitive.md) —
   attribution of every action, record, and transition to a distinguishable entity.
+- [The Policy Primitive](policy_primitive.md) —
+  governed expression of permitted or restricted action.
+- [The Trust Anchor Primitive](trust_anchor_primitive.md) —
+  external ground-of-trust for verification of system attestations.
 
 ## Status
-6 of 8 primitives defined: Attestation, Transition, Record, Authority, Unit, Identity.
-Next: Policy, Trust anchor.
+8 of 8 primitives defined: Attestation, Transition, Record, Authority, Unit, Identity, Policy, Trust Anchor.
