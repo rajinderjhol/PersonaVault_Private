@@ -18,14 +18,13 @@ from app.models.identity import (
 def service():
     """Create a fresh IdentityService instance for each test."""
     test_data_path = Path("data_test")
-    if test_data_path.exists():
-        shutil.rmtree(test_data_path)
-    
+    # shutil.rmtree(test_data_path)
+
     service = IdentityService()
     service.data_path = test_data_path
     service.data_path.mkdir(parents=True, exist_ok=True)
     service._load_data()
-    
+
     return service
 
 
