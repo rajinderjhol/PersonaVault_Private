@@ -24,23 +24,8 @@ class MCPServerManager:
                 config = json.load(f)
                 self.servers = config.get("mcpServers", {})
         else:
-            # Default configuration with Free Search MCP
-            self.servers = {
-                "free-search": {
-                    "name": "Free Web Search",
-                    "description": "Multi-engine web search with no API key required",
-                    "command": "python",
-                    "args": ["-m", "search_mcp"],
-                    "cwd": str(Path.home() / "personavault/backend/free-search-mcp"),
-                    "env": {
-                        "PATH": "/usr/local/bin:/usr/bin:/bin",
-                        "PYTHONPATH": str(Path.home() / "personavault/backend/free-search-mcp/src")
-                    },
-                    "enabled": True,
-                    "tools": ["search", "fetch", "fetch_batch", "research", "read_doc", "compare", "download"],
-                    "status": "disconnected"
-                }
-            }
+            # Default configuration (empty)
+            self.servers = {}
             self.save_config()
     
     def save_config(self):
@@ -103,43 +88,6 @@ class MCPServerManager:
         """Call a tool on an MCP server."""
         if server_id not in self.servers:
             return {"success": False, "error": f"Server {server_id} not found"}
-        
-        if server_id == "free-search":
-            try:
-                # Import free-search-mcp directly
-                import sys
-                import asyncio
-                sys.path.insert(0, '/home/rajinderj8888/personavault/backend/free-search-mcp/src')
-                
-                from search_mcp.server import search, fetch, research
-                
-                if tool_name == "search":
-                    result = await search(
-                        query=params.get("query"),
-                        max_results=params.get("max_results", 5),
-                        freshness=params.get("freshness", "week"),
-                        format="json"
-                    )
-                    return {"success": True, "result": result}
-                elif tool_name == "fetch":
-                    result = await fetch(
-                        url=params.get("url"),
-                        format="json"
-                    )
-                    return {"success": True, "result": result}
-                elif tool_name == "research":
-                    result = await research(
-                        question=params.get("query"),
-                        depth=params.get("depth", 3),
-                        format="json"
-                    )
-                    return {"success": True, "result": result}
-                else:
-                    return {"success": False, "error": f"Tool {tool_name} not implemented"}
-                    
-            except Exception as e:
-                logger.error(f"Free search error: {e}")
-                return {"success": False, "error": str(e)}
         
         return {"success": False, "error": f"Server {server_id} not supported"}
 
