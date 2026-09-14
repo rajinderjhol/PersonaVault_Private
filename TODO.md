@@ -1,6 +1,8 @@
 # 📝 PersonaVault Strategic Todo List
 
-Refer to the project structure in [README.md](README.md) and the vision document in [docs/vision.md](docs/vision.md).
+Refer to the project structure in [README.md](README.md), the vision document in 
+[docs/vision.md](docs/vision.md), and the substrate specification in 
+[docs/whitepapers/](docs/whitepapers/).
 
 ## ✅ Completed Milestones
 - [x] **Service-Oriented Architecture**: ServiceRegistry and provider swapping.
@@ -8,10 +10,18 @@ Refer to the project structure in [README.md](README.md) and the vision document
 - [x] **Three-Layer Memory**: Operational Gas → Liquid → Ice crystallization.
 - [x] **Domain Awareness (Stage 2)**: Detector, Router, and Domain-Aware Generator complete.
 - [x] **Intelligence Marketplace (Stage 3)**: Backend registry, file management, and UI implementation complete.
+- [x] **Substrate Specification**: Eight primitive papers and the synthesis paper
+      (see [docs/whitepapers/](docs/whitepapers/)).
 
 ---
 
 ## 🎯 Active Strategic Horizons (Stage 4+)
+
+### Horizon: Attestation & Trust Anchor Implementation (🔴 HIGH)
+- [ ] **Attestation Primitive**: Bind transitions to cryptographic records at the point of change
+      (target state defined in [docs/whitepapers/attested_epistemic_transitions.md](docs/whitepapers/attested_epistemic_transitions.md)).
+- [ ] **Trust Anchor Integration**: Consume VeriLinkOS registry as the external ground of trust
+      (target state defined in [docs/whitepapers/trust_anchor_primitive.md](docs/whitepapers/trust_anchor_primitive.md)).
 
 ### Horizon: Sovereign Intelligence V3 (🔴 HIGH)
 - [x] **Autonomous Discovery Engine (MVP)**
@@ -58,11 +68,11 @@ Refer to the project structure in [README.md](README.md) and the vision document
 - [x] **Schema Consistency Test**: Model ↔ DB drift caught at test time.
 - [x] **Negative Test for Schema Gate**: Verified detection of schema drift.
 - [x] **Remove stray `.bak` files** from importable packages.
-- [ ] **Vector Index Durability**: Confirm load-failure path persists new index immediately. Add restart-persistence test: write vector, restart, confirm it survives.
+- [x] **Vector Index Durability**: Persist index immediately on creation; restart-persistence test in place.
 
 ---
 
-## 📊 Current Metrics (September 13, 2026)
+## 📊 Current Metrics (September 14, 2026)
 
 | Domain | Events/Decisions | Confidence | Trend | Status |
 |--------|------------------|------------|-------|--------|
@@ -79,4 +89,4 @@ Refer to the project structure in [README.md](README.md) and the vision document
 *Note: Trends marked 'Insuff. Data' for n < 10.*
 
 ---
-*Last Updated: September 13, 2026 (V3 Phase II Milestone Completion)*
+*Last Updated: September 14, 2026 (Substrate Specification Complete)*
