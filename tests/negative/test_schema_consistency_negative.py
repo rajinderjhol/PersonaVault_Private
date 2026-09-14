@@ -14,9 +14,7 @@ async def test_detect_schema_drift():
         # Added extra column
         unexpected_column = Column(String)
         
-    insp = inspect(Base.metadata.bind or Base.metadata.bind_engine or Base.metadata.bind_engine_for_tests if hasattr(Base.metadata, 'bind_engine_for_tests') else None)
-    # Actually, simpler: check the metadata table objects directly
-    
+    # Verify the model table now has the drifted column
     table = Base.metadata.tables["semantic_patterns"]
     assert "unexpected_column" in table.columns
     print("✅ Negative schema test setup verified.")
