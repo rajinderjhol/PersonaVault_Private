@@ -9,7 +9,7 @@ import os
 import httpx
 
 # Add mock modules to path BEFORE importing app
-sys.path.insert(0, os.path.join(os.getcwd(), 'mock_modules'))
+sys.path.insert(0, os.path.join(os.getcwd(), 'tests/fixtures'))
 
 # Now import neo4j - it will use our mock
 import neo4j
