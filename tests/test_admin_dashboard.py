@@ -5,7 +5,7 @@ import pytest
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
@@ -15,7 +15,7 @@ from app.models import User, UserSession
 @pytest.mark.asyncio
 async def test_get_admin_metrics(admin_client):
     """Test the comprehensive metrics endpoint returns expected structure."""
-    response = admin_client.get("/api/v1/admin/dashboard/metrics")
+    response = await admin_client.get("/api/v1/admin/dashboard/metrics")
     
     if response.status_code == 200:
         data = response.json()
@@ -27,7 +27,7 @@ async def test_get_admin_metrics(admin_client):
 @pytest.mark.asyncio
 async def test_list_users_admin(admin_client):
     """Test the admin user list endpoint."""
-    response = admin_client.get("/api/v1/admin/dashboard/users")
+    response = await admin_client.get("/api/v1/admin/dashboard/users")
     
     if response.status_code == 200:
         data = response.json()
@@ -40,8 +40,8 @@ async def test_list_users_admin(admin_client):
 @pytest.mark.asyncio
 async def test_admin_endpoint_requires_auth():
     """Admin endpoints must return 401/403 for unauthenticated requests."""
-    tc = TestClient(app)
-    response = tc.get("/api/v1/admin/dashboard/metrics")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as tc:
+        response = await tc.get("/api/v1/admin/dashboard/metrics")
     assert response.status_code in [401, 403]
 
 
@@ -79,9 +79,9 @@ async def test_admin_endpoint_requires_admin_role(db_session):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
 
-    tc = TestClient(app)
-    tc.cookies.set("session_id", token)
-    response = tc.get("/api/v1/admin/dashboard/metrics")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as tc:
+        tc.cookies.set("session_id", token)
+        response = await tc.get("/api/v1/admin/dashboard/metrics")
 
     assert response.status_code in [401, 403]
     app.dependency_overrides.clear()

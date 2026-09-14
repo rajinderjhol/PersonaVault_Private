@@ -1,7 +1,7 @@
 """
 PersonaVault Test Configuration
 ================================
-Provides fixtures for unit and integration testing against an in-memory SQLite DB.
+Provides fixtures for integration testing against a Postgres database.
 """
 import pytest
 import asyncio
@@ -11,8 +11,9 @@ import tempfile
 import yaml
 import os
 from pathlib import Path
+from contextlib import asynccontextmanager
 
-from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -22,15 +23,15 @@ from app.models import User, UserSession, Organization
 from app.api.v2.services.environment_service import environment_service
 from app.core.dependencies import get_current_user
 
+# Disable lifespan for tests to avoid startup hangs
+@asynccontextmanager
+async def noop_lifespan(app):
+    yield
+
+app.router.lifespan_context = noop_lifespan
+
 # Use a separate test database
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "postgresql+asyncpg://personavault:personavault@localhost:5432/test_db")
-
-@pytest.fixture(scope="session")
-def event_loop():
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    yield loop
-    loop.close()
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -54,7 +55,6 @@ async def db_session(test_engine):
     )
     async with async_session_factory() as session:
         yield session
-        await session.rollback()
 
 
 # ============================================================
@@ -116,13 +116,9 @@ async def create_test_user(db_session, role="user"):
 # ============================================================
 
 @pytest.fixture
-def client(db_session):
-    """Create a test client with admin authentication."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    user, token = loop.run_until_complete(create_test_admin(db_session))
-    loop.close()
+async def client(db_session):
+    """Create an async test client with admin authentication."""
+    user, token = await create_test_admin(db_session)
     
     async def override_get_db():
         yield db_session
@@ -133,9 +129,10 @@ def client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
     
-    with TestClient(app) as tc:
-        tc.cookies.set("session_id", token)
-        yield tc
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        c.cookies.set("session_id", token)
+        yield c
     
     app.dependency_overrides.clear()
 
@@ -145,13 +142,9 @@ def admin_client(client):
     return client
 
 @pytest.fixture
-def auth_client(db_session):
-    """Create a test client with regular user authentication."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    user, token = loop.run_until_complete(create_test_user(db_session, role="user"))
-    loop.close()
+async def auth_client(db_session):
+    """Create an async test client with regular user authentication."""
+    user, token = await create_test_user(db_session, role="user")
     
     async def override_get_db():
         yield db_session
@@ -162,9 +155,10 @@ def auth_client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
     
-    with TestClient(app) as tc:
-        tc.cookies.set("session_id", token)
-        yield tc
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        c.cookies.set("session_id", token)
+        yield c
     
     app.dependency_overrides.clear()
 

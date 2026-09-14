@@ -1,16 +1,16 @@
-"""
-Identity API Tests - Test the identity API endpoints
-"""
-
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
 from app.main import app
 
-client = TestClient(app)
+@pytest.fixture
+async def client():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c
 
-def test_create_profile():
+@pytest.mark.asyncio
+async def test_create_profile(client):
     """Test POST /api/v1/identity/profile"""
-    response = client.post(
+    response = await client.post(
         "/api/v1/identity/profile",
         json={
             "username": "apitestuser",
@@ -24,9 +24,10 @@ def test_create_profile():
     assert data["username"] == "apitestuser"
     assert data["id"] is not None
 
-def test_get_profile():
+@pytest.mark.asyncio
+async def test_get_profile(client):
     """Test GET /api/v1/identity/profile/{user_id}"""
-    create_response = client.post(
+    create_response = await client.post(
         "/api/v1/identity/profile",
         json={
             "username": "gettestuser",
@@ -36,15 +37,16 @@ def test_get_profile():
     )
     user_id = create_response.json()["id"]
     
-    response = client.get(f"/api/v1/identity/profile/{user_id}")
+    response = await client.get(f"/api/v1/identity/profile/{user_id}")
     
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == user_id
 
-def test_register_device():
+@pytest.mark.asyncio
+async def test_register_device(client):
     """Test POST /api/v1/identity/device/{user_id}"""
-    user_response = client.post(
+    user_response = await client.post(
         "/api/v1/identity/profile",
         json={
             "username": "devicetestuser",
@@ -53,7 +55,7 @@ def test_register_device():
     )
     user_id = user_response.json()["id"]
     
-    response = client.post(
+    response = await client.post(
         f"/api/v1/identity/device/{user_id}",
         json={
             "name": "API Test Device",
@@ -66,9 +68,10 @@ def test_register_device():
     assert data["user_id"] == user_id
     assert data["name"] == "API Test Device"
 
-def test_grant_permission():
+@pytest.mark.asyncio
+async def test_grant_permission(client):
     """Test POST /api/v1/identity/permission/{user_id}"""
-    user_response = client.post(
+    user_response = await client.post(
         "/api/v1/identity/profile",
         json={
             "username": "permissiontestuser",
@@ -77,7 +80,7 @@ def test_grant_permission():
     )
     user_id = user_response.json()["id"]
     
-    response = client.post(
+    response = await client.post(
         f"/api/v1/identity/permission/{user_id}",
         json={
             "action": "read_documents",
@@ -90,9 +93,10 @@ def test_grant_permission():
     assert data["action"] == "read_documents"
     assert data["level"] == "execute"
 
-def test_check_permission():
+@pytest.mark.asyncio
+async def test_check_permission(client):
     """Test GET /api/v1/identity/permission/{user_id}/check"""
-    user_response = client.post(
+    user_response = await client.post(
         "/api/v1/identity/profile",
         json={
             "username": "checktestuser",
@@ -101,7 +105,7 @@ def test_check_permission():
     )
     user_id = user_response.json()["id"]
     
-    client.post(
+    await client.post(
         f"/api/v1/identity/permission/{user_id}",
         json={
             "action": "read_documents",
@@ -110,7 +114,7 @@ def test_check_permission():
     )
     
     # Check pass
-    response = client.get(
+    response = await client.get(
         f"/api/v1/identity/permission/{user_id}/check",
         params={
             "action": "read_documents",
@@ -121,7 +125,7 @@ def test_check_permission():
     assert response.json()["has_permission"] is True
     
     # Check fail
-    response = client.get(
+    response = await client.get(
         f"/api/v1/identity/permission/{user_id}/check",
         params={
             "action": "read_documents",
@@ -131,9 +135,10 @@ def test_check_permission():
     assert response.status_code == 200
     assert response.json()["has_permission"] is False
 
-def test_add_trusted_entity():
+@pytest.mark.asyncio
+async def test_add_trusted_entity(client):
     """Test POST /api/v1/identity/trust/{user_id}"""
-    user_response = client.post(
+    user_response = await client.post(
         "/api/v1/identity/profile",
         json={
             "username": "trusttestuser",
@@ -142,7 +147,7 @@ def test_add_trusted_entity():
     )
     user_id = user_response.json()["id"]
     
-    response = client.post(
+    response = await client.post(
         f"/api/v1/identity/trust/{user_id}",
         json={
             "entity_type": "device",
