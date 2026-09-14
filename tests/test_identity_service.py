@@ -16,16 +16,26 @@ from app.models.identity import (
 
 @pytest.fixture
 def service():
-    """Create a fresh IdentityService instance for each test."""
+    """Create a fresh IdentityService instance for each test and clean up after."""
+    import os
     test_data_path = Path("data_test")
-    # shutil.rmtree(test_data_path)
+    
+    # Helper to clean test files
+    def cleanup():
+        for file in test_data_path.glob("*.json"):
+            if file.exists():
+                file.unlink()
 
+    cleanup()
+    
     service = IdentityService()
     service.data_path = test_data_path
     service.data_path.mkdir(parents=True, exist_ok=True)
     service._load_data()
 
-    return service
+    yield service
+    
+    cleanup()
 
 
 @pytest.fixture

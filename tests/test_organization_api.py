@@ -11,7 +11,7 @@ async def test_create_organization_endpoint(admin_client):
         "description": "API Test Organization"
     }
     
-    response = admin_client.post("/api/v1/organizations/", json=payload)
+    response = await admin_client.post("/api/v1/organizations/", json=payload)
     
     # Accept 201 (created) or 200 (OK) or skip if endpoint not found
     if response.status_code in [200, 201]:
@@ -32,10 +32,11 @@ async def test_get_organization_endpoint(admin_client, db_session):
     )
     db_session.add(org)
     await db_session.commit()
-    await db_session.refresh(org)
+    # No need to refresh if we don't need the ID immediately, 
+    # but if we do, use a separate session or handle carefully.
     
     # Get it via API
-    response = admin_client.get(f"/api/v1/organizations/{org.id}")
+    response = await admin_client.get(f"/api/v1/organizations/{org.id}")
     
     if response.status_code == 200:
         data = response.json()

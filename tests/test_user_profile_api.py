@@ -10,7 +10,7 @@ from app.models import User, UserSession
 @pytest.mark.asyncio
 async def test_get_user_profile_endpoint(admin_client):
     """Test getting a user profile."""
-    response = admin_client.get("/api/v1/users/profile")
+    response = await admin_client.get("/api/v1/users/profile")
     
     if response.status_code == 200:
         data = response.json()

@@ -3,9 +3,9 @@ from fastapi import status
 from app.models import User, UserSession
 import uuid
 
-def test_get_memories_unauthorized(client):
+async def test_get_memories_unauthorized(client):
     """Test getting memories without authentication."""
-    response = client.get("/api/v1/memory/")
+    response = await client.get("/api/v1/memory/")
     
     # The endpoint might be public or require auth
     # Accept both 200 (if public) and 401 (if auth required)
@@ -16,12 +16,12 @@ def test_get_memories_unauthorized(client):
         data = response.json()
         assert isinstance(data, list)
 
-def test_get_memories_with_auth(client):
+async def test_get_memories_with_auth(client):
     """Test getting memories with authentication."""
     session_id = "test-session-123"
     client.cookies.set("session_id", session_id)
     
-    response = client.get(
+    response = await client.get(
         "/api/v1/memory/",
         params={"user_id": 1}
     )
@@ -33,9 +33,9 @@ def test_get_memories_with_auth(client):
         data = response.json()
         assert isinstance(data, list)
 
-def test_create_memory(client):
+async def test_create_memory(client):
     """Test creating a new memory."""
-    response = client.post(
+    response = await client.post(
         "/api/v1/memory/",
         json={
             "title": "Test Memory",

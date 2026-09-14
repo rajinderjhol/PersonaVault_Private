@@ -4,6 +4,7 @@ Tests for memory layer graduation (Gas -> Liquid -> Ice) integrity.
 import pytest
 from sqlalchemy import select
 from app.models import Memory, SemanticPattern
+from tests.conftest import create_test_user
 
 
 async def test_memory_graduation_integrity(db_session):
@@ -70,8 +71,9 @@ async def test_inactive_pattern_can_be_deactivated(db_session):
 
 async def test_memory_layer2_creation(db_session):
     """Verify episodic (Layer 2) memory records can be created and retrieved."""
+    user, _ = await create_test_user(db_session)
     memory = Memory(
-        user_id=1,
+        user_id=user.id,
         title="Layer 2 Episodic Entry",
         content="Meeting with the legal team about contract renewal",
         modality="text",

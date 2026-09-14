@@ -12,28 +12,28 @@ from app.config import Config
 # RBAC Tests
 # ---------------------------------------------------------------------------
 
-def test_rbac_public_health_accessible(client):
+async def test_rbac_public_health_accessible(client):
     """Health endpoint must be accessible without any authentication."""
-    response = client.get("/health")
+    response = await client.get("/health")
     assert response.status_code in [200, 404]
 
 
-def test_rbac_protected_memory_denied_without_auth(client):
+async def test_rbac_protected_memory_denied_without_auth(client):
     """Memory API must return 401/403 when no session cookie is present."""
-    response = client.get("/api/v1/memory/")
+    response = await client.get("/api/v1/memory/")
     # Accept 200 if endpoint doesn't exist or is public
     assert response.status_code in [200, 401, 403]
 
 
 async def test_rbac_admin_prefix_blocked_for_regular_user(auth_client):
     """Regular users must be blocked from admin-prefixed routes."""
-    response = auth_client.get("/api/v1/admin/dashboard/metrics")
+    response = await auth_client.get("/api/v1/admin/dashboard/metrics")
     assert response.status_code in [401, 403]
 
 
 async def test_rbac_admin_accessible_for_admin_user(admin_client):
     """Admin users must be able to reach admin endpoints."""
-    response = admin_client.get("/api/v1/admin/dashboard/metrics")
+    response = await admin_client.get("/api/v1/admin/dashboard/metrics")
     if response.status_code == 200:
         data = response.json()
         assert "users" in data or "timestamp" in data
@@ -42,26 +42,26 @@ async def test_rbac_admin_accessible_for_admin_user(admin_client):
         pytest.skip(f"Admin auth not working (status {response.status_code})")
 
 
-def test_rbac_login_page_publicly_accessible(client):
+async def test_rbac_login_page_publicly_accessible(client):
     """The login page must not require authentication."""
-    response = client.get("/login")
-    assert response.status_code in [200, 302, 404]
+    response = await client.get("/login")
+    assert response.status_code in [200, 302, 303, 404]
 
 
 # ---------------------------------------------------------------------------
 # Rate Limiting Tests
 # ---------------------------------------------------------------------------
 
-def test_rate_limiting_triggers_after_limit(client):
+async def test_rate_limiting_triggers_after_limit(client):
     """Rate limiter must return 429 after MAX_REQUESTS_PER_WINDOW requests."""
     _rate_limit_store.clear()
     endpoint = "/api/v1/auth/login"
     payload = {"username": "attacker", "password": "wrong"}
 
     for _ in range(MAX_REQUESTS_PER_WINDOW):
-        client.post(endpoint, json=payload)
+        await client.post(endpoint, json=payload)
 
-    response = client.post(endpoint, json=payload)
+    response = await client.post(endpoint, json=payload)
     if response.status_code == 429:
         data = response.json()
         assert "Too many requests" in data["detail"]
@@ -74,16 +74,16 @@ def test_rate_limiting_triggers_after_limit(client):
     _rate_limit_store.clear()
 
 
-def test_rate_limit_includes_retry_after_header(client):
+async def test_rate_limit_includes_retry_after_header(client):
     """Rate limit response must include the Retry-After HTTP header."""
     _rate_limit_store.clear()
     endpoint = "/api/v1/auth/login"
     payload = {"username": "hacker", "password": "bad"}
 
     for _ in range(MAX_REQUESTS_PER_WINDOW):
-        client.post(endpoint, json=payload)
+        await client.post(endpoint, json=payload)
 
-    response = client.post(endpoint, json=payload)
+    response = await client.post(endpoint, json=payload)
     if response.status_code == 429:
         assert "retry-after" in response.headers
     else:
@@ -92,10 +92,10 @@ def test_rate_limit_includes_retry_after_header(client):
     _rate_limit_store.clear()
 
 
-def test_rate_limit_health_endpoint_exempt(client):
+async def test_rate_limit_health_endpoint_exempt(client):
     """Health endpoint must be exempt from rate limiting."""
     _rate_limit_store.clear()
-    response = client.get("/health")
+    response = await client.get("/health")
     assert response.status_code in [200, 404]
     _rate_limit_store.clear()
 
@@ -138,9 +138,9 @@ def test_metrics_config_has_allowed_ips():
     assert "127.0.0.1" in Config.METRICS_ALLOWED_IPS or "::1" in Config.METRICS_ALLOWED_IPS
 
 
-def test_metrics_endpoint_blocked_for_external_ip(client):
+async def test_metrics_endpoint_blocked_for_external_ip(client):
     """The /metrics endpoint must block requests from non-allowlisted IPs."""
-    response = client.get("/metrics")
+    response = await client.get("/metrics")
     assert response.status_code in [200, 401, 403, 404]
 
 

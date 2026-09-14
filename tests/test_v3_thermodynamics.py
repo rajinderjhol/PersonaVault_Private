@@ -58,9 +58,17 @@ async def test_guarded_evaporation():
 @pytest.mark.asyncio
 async def test_rejection_path():
     manager = PatternPhaseManager()
-    result = await manager.handle_synthesis_rejection("env-001", "finance", "Too early")
-    assert result is True
-    print("✅ Rejection path verified.")
+    
+    with patch("app.api.v2.services.environment_service.environment_service.get_environment", new_callable=AsyncMock) as mock_get_env, \
+         patch("app.api.v2.services.environment_service.environment_service.update_environment", new_callable=AsyncMock):
+        
+        mock_env = MagicMock()
+        mock_env.thermal_threshold = 10.0
+        mock_get_env.return_value = mock_env
+        
+        result = await manager.handle_synthesis_rejection("env-001", "finance", "Too early")
+        assert result is True
+        print("✅ Rejection path verified.")
 
 @pytest.mark.asyncio
 async def test_hysteresis_logic():

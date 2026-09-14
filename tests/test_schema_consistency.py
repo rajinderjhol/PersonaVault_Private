@@ -4,8 +4,8 @@ from app.db.session import Base, engine
 from app.models.semantic import SemanticPattern  # Import one model to trigger loading
 
 @pytest.mark.asyncio
-async def test_all_models_match_db():
-    async with engine.connect() as conn:
+async def test_all_models_match_db(test_engine):
+    async with test_engine.connect() as conn:
         def _check(sync_conn):
             insp = inspect(sync_conn)
             mismatches = []
