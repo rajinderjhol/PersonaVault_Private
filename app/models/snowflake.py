@@ -4,7 +4,7 @@ Snowflake Model - Domain-specific pattern variants
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Boolean, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.db.session import Base
@@ -46,8 +46,8 @@ class Snowflake(Base):
     is_crystallized = Column(Boolean, default=False)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationship to base pattern
@@ -94,7 +94,7 @@ class SnowflakeTransition(Base):
     transition_metadata = Column(JSON, nullable=True)  # Renamed from 'metadata'
     triggered_by = Column(String(100), nullable=True)  # agent_id or user_id
     
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     # Relationship
     snowflake = relationship("Snowflake", backref="transitions")

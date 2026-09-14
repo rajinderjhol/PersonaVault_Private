@@ -4,7 +4,7 @@ Pack Version Model - Track pack versions and enable rollback
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Boolean, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.db.session import Base
@@ -45,7 +45,7 @@ class PackVersion(Base):
     success_rate = Column(Float, default=0.0)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     activated_at = Column(DateTime(timezone=True), nullable=True)
     deprecated_at = Column(DateTime(timezone=True), nullable=True)
     
@@ -90,7 +90,7 @@ class PackRollback(Base):
     to_version = Column(String(20), nullable=False)
     reason = Column(Text, nullable=True)
     triggered_by = Column(String(100), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     successful = Column(Boolean, default=True)
     
     def to_dict(self) -> dict:

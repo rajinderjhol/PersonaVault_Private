@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, Boolean, JSON
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.session import Base
 from sqlalchemy.orm import relationship
 from app.models.intelligence_source import IntelligenceSource
@@ -24,8 +24,8 @@ class User(Base):
         "order": ["dashboard", "chat", "swarm"],
         "collapsed": False
     })
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime(timezone=True), nullable=True)
 
     # relationships

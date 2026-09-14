@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, Text, JSON, Float
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.session import Base
 
 class SimulationJob(Base):
@@ -13,6 +13,6 @@ class SimulationJob(Base):
     status = Column(String(20), default="pending")  # pending, processing, completed, failed
     result_metrics = Column(JSON, nullable=True)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime(timezone=True), nullable=True)
     attestation = Column(String(255), nullable=True)

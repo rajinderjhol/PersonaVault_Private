@@ -4,7 +4,7 @@ Pattern Model - Core intelligence patterns with thermodynamic phase tracking
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Boolean, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 import enum
 
@@ -85,8 +85,8 @@ class Pattern(Base):
     snowflake_actions = Column(JSON, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     last_success_at = Column(DateTime(timezone=True), nullable=True)
     last_failure_at = Column(DateTime(timezone=True), nullable=True)
@@ -173,7 +173,7 @@ class PatternTransition(Base):
     confidence_delta = Column(Float, default=0.0)
     success_delta = Column(Float, default=0.0)
     
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     # Relationship
     pattern = relationship("Pattern", backref="transitions")
