@@ -12,9 +12,13 @@ non-guarantees. Each paper makes one narrow claim and defends it.
   memory system.
 - [The Record Primitive](record_primitive.md) —
   persistent representation with differentiated guarantees.
-- [The PersonaVault Substrate](substrate.md) —
-  the irreducible primitives of governed, evolvable memory.
+- [The Authority Primitive](authority_primitive.md) —
+  the governed ability to act, with defined source, scope, carrier, and enforcement.
+- [The Unit Primitive](unit_primitive.md) —
+  stable referent for a thing the system tracks.
+- [The Identity Primitive](identity_primitive.md) —
+  attribution of every action, record, and transition to a distinguishable entity.
 
 ## Status
-4 of 8 primitives defined: Attestation, Transition, Record, Authority.
-Next: Unit, Identity, Policy, Trust anchor.
+6 of 8 primitives defined: Attestation, Transition, Record, Authority, Unit, Identity.
+Next: Policy, Trust anchor.
