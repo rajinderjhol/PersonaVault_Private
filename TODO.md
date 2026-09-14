@@ -1,5 +1,7 @@
 # 📝 PersonaVault Strategic Todo List
 
+Refer to the project structure in [README.md](README.md) and the vision document in [docs/vision.md](docs/vision.md).
+
 ## ✅ Completed Milestones
 - [x] **Service-Oriented Architecture**: ServiceRegistry and provider swapping.
 - [x] **Sovereign Execution Modes**: All modes implemented and verified.
