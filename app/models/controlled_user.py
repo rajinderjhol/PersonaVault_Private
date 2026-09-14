@@ -1,7 +1,7 @@
 """
 Controlled User Models - Parental controls, supervised access, compliance
 """
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, JSON, Enum, Float, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Enum, Float, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -63,9 +63,9 @@ class ControlledUser(Base):
     monthly_decision_limit = Column(Integer, default=1000)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     user = relationship("User", foreign_keys=[user_id], backref="controlled_settings")
@@ -81,9 +81,9 @@ class ControlledAction(Base):
     request_data = Column(JSON, nullable=True)
     status = Column(String(50), default="pending")  # pending, approved, denied
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    approved_at = Column(DateTime, nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
     reason = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     user = relationship("User", foreign_keys=[user_id])
     approver = relationship("User", foreign_keys=[approved_by])
@@ -97,8 +97,8 @@ class UserConnection(Base):
     connected_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     status = Column(Enum(ConnectionStatus), default=ConnectionStatus.PENDING)
     message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     
     user = relationship("User", foreign_keys=[user_id], backref="connections_sent")
     connected_user = relationship("User", foreign_keys=[connected_user_id], backref="connections_received")

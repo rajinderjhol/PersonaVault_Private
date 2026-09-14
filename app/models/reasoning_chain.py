@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.session import Base
@@ -15,8 +15,8 @@ class ReasoningChainModel(Base):
     confidence = Column(Float, default=0.0)
     status = Column(String, default="in_progress")
     created_by = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {

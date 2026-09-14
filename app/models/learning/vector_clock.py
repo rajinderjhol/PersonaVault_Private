@@ -2,7 +2,7 @@
 Vector Clock Model for causal ordering of events in multi-agent systems.
 Enables conflict detection and resolution using CRDT semantics.
 """
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, JSON
 from datetime import datetime
 from app.db.session import Base
 
@@ -13,7 +13,7 @@ class VectorClock(Base):
     event_id = Column(Integer, index=True, nullable=True)
     agent_id = Column(String, index=True, nullable=False)
     clock = Column(JSON, default={})  # {agent_id: counter}
-    timestamp = Column(DateTime, default=lambda: datetime.utcnow())
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.utcnow())
     
     def increment(self, agent_id: str):
         """Increment clock for a specific agent."""

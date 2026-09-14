@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, JSON
 from app.db.session import Base
 from datetime import datetime, timezone
 
@@ -10,8 +10,8 @@ class PendingAction(Base):
     query = Column(Text)
     options = Column(JSON)
     status = Column(String, default="pending")  # pending, approved, rejected, timed_out
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
     user_response = Column(Text, nullable=True)
 
     # VeriLinkOS Integration Placeholders

@@ -14,8 +14,8 @@ class SemanticPattern(Base):
     success_count = Column(Integer, default=0)
     weight = Column(Float, default=0.7)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     def __repr__(self):
         return f"<SemanticPattern {self.pattern_type}: {self.trigger[:30]}... (weight: {self.weight})>"

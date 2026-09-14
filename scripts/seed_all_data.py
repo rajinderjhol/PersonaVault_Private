@@ -1,6 +1,8 @@
 """Seed the system with comprehensive demo data for all tables."""
 import asyncio
 import sys
+from dotenv import load_dotenv
+load_dotenv()
 import json
 from datetime import datetime, timezone, timedelta
 sys.path.insert(0, '.')

@@ -1,7 +1,7 @@
 """
 Decision Timeline Model for tracking decision evolution.
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, Text, JSON, Float, ForeignKey
 from datetime import datetime, timezone
 from app.db.session import Base
 
@@ -24,7 +24,7 @@ class DecisionTimeline(Base):
     extra_data = Column(JSON, default={})
     
     # Timestamp
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     def __repr__(self):
         return f"<DecisionTimeline step {self.step_number}: {self.step_type}>"

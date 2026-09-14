@@ -1,7 +1,7 @@
 """
 Snowflake Model - Domain-specific pattern variants
 """
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, JSON, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Boolean, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -46,9 +46,9 @@ class Snowflake(Base):
     is_crystallized = Column(Boolean, default=False)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationship to base pattern
     base_pattern = relationship("Pattern", foreign_keys=[parent_pattern_id])
@@ -94,7 +94,7 @@ class SnowflakeTransition(Base):
     transition_metadata = Column(JSON, nullable=True)  # Renamed from 'metadata'
     triggered_by = Column(String(100), nullable=True)  # agent_id or user_id
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     # Relationship
     snowflake = relationship("Snowflake", backref="transitions")

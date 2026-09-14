@@ -47,9 +47,11 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_change_me")
 
     # --- Database Configuration ---
+    # Default is SQLite for local dev. Set DATABASE_URL in .env to override.
+    # Production target: postgresql+asyncpg://user:pass@host:5432/dbname
     DATABASE_URL = os.getenv(
-        "DATABASE_URL", 
-        "sqlite+aiosqlite:///./storage/memory_db/personavault.db" 
+        "DATABASE_URL",
+        "sqlite+aiosqlite:///./storage/memory_db/personavault.db",
     )
 
     # --- Specialized Engine Configuration ---

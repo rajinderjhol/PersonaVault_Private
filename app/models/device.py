@@ -1,7 +1,7 @@
 """
 Device Models - Unified device management
 """
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, JSON, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -39,7 +39,7 @@ class Device(Base):
     public_key = Column(String(4096), nullable=True)
     
     # Connectivity
-    last_seen = Column(DateTime, nullable=True)
+    last_seen = Column(DateTime(timezone=True), nullable=True)
     ip_address = Column(String(45), nullable=True)  # IPv6 support
     endpoint = Column(String(500), nullable=True)
     
@@ -47,9 +47,9 @@ class Device(Base):
     device_metadata = Column(JSON, default=dict)
     
     # Timestamps
-    registered_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    revoked_at = Column(DateTime, nullable=True)
+    registered_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     user = relationship("User", foreign_keys=[user_id])

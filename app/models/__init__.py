@@ -25,7 +25,7 @@ class Role(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(Text)
     permissions = Column(JSON, default={})
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     is_system = Column(Boolean, default=False)
 
 class APIKey(Base):
@@ -35,9 +35,9 @@ class APIKey(Base):
     name = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=True)
-    last_used = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    last_used = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
 
 class AuditLog(Base):
@@ -50,7 +50,7 @@ class AuditLog(Base):
     details = Column(Text)
     ip_address = Column(String)
     user_agent = Column(String)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow, index=True)
 
 class Memory(Base):
     __tablename__ = "memories"
@@ -64,8 +64,8 @@ class Memory(Base):
     modality = Column(String, default="text")
     embedding = Column(JSON, nullable=True)
     extra_data = Column(JSON, default={})
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     expiry_days = Column(Integer, default=0)
     is_encrypted = Column(Boolean, default=False)
 
@@ -74,8 +74,8 @@ class UserSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     session_token = Column(String, unique=True, index=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
     # relationship
     user = relationship("User", back_populates="sessions")
@@ -93,7 +93,7 @@ class EpisodicEntry(Base):
     signature = Column(String, nullable=True)
     hitl_approved = Column(Boolean, default=False)
     user_feedback = Column(Integer, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow)
     consolidated = Column(Boolean, default=False)
 
 class ApprovalRequest(Base):
@@ -105,8 +105,8 @@ class ApprovalRequest(Base):
     requester_id = Column(Integer)
     approver_ids = Column(JSON) # Stored as a list of integers
     status = Column(String, default="pending")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    approved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
     approved_by = Column(Integer, nullable=True)
 
 class IoTDevice(Base):
@@ -118,8 +118,8 @@ class IoTDevice(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     location = Column(String)
     status = Column(String, default="active")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    last_seen = Column(DateTime(timezone=True), default=datetime.utcnow)
     extra_data = Column(JSON, default={})
 
 class IoTData(Base):
@@ -128,7 +128,7 @@ class IoTData(Base):
     device_id = Column(String, index=True, nullable=False)
     data_type = Column(String, index=True)
     value = Column(JSON, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     linked_memory_id = Column(Integer, ForeignKey("memories.id"), nullable=True)
 
@@ -142,8 +142,8 @@ class MedicalAlert(Base):
     message = Column(Text)
     value = Column(JSON)
     is_acknowledged = Column(Boolean, default=False)
-    acknowledged_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
 # ============ Pydantic Models (Memory Graph) ============
 
@@ -209,8 +209,8 @@ class PersonalContext(Base):
     context_type = Column(String, index=True)
     value = Column(Text)
     associated_memory_id = Column(Integer, ForeignKey("memories.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class AISetting(Base):
     __tablename__ = "ai_settings"
@@ -222,8 +222,8 @@ class AISetting(Base):
     deployment_type = Column(String, default="local")
     parameters = Column(JSON, default={})
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class LegalMatter(Base):
     __tablename__ = "legal_matters"
@@ -235,8 +235,8 @@ class LegalMatter(Base):
     assigned_attorney_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(String, default="active")  # active, closed, pending
     priority = Column(String, default="medium")  # low, medium, high, urgent
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class LegalDocument(Base):
     __tablename__ = "legal_documents"
@@ -247,8 +247,8 @@ class LegalDocument(Base):
     document_type = Column(String)  # contract, brief, memo, etc.
     file_path = Column(String)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class UserWidget(Base):
     __tablename__ = "user_widgets"
@@ -258,8 +258,8 @@ class UserWidget(Base):
     config = Column(JSON, default={})
     position = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class UserPersona(Base):
     __tablename__ = "user_personas"
@@ -271,8 +271,8 @@ class UserPersona(Base):
     traits = Column(JSON, default={})
     preferences = Column(JSON, default={})
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class WorkflowTask(Base):
     __tablename__ = "workflow_tasks"
@@ -284,11 +284,11 @@ class WorkflowTask(Base):
     status = Column(String, default="pending")  # pending, in_progress, completed, cancelled
     priority = Column(String, default="medium")  # low, medium, high, urgent
     assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
-    due_date = Column(DateTime, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     extra_data = Column(JSON, default={})
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # ============ Exports ============
 __all__ = [

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, Boolean, JSON
 from datetime import datetime
 from app.db.session import Base
 from sqlalchemy.orm import relationship
@@ -24,9 +24,9 @@ class User(Base):
         "order": ["dashboard", "chat", "swarm"],
         "collapsed": False
     })
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime(timezone=True), nullable=True)
 
     # relationships
     organization = relationship("Organization", back_populates="users")

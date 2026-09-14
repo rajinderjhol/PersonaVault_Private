@@ -1,7 +1,7 @@
 """
 Pattern Model - Core intelligence patterns with thermodynamic phase tracking
 """
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, JSON, Boolean, Text, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, JSON, Boolean, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -49,7 +49,7 @@ class Pattern(Base):
     
     # Thermodynamic phase tracking
     phase = Column(String(20), default="liquid", index=True)
-    phase_updated_at = Column(DateTime, nullable=True)
+    phase_updated_at = Column(DateTime(timezone=True), nullable=True)
     
     # Performance metrics
     confidence = Column(Float, default=0.0)
@@ -62,7 +62,7 @@ class Pattern(Base):
     
     # Crystallization
     is_crystallized = Column(Boolean, default=False, index=True)
-    crystallized_at = Column(DateTime, nullable=True)
+    crystallized_at = Column(DateTime(timezone=True), nullable=True)
     crystallization_confidence = Column(Float, default=0.0)
     
     # Sources
@@ -85,11 +85,11 @@ class Pattern(Base):
     snowflake_actions = Column(JSON, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_used_at = Column(DateTime, nullable=True)
-    last_success_at = Column(DateTime, nullable=True)
-    last_failure_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    last_success_at = Column(DateTime(timezone=True), nullable=True)
+    last_failure_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     children = relationship("Pattern", 
@@ -173,7 +173,7 @@ class PatternTransition(Base):
     confidence_delta = Column(Float, default=0.0)
     success_delta = Column(Float, default=0.0)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     # Relationship
     pattern = relationship("Pattern", backref="transitions")

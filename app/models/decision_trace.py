@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
-from sqlalchemy import Column, String, DateTime, Float, JSON, Boolean, Enum, ForeignKey, Integer
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, Float, JSON, Boolean, Enum, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -25,7 +25,7 @@ class DecisionTrace(Base):
     
     # Existing fields for granular steps
     step = Column(Enum(TraceStep), nullable=False, default=TraceStep.SUMMARY)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     
     # Structured data for each step
     data = Column(JSON, nullable=False, default=dict)

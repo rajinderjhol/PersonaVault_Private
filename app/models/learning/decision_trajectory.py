@@ -1,7 +1,7 @@
 """
 Decision Trajectory Model for tracking decision paths.
 """
-from sqlalchemy import Column, Integer, String, DateTime, JSON, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, JSON, Float, ForeignKey
 from datetime import datetime, timezone
 from app.db.session import Base
 
@@ -10,7 +10,7 @@ class DecisionTrajectory(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     # Decision path
     decisions = Column(JSON, default=[])  # List of decisions

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.session import Base
@@ -10,8 +10,8 @@ class ChatSession(Base):
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     title = Column(String, default="New Chat")
     pinned = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
@@ -24,6 +24,6 @@ class ChatMessage(Base):
     content = Column(Text)
     provider = Column(String, nullable=True)
     trace_ids = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     session = relationship("ChatSession", back_populates="messages")

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Boolean, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, ForeignKey, Index
 from sqlalchemy.sql import func
 import uuid
 
@@ -18,8 +18,8 @@ class TrustPolicy(Base):
     action_on_violation = Column(String(50), nullable=False, default="block")
     notification_enabled = Column(Boolean, nullable=False, default=True)
     
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     
     __table_args__ = (
         Index("idx_trust_policies_user_id", "user_id"),

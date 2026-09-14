@@ -1,7 +1,7 @@
 """
 Behaviour Pack Model for declarative domain configuration.
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, Text, JSON, Boolean
 from datetime import datetime, timezone
 from app.db.session import Base
 
@@ -27,7 +27,7 @@ class BehaviourPack(Base):
     
     # Status
     is_active = Column(Boolean, default=True)
-    installed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    installed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     installed_by = Column(Integer, default=1)  # Default to admin user
     
     def __repr__(self):

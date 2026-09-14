@@ -2,7 +2,7 @@
 Behaviour Event Model for Decision Learning Engine.
 Tracks every decision made by humans or AI.
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, Float, JSON, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, Text, Float, JSON, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.db.session import Base
@@ -12,7 +12,7 @@ class BehaviourEvent(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     # Core fields
     event_type = Column(String, index=True)  # contract_review, incident_investigation
@@ -35,7 +35,7 @@ class BehaviourEvent(Base):
     # Governance
     audit_id = Column(String, index=True)
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
     
     def __repr__(self):
         return f"<BehaviourEvent {self.event_type}: {self.decision}>"

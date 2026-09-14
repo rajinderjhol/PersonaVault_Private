@@ -1,7 +1,7 @@
 """
 Decision Evidence Models
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey, Float, Text, Boolean, JSON, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.session import Base
@@ -24,7 +24,7 @@ class EvidenceBlock(Base):
     is_qualified = Column(Boolean, default=False)
     tags = Column(JSON, default=[])
     verifiable_attestation = Column(String(255), nullable=True)
-    extracted_at = Column(DateTime, default=datetime.utcnow)
+    extracted_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     # Relationships
     decision_links = relationship("DecisionEvidenceLink", back_populates="evidence")
@@ -38,7 +38,7 @@ class DecisionEvidenceLink(Base):
     evidence_id = Column(Integer, ForeignKey("evidence_blocks.id"), nullable=False, index=True)
     confidence = Column(Float, default=0.8)
     reasoning = Column(Text)
-    linked_at = Column(DateTime, default=datetime.utcnow)
+    linked_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     audit_hash = Column(String(64), nullable=False)
     
     # Relationships
@@ -64,8 +64,8 @@ class DocumentIngestionJob(Base):
     total_blocks = Column(Integer, default=0)
     qualified_blocks = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     job_metadata = Column(JSON, default={})
 
 class BulkIngestionJob(Base):
@@ -80,6 +80,6 @@ class BulkIngestionJob(Base):
     successful_files = Column(Integer, default=0)
     failed_files = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     job_metadata = Column(JSON, default={})
