@@ -52,6 +52,8 @@ Three parts, each required:
 
 **3.3 Non-overlapping.** Each primitive has a unique, clearly defined responsibility. If two primitives overlap, the substrate is over-specified, leading to architectural ambiguity.
 
+**3.4 On the claim of sufficiency.** The eight-primitive set is argued, not proven. If a requirement of governed, evolvable memory exists that these eight do not address, then a ninth primitive is required and the set is incomplete. The claim is falsifiable: a counter-example — a system that requires a capability not derivable from any of the eight — would refute it. To date, no such counter-example has been found.
+
 ---
 
 ## 4. The Derivation
@@ -69,6 +71,8 @@ We derive the substrate from the requirements of a governed, evolvable memory sy
 
 This derivation covers the complete stack of governed learning: what exists (Unit/Record), what changes (Transition), who acts (Identity), who permits (Authority/Policy), and who believes the proof (Attestation/Trust Anchor).
 
+The derivation is not merely taxonomic; it is functional. Without Unit and Record, the system is transient. Without Transition, it is static. Without Identity, Authority, and Policy, it is ungoverned. Without Attestation and Trust Anchor, it is unverifiable. Each requirement necessitates the corresponding primitive.
+
 ---
 
 ## 5. The Eight Primitives
@@ -84,11 +88,11 @@ This derivation covers the complete stack of governed learning: what exists (Uni
 | **Attestation** | Verifiable proof of a transition under authority. | Aspirational |
 | **Trust Anchor** | The external source of cryptographic truth. | Aspirational |
 
-*(Each primitive is defined in detail in its own whitepaper.)*
+*Status reflects implementation state in the PersonaVault codebase as of September 2026. Papers exist for four of the eight primitives (Transition, Record, Authority, Attestation); the remaining four (Unit, Identity, Policy, Trust Anchor) are implemented but not yet documented as standalone papers.*
 
 ---
 
-## 6. What the Substrate Guarantees
+## 6. What the Substrate Provides
 
 **6.1 End-to-end governability.** Because the substrate is integrated, there are no "hidden" paths. Any change to the system's state or any action it takes flows through the Transition, Authority, and Record layers.
 
@@ -97,6 +101,18 @@ This derivation covers the complete stack of governed learning: what exists (Uni
 **6.3 Independent verifiability.** Because the substrate supports Attestation bound to a Trust Anchor, a third party can verify the system's behavior without trusting the system's own logs.
 
 **6.4 Evolvable integrity.** Because the system distinguishes mutable and immutable records, it can evolve its knowledge (mutable patterns) while preserving the integrity of its governance (immutable policies and audit logs).
+
+---
+
+## 6.5 Implementation status against the substrate
+
+The substrate model describes what a governed, evolvable memory system requires. PersonaVault's current implementation covers approximately six of the eight primitives and the composition of five of them. The specific gaps are:
+
+- **Missing Documentation:** Unit, Identity, Policy, and Trust Anchor require formalization papers to match the rigor of the other four.
+- **Incomplete Attestation:** The cryptographic binding of transitions to records (the Attestation primitive) is not yet implemented.
+- **Trust Anchor Integration:** No external cryptographic trust anchor is currently wired into the Authority and Record layers.
+
+Until these gaps close, the substrate's guarantees are aspirational for the missing primitives and the incomplete compositions.
 
 ---
 
@@ -125,7 +141,7 @@ Removing any primitive leaves the substrate incomplete:
 - **Without Attestation:** The system is internally consistent but externally unverifiable.
 - **Without Trust Anchor:** Attestation is self-assertion, not independent proof.
 
-Eight primitives. No more, no less.
+Eight primitives. No more, no less. Any attempt to implement a ninth primitive would either be redundant (re-implementing one of these) or outside the scope of governed, evolvable memory.
 
 ---
 
