@@ -49,7 +49,7 @@ class DecisionEvidenceLink(Base):
         super().__init__(**kwargs)
         # Generate audit hash on creation
         self.audit_hash = hashlib.sha256(
-            f"{self.decision_id}{self.evidence_id}{datetime.utcnow().isoformat()}".encode()
+            f"{self.decision_id}{self.evidence_id}{datetime.now(timezone.utc).isoformat()}".encode()
         ).hexdigest()[:16]
 
 class DocumentIngestionJob(Base):

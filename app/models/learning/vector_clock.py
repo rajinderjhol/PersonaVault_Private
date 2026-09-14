@@ -13,7 +13,7 @@ class VectorClock(Base):
     event_id = Column(Integer, index=True, nullable=True)
     agent_id = Column(String, index=True, nullable=False)
     clock = Column(JSON, default={})  # {agent_id: counter}
-    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.utcnow())
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     def increment(self, agent_id: str):
         """Increment clock for a specific agent."""
