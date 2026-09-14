@@ -30,8 +30,8 @@ class Device(Base):
     config = Column(JSON, default=dict)
     
     # Ownership
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     
     # Trust & Security
     trust_level = Column(Enum(DeviceTrustLevel), default=DeviceTrustLevel.MEDIUM)

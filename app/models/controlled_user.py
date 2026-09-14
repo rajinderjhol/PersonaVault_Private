@@ -37,12 +37,12 @@ class ControlledUser(Base):
     __tablename__ = "controlled_users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
     
     # Access control
     access_level = Column(Enum(AccessLevel), default=AccessLevel.STANDARD)
     supervision_mode = Column(Enum(SupervisionMode), default=SupervisionMode.NONE)
-    supervisor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    supervisor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     # Restrictions
     allowed_domains = Column(JSON, default=list)  # ['security', 'compliance']
@@ -76,11 +76,11 @@ class ControlledAction(Base):
     __tablename__ = "controlled_actions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     action_type = Column(String(100), nullable=False)
     request_data = Column(JSON, nullable=True)
     status = Column(String(50), default="pending")  # pending, approved, denied
-    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
     reason = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -93,8 +93,8 @@ class UserConnection(Base):
     __tablename__ = "user_connections"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    connected_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    connected_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(ConnectionStatus), default=ConnectionStatus.PENDING)
     message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
