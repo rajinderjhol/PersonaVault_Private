@@ -16,7 +16,7 @@ from app.db.session import get_db, SessionLocal
 from app.services.vector_service import vector_service
 from app.models import Memory, User
 
-router = APIRouter(prefix="/documents", tags=["documents"])
+router = APIRouter(tags=["documents"])
 
 # Ensure upload directory exists
 UPLOAD_DIR = "storage/uploads"
