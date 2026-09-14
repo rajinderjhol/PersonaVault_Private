@@ -18,6 +18,11 @@
 
 ## 🎯 Strategic Evolution (Phase II)
 
+## Documentation
+- [Architecture](ARCHITECTURE.md)
+- [Whitepapers](docs/whitepapers/) — formal definitions of the system's primitives
+- [TODO](TODO.md) — open work
+
 | Stage | Focus | Status |
 |-------|-------|--------|
 | **S1** | Domain Awareness (Detection/Routing) | ✅ Complete |
