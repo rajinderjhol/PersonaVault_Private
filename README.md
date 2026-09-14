@@ -49,6 +49,7 @@ pip install -r requirements.txt
 Three-layer memory (Gas → Liquid → Ice), a multi-agent swarm, and a
 governance layer that gates every crystallized pattern. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the full picture.
+[Whitepapers](docs/whitepapers/) — formal definitions of the system's primitives.
 
 ## Status
 V3 Phase II — core thermodynamic memory, synthesis, inference, and
