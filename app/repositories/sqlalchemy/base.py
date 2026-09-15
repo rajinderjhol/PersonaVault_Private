@@ -9,8 +9,12 @@ class SQLBaseRepository:
 
     async def _get_session(self) -> AsyncSession:
         """Helper to get an active session."""
+        print(f"DEBUG: SQLBaseRepository._get_session called. self.db is: {self.db}")
         if callable(self.db):
-            return self.db()
+            session = self.db()
+            print(f"DEBUG: SQLBaseRepository._get_session called callable, result: {session}")
+            return session
+        print(f"DEBUG: SQLBaseRepository._get_session returning self.db: {self.db}")
         return self.db
 
     async def _close_session(self, session: AsyncSession):
