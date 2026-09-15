@@ -80,3 +80,8 @@ full_db_dump.sql
 fix_*.py
 index_*.py
 data_test/
+
+# Compiled pack outputs (regenerated on compile, timestamps churn)
+packs/compiled/*.json
+packs/compiled/*_pack.py
+cookie.txt
