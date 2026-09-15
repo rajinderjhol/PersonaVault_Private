@@ -38,6 +38,12 @@ def test_engine():
     """Initializes the database engine."""
     return create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
 
+@pytest.fixture(scope="session")
+def test_session_factory(test_engine):
+    return async_sessionmaker(
+        test_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
 @pytest.fixture(autouse=True)
 async def clean_db(test_engine):
     """Reset the database schema before every test."""
@@ -49,11 +55,8 @@ async def clean_db(test_engine):
     environment_service.reset()
 
 @pytest.fixture
-async def db_session(test_engine):
-    async_session_factory = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
-    async with async_session_factory() as session:
+async def db_session(test_session_factory):
+    async with test_session_factory() as session:
         yield session
 
 
@@ -116,12 +119,13 @@ async def create_test_user(db_session, role="user"):
 # ============================================================
 
 @pytest.fixture
-async def client(db_session):
+async def client(db_session, test_session_factory):
     """Create an async test client with admin authentication."""
     user, token = await create_test_admin(db_session)
     
     async def override_get_db():
-        yield db_session
+        async with test_session_factory() as session:
+            yield session
     
     async def override_get_current_user():
         return user
@@ -142,12 +146,13 @@ def admin_client(client):
     return client
 
 @pytest.fixture
-async def auth_client(db_session):
+async def auth_client(db_session, test_session_factory):
     """Create an async test client with regular user authentication."""
     user, token = await create_test_user(db_session, role="user")
     
     async def override_get_db():
-        yield db_session
+        async with test_session_factory() as session:
+            yield session
     
     async def override_get_current_user():
         return user
