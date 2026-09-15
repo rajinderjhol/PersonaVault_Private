@@ -28,3 +28,20 @@ This document defines the architectural distinction between how PersonaVault pro
 The system adopts a dual-pipeline architecture. Authoritative knowledge follows the direct pipeline, ensuring immediate accessibility. Emergent knowledge follows the recurrence-based pipeline, ensuring that only patterns which demonstrate stability and impact are promoted to trusted memory.
 
 Both pipelines are supported by the same underlying substrate (SemanticPatterns, weights, and retrieval mechanisms).
+
+## Next steps
+
+### Immediate (next session)
+- [ ] Fix the remaining auth/login quirks in `run_demo_loop.sh` and commit it as the reference demo
+- [ ] Add a `docs/knowledge-types.md` reference to the README's "What it does" section
+- [ ] Verify the demo runs on a fresh VM after a Postgres restart
+
+### Short-term (next 2-4 weeks)
+- [ ] Design the evidence_blocks schema: what fields does an observation carry?
+- [ ] Implement ingest routing: which sources go to the direct pipeline, which to evidence?
+- [ ] Build the first consolidation pass: read evidence, detect recurrence, produce candidate patterns
+
+### Medium-term (post-demo)
+- [ ] Wire the lifecycle transitions (Gas → Liquid → Ice) to the recurrence pipeline
+- [ ] Implement the "corrections" path (already partially exists via policy_inference_service)
+- [ ] Test with a real emergent corpus (meeting notes, discussion threads)

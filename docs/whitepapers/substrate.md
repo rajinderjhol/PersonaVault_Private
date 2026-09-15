@@ -164,3 +164,11 @@ The claim is narrow and checkable:
 > **A governed, evolvable memory system requires a substrate composed of eight irreducible primitives, such that any action or epistemic change can be traced to a verifiable authority chain and represented within a governed record layer.**
 
 This substrate is not just an architectural choice; it is the boundary between a system that can be trusted and a system that merely asserts its own reliability.
+
+> **Note on implementation status.** The substrate supports two knowledge 
+> formation paths. Authoritative knowledge (contracts, policies, regulations) 
+> is extracted directly — it is valid on arrival. Emergent knowledge 
+> (discussions, corrections, recurring decisions) is crystallized through 
+> recurrence over time. The current codebase implements the direct path; the 
+> recurrence path is planned. See [docs/knowledge-types.md](../knowledge-types.md) 
+> for the full distinction.
