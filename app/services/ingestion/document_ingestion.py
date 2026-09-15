@@ -108,6 +108,7 @@ class DocumentIngestionService:
         if not folder.is_dir():
             raise ValueError(f"Path is not a directory: {folder_path}")
         
+        logger.info(f"DEBUG: Scanning {folder}")
         # Get all documents
         documents = await self._scan_folder(folder, recursive)
         
@@ -180,6 +181,7 @@ class DocumentIngestionService:
         user_id: int
     ) -> IngestionResult:
         """Ingest a single document."""
+        logger.info(f"DEBUG: Ingesting {doc.name}")
         try:
             # Read the file
             content = await self._read_file(doc.path)
@@ -334,6 +336,7 @@ class DocumentIngestionService:
         from app.services.memory.ice_repository import IceMemoryRepository
         from app.db.session import SessionLocal
         
+        logger.info(f"DEBUG: Crystallizing {filename}")
         patterns = []
         
         # Simple pattern extraction: break content into chunks

@@ -17,7 +17,7 @@ async def list_patterns(
     domain: Optional[str] = None,
     min_confidence: float = Query(0.0, ge=0.0, le=1.0),
     search: Optional[str] = None,
-    sort_by: str = Query("confidence", pattern="^(confidence|created_at|use_count)$"),
+    sort_by: str = Query("weight", pattern="^(weight|created_at|occurrence_count)$"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$")
 ) -> Dict[str, Any]:
     """List crystallized patterns with filtering and sorting."""

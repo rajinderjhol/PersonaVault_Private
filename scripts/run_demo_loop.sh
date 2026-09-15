@@ -27,7 +27,7 @@ psql_exec "SELECT count(*) FROM semantic_patterns;"
 
 # 2. Ingest
 echo "=== 1. Ingest ==="
-INGEST_RESP=$(curl -s -b "$COOKIES" -X POST "$BACKEND/api/v1/ingestion/folder"   -H "Content-Type: application/json"   -d "{\"folder_path\": \"\", \"user_id\": 1, \"recursive\": true}")
+INGEST_RESP=$(curl -s -b "$COOKIES" -X POST "$BACKEND/api/v1/ingestion/folder"   -H "Content-Type: application/json"   -d "{\"folder_path\": \"$DOCS\", \"user_id\": 1, \"recursive\": true}")
 JOB_ID=$(echo "$INGEST_RESP" | jq -r '.job_id // empty')
 
 if [ -z "$JOB_ID" ]; then
