@@ -85,3 +85,8 @@ data_test/
 packs/compiled/*.json
 packs/compiled/*_pack.py
 cookie.txt
+
+# Runtime state files (written by app/tests)
+data/identity/
+data/ingestion_history.json
+data_test/sync_states.json
