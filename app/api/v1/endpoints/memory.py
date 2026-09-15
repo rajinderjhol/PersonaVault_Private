@@ -39,10 +39,15 @@ async def get_memories(
         "created_at": m.created_at.isoformat() if m.created_at else None
     } for m in memories]
 
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
+from app.models import Memory
+from app.repositories.sqlalchemy.memory import SQLMemoryRepository
+
 @router.post("/")
 async def create_memory(
     request: Request,
     memory: MemoryCreate,
+    background_tasks: BackgroundTasks,
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ):
@@ -51,17 +56,24 @@ async def create_memory(
         # Get memory service from app state (uses repository pattern)
         memory_service = request.app.state.memory_service
         
-        # This triggers the repository which handles FAISS indexing
-        new_memory = await memory_service.save_memory(
+        # Save to L2 (SQL)
+        new_memory = await memory_service.memory_repo.add(
             user_id=user_id,
-            memory_type="text",
+            title=memory.title or "",
             content=memory.content,
-            tags=memory.tags or "",
-            title=memory.title
+            modality="text",
+            tags=memory.tags or ""
         )
         
+        # Offload side-effects (L3 Vector / Graph) to background tasks
+        if new_memory:
+            if memory_service.vector_repo:
+                background_tasks.add_task(memory_service.vector_repo.add, new_memory.id, memory.content, user_id)
+            if memory_service.graph_repo:
+                background_tasks.add_task(memory_service.graph_repo.add_node, new_memory.id, new_memory.title, "Memory", user_id)
+        
         return {
-            "message": "Memory created with vector indexing", 
+            "message": "Memory created with vector indexing (queued)", 
             "id": new_memory.id,
             "title": new_memory.title
         }
@@ -70,7 +82,7 @@ async def create_memory(
         logger.error(f"Memory service error: {e}")
         new_memory = Memory(
             user_id=user_id,
-            title=memory.title,
+            title=memory.title or "",
             content=memory.content,
             tags=memory.tags or "",
             expiry_days=memory.expiry_days or 0
@@ -78,6 +90,10 @@ async def create_memory(
         db.add(new_memory)
         await db.commit()
         await db.refresh(new_memory)
+        return {
+            "message": "Memory created (fallback)", 
+            "id": new_memory.id
+        }
         return {"message": "Memory created (fallback)", "id": new_memory.id}
 
 @router.get("/search")

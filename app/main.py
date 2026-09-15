@@ -326,19 +326,20 @@ async def lifespan(app: FastAPI):
     )
 
     # Ignite background Crystallization Task with optimized settings
-    app.state.consolidation_task = ConsolidationTask(
-        orchestrator=app.state.orchestrator,
-        memory_service=app.state.memory_service,
-        config={
-            "batch_size": 20,  # Increased from 10
-            "interval_hours": 0.5,  # Every 30 minutes instead of 1 hour
-            "max_workers": 4  # Parallel processing workers
-        }
-    )
-    # Enable parallel execution
-    app.state.orchestrator._parallel_execution = True
-    app.state.consolidation_task.trigger_event = asyncio.Event()
-    asyncio.create_task(app.state.consolidation_task.run())
+        # app.state.consolidation_task = ConsolidationTask(
+    #     orchestrator=app.state.orchestrator,
+    #     memory_service=app.state.memory_service,
+    #     config={
+    #         "batch_size": 20,  # Increased from 10
+    #         "interval_hours": 0.5,  # Every 30 minutes instead of 1 hour
+    #         "max_workers": 4  # Parallel processing workers
+    #     }
+    # )
+    # # Enable parallel execution
+    # app.state.orchestrator._parallel_execution = True
+    # app.state.consolidation_task.trigger_event = asyncio.Event()
+    #     # asyncio.create_task(app.state.consolidation_task.run())
+
 
     # Ignite Physical Telemetry Adapter
     from app.swarm.specialized.health import HealthAgent
